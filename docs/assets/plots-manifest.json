@@ -25,12 +25,6 @@
           "path": "visualizations/week-02/multi-tool-revenue-visualization.html"
         },
         {
-          "title": "Tool selection matrix",
-          "slug": "tool-selection-matrix",
-          "description": "Turns the audience-purpose framework into a quick decision matrix across spreadsheets, BI platforms, and Python/Plotly.",
-          "path": "visualizations/week-02/tool-selection-matrix.html"
-        },
-        {
           "title": "BI-style revenue summary",
           "slug": "bi-style-revenue-summary",
           "description": "A dashboard-style comparison of total scale and growth, matching the Week 2 BI discussion about executive summaries, KPI monitoring, and drill-down needs.",

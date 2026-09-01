@@ -18,6 +18,8 @@ LINE = "#d8dadd"
 
 
 def quarterly_revenue() -> pd.DataFrame:
+    # Keep the raw dataset in a single wide table so the same source can feed both
+    # the annual spreadsheet-friendly chart and the quarterly interactive view.
     rows = [
         ("Q1",2020,2450000,1820000,3100000),
         ("Q2",2020,2380000,1750000,3250000),
@@ -60,13 +62,15 @@ def long_revenue() -> pd.DataFrame:
 def apply_finance_theme(figure: go.Figure, height: int = 720) -> go.Figure:
     figure.update_layout(
         height=height,
-        margin={"t": 92, "r": 44, "b": 72, "l": 72},
+        # The top margin leaves room for the shared title, subplot labels, and legend.
+        margin={"t": 124, "r": 44, "b": 72, "l": 72},
         paper_bgcolor="#ffffff",
         plot_bgcolor="#ffffff",
         font={"family": "Inter, Arial, sans-serif", "color": INK},
         legend={
             "orientation": "h",
-            "y": 1.04,
+            # Push the legend above the plotting area so it does not collide with subplot titles.
+            "y": 1.14,
             "x": 1,
             "xanchor": "right",
             "title": None,
@@ -91,6 +95,8 @@ def apply_finance_theme(figure: go.Figure, height: int = 720) -> go.Figure:
 
 def spreadsheet_vs_python_view() -> go.Figure:
     data = long_revenue()
+    # Aggregate to yearly totals for the left chart while preserving quarterly detail
+    # for the right chart.
     annual = (
         data.groupby(["year", "company"], as_index=False)["revenue_millions"]
         .sum()
@@ -104,7 +110,8 @@ def spreadsheet_vs_python_view() -> go.Figure:
             "Spreadsheet-ready: yearly grouped columns",
             "Plotly/Python: interactive quarterly detail",
         ),
-        horizontal_spacing=0.13,
+        # Add extra gap so the right subplot title has room to breathe near the legend.
+        horizontal_spacing=0.16,
     )
 
     colors = {
@@ -155,6 +162,8 @@ def spreadsheet_vs_python_view() -> go.Figure:
         },
         barmode="group",
     )
+    # Nudge the subplot titles into a more stable position after the legend shift.
+    figure.for_each_annotation(lambda annotation: annotation.update(y=1.01))
     figure.update_yaxes(title="Revenue ($M)", row=1, col=1)
     figure.update_yaxes(title="Revenue ($M)", row=1, col=2)
     figure.update_xaxes(title="Year", type="category", row=1, col=1)
@@ -276,15 +285,6 @@ FIGURES = [
             "annual view with an interactive Plotly quarterly time series."
         ),
         "figure": spreadsheet_vs_python_view(),
-    },
-    {
-        "title": "Tool selection matrix",
-        "slug": "tool-selection-matrix",
-        "description": (
-            "Turns the audience-purpose framework into a quick decision matrix across "
-            "spreadsheets, BI platforms, and Python/Plotly."
-        ),
-        "figure": tool_selection_matrix(),
     },
     {
         "title": "BI-style revenue summary",
