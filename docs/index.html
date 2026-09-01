@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FINC 560 Visualizations</title>
+    <link rel="stylesheet" href="assets/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div>
+        <p class="course">FINC 560</p>
+        <h1>Assignment Visualizations</h1>
+      </div>
+      <nav class="tabs" aria-label="Site sections">
+        <button class="tab is-active" type="button" data-tab="overview">Overview</button>
+        <button class="tab" type="button" data-tab="notes">Notes</button>
+      </nav>
+    </header>
+
+    <main>
+      <section class="panel is-active" id="overview" aria-labelledby="overview-title">
+        <div class="section-heading">
+          <p class="eyebrow">Status</p>
+          <h2 id="overview-title">Static pages for long-form Plotly output.</h2>
+        </div>
+        <div class="overview-grid">
+          <div>
+            <h3>Site structure</h3>
+            <p>
+              Python assignment modules export Plotly figures into
+              <code>docs/visualizations/</code>. The public site embeds each
+              graph in a same-origin iframe so long charts can scroll naturally.
+            </p>
+          </div>
+          <div>
+            <h3>Publishing target</h3>
+            <p>
+              GitHub Pages can serve this repository directly from the
+              <code>docs</code> folder on <code>main</code>.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="notes" aria-labelledby="notes-title">
+        <div class="section-heading">
+          <p class="eyebrow">Workflow</p>
+          <h2 id="notes-title">Add a weekly assignment module, then export.</h2>
+        </div>
+        <ol class="steps">
+          <li>Create or copy a file in <code>src/assignments/</code>.</li>
+          <li>Add Plotly figures to its <code>FIGURES</code> list.</li>
+          <li>Run <code>python scripts/export_plotly.py</code>.</li>
+          <li>Commit the updated source and generated <code>docs/</code> output.</li>
+        </ol>
+      </section>
+
+      <section class="assignments" id="assignments" aria-live="polite"></section>
+    </main>
+
+    <script src="assets/app.js"></script>
+  </body>
+</html>

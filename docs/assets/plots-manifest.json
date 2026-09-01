@@ -1,0 +1,16 @@
+{
+  "assignments": [
+    {
+      "id": "week-01",
+      "label": "Week 01",
+      "title": "Example long Plotly graph",
+      "figures": [
+        {
+          "title": "Example long Plotly graph",
+          "slug": "sample-long-plot",
+          "path": "visualizations/week-01/sample-long-plot.html"
+        }
+      ]
+    }
+  ]
+}
