@@ -21,23 +21,22 @@
     <main>
       <section class="panel is-active" id="overview" aria-labelledby="overview-title">
         <div class="section-heading">
-          <p class="eyebrow">Status</p>
-          <h2 id="overview-title">Static pages for long-form Plotly output.</h2>
+          <p class="eyebrow">Brief</p>
+          <h2 id="overview-title">Overview</h2>
         </div>
         <div class="overview-grid">
           <div>
-            <h3>Site structure</h3>
+            <h3>How it works</h3>
             <p>
-              Python assignment modules export Plotly figures into
-              <code>docs/visualizations/</code>. The public site embeds each
-              graph in a same-origin iframe so long charts can scroll naturally.
+              This site using Github Pages to host a static site. The source code for each visualization is in
+              <code>docs/visualizations/</code> which gerneates a dynamic HTML pages using Javascript genreate from python.
+              The related python code for each view can be found in <code>docs/assignments/</code>
             </p>
           </div>
           <div>
-            <h3>Publishing target</h3>
+            <h3>Navigation</h3>
             <p>
-              GitHub Pages can serve this repository directly from the
-              <code>docs</code> folder on <code>main</code>.
+              Different visualizations are can be view by clicking the tabs in the top right.
             </p>
           </div>
         </div>
@@ -45,14 +44,11 @@
 
       <section class="panel" id="notes" aria-labelledby="notes-title">
         <div class="section-heading">
-          <p class="eyebrow">Workflow</p>
-          <h2 id="notes-title">Add a weekly assignment module, then export.</h2>
+          <p class="eyebrow">Just in case</p>
+          <h2 id="notes-title">Notes</h2>
         </div>
         <ol class="steps">
-          <li>Create or copy a file in <code>src/assignments/</code>.</li>
-          <li>Add Plotly figures to its <code>FIGURES</code> list.</li>
-          <li>Run <code>python scripts/export_plotly.py</code>.</li>
-          <li>Commit the updated source and generated <code>docs/</code> output.</li>
+          <li>Nothing to note right now.</li>
         </ol>
       </section>
 
