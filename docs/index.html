@@ -3,14 +3,15 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>FINC 560 Visualizations</title>
+    <title>FINC 560 Financial Visualizations</title>
+    <link rel="icon" href="data:," />
     <link rel="stylesheet" href="assets/styles.css" />
   </head>
   <body>
     <header class="site-header">
       <div>
         <p class="course">FINC 560</p>
-        <h1>Assignment Visualizations</h1>
+        <h1>Financial Visualization Lab</h1>
       </div>
       <nav class="tabs" aria-label="Site sections">
         <button class="tab is-active" type="button" data-tab="overview">Overview</button>
@@ -26,17 +27,18 @@
         </div>
         <div class="overview-grid">
           <div>
-            <h3>How it works</h3>
-            <p>
-              This site using Github Pages to host a static site. The source code for each visualization is in
-              <code>docs/visualizations/</code> which gerneates a dynamic HTML pages using Javascript genreate from python.
-              The related python code for each view can be found in <code>docs/assignments/</code>
+          <h3>How it works</h3>
+          <p>
+              This GitHub Pages site hosts interactive Plotly exports for FINC 560. The Python source lives in
+              <code>src/assignments/</code>, and the generated standalone HTML files are published from
+              <code>docs/visualizations/</code>.
             </p>
           </div>
           <div>
-            <h3>Navigation</h3>
+            <h3>Course connection</h3>
             <p>
-              Different visualizations are can be view by clicking the tabs in the top right.
+              Week 1 focuses on design principles. Week 2 applies those principles to tool selection,
+              spreadsheet-style charts, BI dashboard summaries, and Python/Plotly interactivity.
             </p>
           </div>
         </div>
@@ -48,7 +50,8 @@
           <h2 id="notes-title">Notes</h2>
         </div>
         <ol class="steps">
-          <li>Nothing to note right now.</li>
+          <li>Week 2 uses the quarterly revenue dataset from the multi-tool visualization assignment.</li>
+          <li>All figures are generated from code so they can be updated and reproduced consistently.</li>
         </ol>
       </section>
 

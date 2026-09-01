@@ -67,7 +67,10 @@ function createAssignmentSection(assignment) {
     shell.className = "plot-shell";
     shell.innerHTML = `
       <div class="plot-title">
-        <h3>${figure.title}</h3>
+        <div>
+          <h3>${figure.title}</h3>
+          ${figure.description ? `<p>${figure.description}</p>` : ""}
+        </div>
         <a class="open-link" href="${figure.path}">Open graph</a>
       </div>
       <iframe

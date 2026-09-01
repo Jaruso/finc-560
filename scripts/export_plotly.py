@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
-ASSIGNMENT_MODULES = ["src.assignments.week_01"]
+ASSIGNMENT_MODULES = ["src.assignments.week_01", "src.assignments.week_02"]
 
 sys.path.insert(0, str(ROOT))
 
@@ -44,6 +44,7 @@ def export_module(module_name: str) -> ExportedAssignment:
             {
                 "title": title,
                 "slug": slug,
+                "description": item.get("description", ""),
                 "path": str(output_path.relative_to(DOCS)),
             }
         )
