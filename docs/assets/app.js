@@ -18,15 +18,16 @@ function setActiveTab(tabId) {
 function resizeFrame(frame) {
   try {
     const doc = frame.contentDocument;
-    const minHeight = matchMedia("(max-width: 760px)").matches ? 640 : 900;
-    const height = Math.max(
+    const graph = doc.querySelector(".plotly-graph-div");
+    const graphHeight = graph?.getBoundingClientRect().height;
+    const documentHeight = Math.max(
       doc.body.scrollHeight,
-      doc.documentElement.scrollHeight,
-      minHeight
+      doc.documentElement.scrollHeight
     );
-    frame.style.height = `${height + 24}px`;
+    const height = Math.ceil(graphHeight || documentHeight);
+    frame.style.height = `${height + 4}px`;
   } catch {
-    frame.style.height = "1200px";
+    frame.style.height = "640px";
   }
 }
 

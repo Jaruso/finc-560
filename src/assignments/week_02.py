@@ -66,7 +66,7 @@ def apply_finance_theme(figure: go.Figure, height: int = 720) -> go.Figure:
     figure.update_layout(
         height=height,
         # Keep a little extra top margin so Plotly's legend and title do not collide.
-        margin={"t": 108, "r": 44, "b": 72, "l": 72},
+        margin={"t": 92, "r": 28, "b": 64, "l": 64},
         paper_bgcolor="#ffffff",
         plot_bgcolor="#ffffff",
         font={"family": "Inter, Arial, sans-serif", "color": INK},
@@ -126,7 +126,7 @@ def annual_revenue_view() -> go.Figure:
     )
     figure.update_yaxes(title="Revenue ($M)")
     figure.update_xaxes(title="Year", type="category")
-    return apply_finance_theme(figure, height=620)
+    return apply_finance_theme(figure, height=500)
 
 
 def quarterly_revenue_view() -> go.Figure:
@@ -159,7 +159,7 @@ def quarterly_revenue_view() -> go.Figure:
         title="Quarter",
         rangeslider={"visible": True, "thickness": 0.08},
     )
-    return apply_finance_theme(figure, height=620)
+    return apply_finance_theme(figure, height=540)
 
 
 FIGURES = [
