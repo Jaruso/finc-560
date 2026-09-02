@@ -1,5 +1,6 @@
 const tabsContainer = document.querySelector(".tabs");
 const assignmentsContainer = document.querySelector("#assignments");
+const manifestUrl = "assets/plots-manifest.json?v=20260902-week2-only";
 
 function setActiveTab(tabId) {
   document.querySelectorAll(".tab").forEach((tab) => {
@@ -93,7 +94,7 @@ function createAssignmentSection(assignment) {
 }
 
 async function loadAssignments() {
-  const response = await fetch("assets/plots-manifest.json");
+  const response = await fetch(manifestUrl, { cache: "no-store" });
   const manifest = await response.json();
   manifest.assignments.forEach(createAssignmentSection);
 }
@@ -103,5 +104,7 @@ attachInteractions();
 loadAssignments().then(() => {
   if (initialTab && document.getElementById(initialTab)) {
     setActiveTab(initialTab);
+  } else {
+    setActiveTab("overview");
   }
 });
