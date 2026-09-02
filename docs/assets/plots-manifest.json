@@ -1,19 +1,6 @@
 {
   "assignments": [
     {
-      "id": "week-01",
-      "label": "Week 01",
-      "title": "Visualization design principles",
-      "figures": [
-        {
-          "title": "Design cleanup: same data, clearer message",
-          "slug": "design-cleanup-revenue-trend",
-          "description": "A course-connected Week 1 example showing how decluttering, direct annotation, and pre-attentive contrast change the readability of a financial trend.",
-          "path": "visualizations/week-01/design-cleanup-revenue-trend.html"
-        }
-      ]
-    },
-    {
       "id": "week-02",
       "label": "Week 02",
       "title": "Tools of financial visualization",

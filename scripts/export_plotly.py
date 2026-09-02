@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
-ASSIGNMENT_MODULES = ["src.assignments.week_01", "src.assignments.week_02"]
+ASSIGNMENT_MODULES = ["src.assignments.week_02"]
 PLOT_PAGE_HEAD = """\
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
