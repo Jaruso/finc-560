@@ -62,15 +62,15 @@ def long_revenue() -> pd.DataFrame:
 def apply_finance_theme(figure: go.Figure, height: int = 720) -> go.Figure:
     figure.update_layout(
         height=height,
-        # The top margin leaves room for the shared title, subplot labels, and legend.
-        margin={"t": 124, "r": 44, "b": 72, "l": 72},
+        # The top margin leaves room for the shared title, legend, and subplot labels.
+        margin={"t": 156, "r": 44, "b": 72, "l": 72},
         paper_bgcolor="#ffffff",
         plot_bgcolor="#ffffff",
         font={"family": "Inter, Arial, sans-serif", "color": INK},
         legend={
             "orientation": "h",
-            # Push the legend above the plotting area so it does not collide with subplot titles.
-            "y": 1.14,
+            # Keep the legend in its own band above the subplot titles.
+            "y": 1.2,
             "x": 1,
             "xanchor": "right",
             "title": None,
@@ -159,6 +159,7 @@ def spreadsheet_vs_python_view() -> go.Figure:
             "text": "Same dataset, different tool strengths",
             "x": 0.02,
             "xanchor": "left",
+            "y": 0.98,
         },
         barmode="group",
     )

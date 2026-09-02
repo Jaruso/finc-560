@@ -10,6 +10,24 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
 ASSIGNMENT_MODULES = ["src.assignments.week_01", "src.assignments.week_02"]
+PLOT_PAGE_HEAD = """\
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  html,
+  body {
+    min-height: 100%;
+    margin: 0;
+  }
+
+  @media (max-width: 760px) {
+    body {
+      min-width: 820px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+</style>
+"""
 
 sys.path.insert(0, str(ROOT))
 
@@ -40,6 +58,14 @@ def export_module(module_name: str) -> ExportedAssignment:
             full_html=True,
             config={"responsive": True, "displaylogo": False},
         )
+        # Standalone Plotly pages need their own viewport/min-width rules because
+        # they are also opened directly from the "Open graph" links.
+        html = output_path.read_text(encoding="utf-8")
+        html = html.replace(
+            '<meta charset="utf-8" />\n    <style>html, body {height: 100%;}</style>',
+            f'<meta charset="utf-8" />\n    {PLOT_PAGE_HEAD}',
+        )
+        output_path.write_text(html, encoding="utf-8")
         figures.append(
             {
                 "title": title,

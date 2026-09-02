@@ -73,12 +73,14 @@ function createAssignmentSection(assignment) {
         </div>
         <a class="open-link" href="${figure.path}">Open graph</a>
       </div>
-      <iframe
-        class="plot-frame"
-        title="${figure.title}"
-        src="${figure.path}"
-        loading="lazy"
-      ></iframe>
+      <div class="plot-viewport" aria-label="Scrollable visualization">
+        <iframe
+          class="plot-frame"
+          title="${figure.title}"
+          src="${figure.path}"
+          loading="lazy"
+        ></iframe>
+      </div>
     `;
     list.append(shell);
   });
