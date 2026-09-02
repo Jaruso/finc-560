@@ -18,10 +18,11 @@ function setActiveTab(tabId) {
 function resizeFrame(frame) {
   try {
     const doc = frame.contentDocument;
+    const minHeight = matchMedia("(max-width: 760px)").matches ? 640 : 900;
     const height = Math.max(
       doc.body.scrollHeight,
       doc.documentElement.scrollHeight,
-      900
+      minHeight
     );
     frame.style.height = `${height + 24}px`;
   } catch {

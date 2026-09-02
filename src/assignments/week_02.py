@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import pandas as pd
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 
 
 ASSIGNMENT = "week-02"
@@ -14,6 +13,11 @@ ACCENT = "#0d7f6f"
 INK = "#151515"
 MUTED = "#666b72"
 LINE = "#d8dadd"
+COLORS = {
+    "TechCorp Inc.": ACCENT,
+    "DataSystems LLC": "#d1495b",
+    "CloudServices Co.": "#2f4858",
+}
 
 
 def quarterly_revenue() -> pd.DataFrame:
@@ -61,14 +65,14 @@ def long_revenue() -> pd.DataFrame:
 def apply_finance_theme(figure: go.Figure, height: int = 720) -> go.Figure:
     figure.update_layout(
         height=height,
-        # The top margin leaves room for the legend and subplot labels.
+        # Keep a little extra top margin so Plotly's legend and title do not collide.
         margin={"t": 108, "r": 44, "b": 72, "l": 72},
         paper_bgcolor="#ffffff",
         plot_bgcolor="#ffffff",
         font={"family": "Inter, Arial, sans-serif", "color": INK},
+        dragmode=False,
         legend={
             "orientation": "h",
-            # Keep the legend in its own band above the subplot titles.
             "y": 1.1,
             "x": 1,
             "xanchor": "right",
@@ -92,87 +96,87 @@ def apply_finance_theme(figure: go.Figure, height: int = 720) -> go.Figure:
     return figure
 
 
-def spreadsheet_vs_python_view() -> go.Figure:
+def annual_revenue_view() -> go.Figure:
     data = long_revenue()
-    # Aggregate to yearly totals for the left chart while preserving quarterly detail
-    # for the right chart.
+    # Aggregate the quarterly source into spreadsheet-style annual totals.
     annual = (
         data.groupby(["year", "company"], as_index=False)["revenue_millions"]
         .sum()
         .sort_values(["year", "company"])
     )
 
-    figure = make_subplots(
-        rows=2,
-        cols=1,
-        subplot_titles=(
-            "Annual grouped columns",
-            "Quarterly interactive detail",
-        ),
-        vertical_spacing=0.16,
-    )
-
-    colors = {
-        "TechCorp Inc.": ACCENT,
-        "DataSystems LLC": "#d1495b",
-        "CloudServices Co.": "#2f4858",
-    }
+    figure = go.Figure()
     for company in COMPANIES:
         annual_company = annual[annual["company"] == company]
-        detail_company = data[data["company"] == company]
         figure.add_trace(
             go.Bar(
                 x=annual_company["year"],
                 y=annual_company["revenue_millions"],
                 name=company,
-                marker_color=colors[company],
+                marker_color=COLORS[company],
                 offsetgroup=company,
                 legendgroup=company,
                 hovertemplate=f"{company}<br>%{{x}}: $%{{y:.2f}}M<extra></extra>",
             ),
-            row=1,
-            col=1,
         )
+
+    figure.update_layout(
+        title={"text": "Annual grouped columns", "x": 0.02, "xanchor": "left"},
+        barmode="group",
+    )
+    figure.update_yaxes(title="Revenue ($M)")
+    figure.update_xaxes(title="Year", type="category")
+    return apply_finance_theme(figure, height=620)
+
+
+def quarterly_revenue_view() -> go.Figure:
+    data = long_revenue()
+    figure = go.Figure()
+
+    for company in COMPANIES:
+        detail_company = data[data["company"] == company]
         figure.add_trace(
             go.Scatter(
                 x=detail_company["period_date"],
                 y=detail_company["revenue_millions"],
                 mode="lines+markers",
                 name=company,
-                line={"color": colors[company], "width": 3},
+                line={"color": COLORS[company], "width": 3},
                 marker={"size": 6},
                 legendgroup=company,
-                showlegend=False,
                 customdata=detail_company[["period"]],
                 hovertemplate=(
                     f"{company}<br>%{{customdata[0]}}: $%{{y:.2f}}M<extra></extra>"
                 ),
-            ),
-            row=2,
-            col=1,
+            )
         )
 
-    figure.update_layout(barmode="group")
-    figure.update_yaxes(title="Revenue ($M)", row=1, col=1)
-    figure.update_yaxes(title="Revenue ($M)", row=2, col=1)
-    figure.update_xaxes(title="Year", type="category", row=1, col=1)
+    figure.update_layout(
+        title={"text": "Quarterly interactive detail", "x": 0.02, "xanchor": "left"}
+    )
+    figure.update_yaxes(title="Revenue ($M)")
     figure.update_xaxes(
         title="Quarter",
         rangeslider={"visible": True, "thickness": 0.08},
-        row=2,
-        col=1,
     )
-    return apply_finance_theme(figure, height=1120)
+    return apply_finance_theme(figure, height=620)
 
 
 FIGURES = [
     {
-        "title": "Multi-tool revenue visualization",
-        "slug": "multi-tool-revenue-visualization",
+        "title": "Annual revenue by company",
+        "slug": "annual-revenue-by-company",
         "description": (
-            "Uses the Week 2 assignment dataset to contrast a spreadsheet-friendly "
-            "annual view with an interactive Plotly quarterly time series."
+            "A spreadsheet-friendly grouped column chart summarizing yearly revenue."
         ),
-        "figure": spreadsheet_vs_python_view(),
+        "figure": annual_revenue_view(),
+    },
+    {
+        "title": "Quarterly revenue trend",
+        "slug": "quarterly-revenue-trend",
+        "description": (
+            "An interactive Plotly time series showing quarterly revenue movement."
+        ),
+        "figure": quarterly_revenue_view(),
     },
 ]

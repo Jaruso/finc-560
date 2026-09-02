@@ -19,10 +19,16 @@
       "title": "Tools of financial visualization",
       "figures": [
         {
-          "title": "Multi-tool revenue visualization",
-          "slug": "multi-tool-revenue-visualization",
-          "description": "Uses the Week 2 assignment dataset to contrast a spreadsheet-friendly annual view with an interactive Plotly quarterly time series.",
-          "path": "visualizations/week-02/multi-tool-revenue-visualization.html"
+          "title": "Annual revenue by company",
+          "slug": "annual-revenue-by-company",
+          "description": "A spreadsheet-friendly grouped column chart summarizing yearly revenue.",
+          "path": "visualizations/week-02/annual-revenue-by-company.html"
+        },
+        {
+          "title": "Quarterly revenue trend",
+          "slug": "quarterly-revenue-trend",
+          "description": "An interactive Plotly time series showing quarterly revenue movement.",
+          "path": "visualizations/week-02/quarterly-revenue-trend.html"
         }
       ]
     }

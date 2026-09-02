@@ -324,7 +324,7 @@ main {
   }
 
   .plot-frame {
-    min-height: 860px;
+    min-height: 640px;
   }
 
   .plot-viewport {
