@@ -29,6 +29,12 @@
           "slug": "quarterly-revenue-trend",
           "description": "An interactive Plotly time series showing quarterly revenue movement.",
           "path": "visualizations/week-02/quarterly-revenue-trend.html"
+        },
+        {
+          "title": "Indexed revenue growth",
+          "slug": "indexed-revenue-growth",
+          "description": "A normalized view that compares each company's growth from its Q1 2020 baseline.",
+          "path": "visualizations/week-02/indexed-revenue-growth.html"
         }
       ]
     }

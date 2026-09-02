@@ -30,7 +30,12 @@ PLOT_RESPONSIVE_SCRIPT = """\
 
   const baseLayout = JSON.parse(JSON.stringify(graph.layout || {}));
   const baseAnnotations = JSON.parse(JSON.stringify(baseLayout.annotations || []));
-  const plotConfig = { responsive: true, displaylogo: false, scrollZoom: false };
+  const plotConfig = {
+    responsive: true,
+    displaylogo: false,
+    scrollZoom: false,
+    modeBarButtonsToRemove: ["select2d", "lasso2d"],
+  };
   const hasSecondPanel = baseLayout.xaxis2 && baseLayout.yaxis2;
 
   function mobileAnnotations() {
@@ -140,6 +145,7 @@ def export_module(module_name: str) -> ExportedAssignment:
                 "displaylogo": False,
                 "scrollZoom": False,
                 "doubleClick": "reset",
+                "modeBarButtonsToRemove": ["select2d", "lasso2d"],
             },
         )
         # Standalone Plotly pages need the same responsive behavior as the embedded views.

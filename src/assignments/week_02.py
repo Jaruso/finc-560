@@ -54,12 +54,14 @@ def quarterly_revenue() -> pd.DataFrame:
 
 
 def long_revenue() -> pd.DataFrame:
-    return quarterly_revenue().melt(
+    data = quarterly_revenue().melt(
         id_vars=["quarter", "year", "period", "period_date"],
         value_vars=COMPANIES,
         var_name="company",
         value_name="revenue_millions",
     )
+    data["revenue_millions"] = data["revenue_millions"] / 1_000_000
+    return data
 
 
 def apply_finance_theme(figure: go.Figure, height: int = 720) -> go.Figure:
@@ -72,6 +74,7 @@ def apply_finance_theme(figure: go.Figure, height: int = 720) -> go.Figure:
         plot_bgcolor="#ffffff",
         font={"family": "Inter, Arial, sans-serif", "color": INK},
         dragmode=False,
+        hovermode="x unified",
         legend={
             "orientation": "h",
             "y": 1.08,
@@ -154,6 +157,52 @@ def quarterly_revenue_view() -> go.Figure:
     return apply_finance_theme(figure, height=500)
 
 
+def indexed_growth_view() -> go.Figure:
+    data = long_revenue().copy()
+    # Indexing removes starting-size differences so growth rates are comparable.
+    baselines = data[data["period"] == "2020 Q1"].set_index("company")[
+        "revenue_millions"
+    ]
+    data["revenue_index"] = data.apply(
+        lambda row: (row["revenue_millions"] / baselines[row["company"]]) * 100,
+        axis=1,
+    )
+    data["growth_since_start"] = data["revenue_index"] - 100
+
+    figure = go.Figure()
+    for company in COMPANIES:
+        company_data = data[data["company"] == company]
+        figure.add_trace(
+            go.Scatter(
+                x=company_data["period_date"],
+                y=company_data["revenue_index"],
+                mode="lines+markers",
+                name=company,
+                line={"color": COLORS[company], "width": 3},
+                marker={"size": 6},
+                legendgroup=company,
+                customdata=company_data[["period", "growth_since_start"]],
+                hovertemplate=(
+                    f"{company}<br>"
+                    "%{customdata[0]}<br>"
+                    "Index: %{y:.1f}<br>"
+                    "Growth since Q1 2020: %{customdata[1]:.1f}%<extra></extra>"
+                ),
+            )
+        )
+
+    figure.update_yaxes(title="Revenue index (Q1 2020 = 100)")
+    figure.update_xaxes(title="Quarter")
+    figure.add_hline(
+        y=100,
+        line_color=LINE,
+        line_dash="dash",
+        annotation_text="Q1 2020 baseline",
+        annotation_position="bottom right",
+    )
+    return apply_finance_theme(figure, height=500)
+
+
 FIGURES = [
     {
         "title": "Annual revenue by company",
@@ -170,5 +219,13 @@ FIGURES = [
             "An interactive Plotly time series showing quarterly revenue movement."
         ),
         "figure": quarterly_revenue_view(),
+    },
+    {
+        "title": "Indexed revenue growth",
+        "slug": "indexed-revenue-growth",
+        "description": (
+            "A normalized view that compares each company's growth from its Q1 2020 baseline."
+        ),
+        "figure": indexed_growth_view(),
     },
 ]
