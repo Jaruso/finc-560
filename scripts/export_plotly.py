@@ -142,8 +142,7 @@ def export_module(module_name: str) -> ExportedAssignment:
                 "doubleClick": "reset",
             },
         )
-        # Standalone Plotly pages need the same responsive subplot behavior because
-        # they are also opened directly from the "Open graph" links.
+        # Standalone Plotly pages need the same responsive behavior as the embedded views.
         html = output_path.read_text(encoding="utf-8")
         html = html.replace(
             '<meta charset="utf-8" />\n    <style>html, body {height: 100%;}</style>',

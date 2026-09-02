@@ -73,7 +73,6 @@ function createAssignmentSection(assignment) {
           <h3>${figure.title}</h3>
           ${figure.description ? `<p>${figure.description}</p>` : ""}
         </div>
-        <a class="open-link" href="${figure.path}">Open graph</a>
       </div>
       <div class="plot-viewport" aria-label="Scrollable visualization">
         <iframe
