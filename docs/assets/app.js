@@ -34,9 +34,26 @@ function attachInteractions(scope = document) {
     tab.addEventListener("click", () => setActiveTab(tab.dataset.tab));
   });
 
+  scope.querySelectorAll(".reset-graph").forEach((button) => {
+    button.addEventListener("click", () => resetGraph(button));
+  });
+
   scope.querySelectorAll(".plot-frame").forEach((frame) => {
     frame.addEventListener("load", () => resizeFrame(frame));
   });
+}
+
+function resetGraph(button) {
+  const frame = button.closest(".plot-shell")?.querySelector(".plot-frame");
+  if (!frame) {
+    return;
+  }
+
+  try {
+    frame.contentWindow.resetPlotlyGraph();
+  } catch {
+    frame.src = frame.src;
+  }
 }
 
 function createAssignmentSection(assignment) {
@@ -71,7 +88,10 @@ function createAssignmentSection(assignment) {
           <h3>${figure.title}</h3>
           ${figure.description ? `<p>${figure.description}</p>` : ""}
         </div>
-        <a class="open-link" href="${figure.path}">Open graph</a>
+        <div class="plot-actions">
+          <button class="reset-graph" type="button">Reset graph</button>
+          <a class="open-link" href="${figure.path}">Open graph</a>
+        </div>
       </div>
       <div class="plot-viewport" aria-label="Scrollable visualization">
         <iframe

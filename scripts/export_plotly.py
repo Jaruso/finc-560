@@ -18,9 +18,30 @@ PLOT_PAGE_HEAD = """\
     min-height: 100%;
     margin: 0;
   }
+
+  .plot-reset {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 20;
+    min-height: 38px;
+    border: 1px solid #d8dadd;
+    border-radius: 6px;
+    padding: 0 12px;
+    background: #ffffff;
+    color: #151515;
+    font: 700 14px Inter, Arial, sans-serif;
+    box-shadow: 0 8px 24px rgba(21, 21, 21, 0.12);
+  }
+
+  .plot-reset:hover,
+  .plot-reset:focus-visible {
+    background: #ececea;
+  }
 </style>
 """
 PLOT_RESPONSIVE_SCRIPT = """\
+<button class="plot-reset" type="button">Reset graph</button>
 <script>
 (function () {
   const graph = document.querySelector(".plotly-graph-div");
@@ -28,12 +49,14 @@ PLOT_RESPONSIVE_SCRIPT = """\
     return;
   }
 
+  const resetButton = document.querySelector(".plot-reset");
   const baseLayout = JSON.parse(JSON.stringify(graph.layout || {}));
   const baseAnnotations = JSON.parse(JSON.stringify(baseLayout.annotations || []));
+  const plotConfig = { responsive: true, displaylogo: false, scrollZoom: false };
   const hasSecondPanel = baseLayout.xaxis2 && baseLayout.yaxis2;
 
-  if (!hasSecondPanel) {
-    return;
+  if (resetButton && window.self !== window.top) {
+    resetButton.hidden = true;
   }
 
   function mobileAnnotations() {
@@ -65,6 +88,7 @@ PLOT_RESPONSIVE_SCRIPT = """\
             x: 0.02,
             y: 0.995,
           },
+          dragmode: false,
           xaxis: { ...baseLayout.xaxis, domain: [0, 1] },
           yaxis: { ...baseLayout.yaxis, domain: [0.53, 0.88] },
           xaxis2: { ...baseLayout.xaxis2, domain: [0, 1] },
@@ -76,6 +100,7 @@ PLOT_RESPONSIVE_SCRIPT = """\
           margin: baseLayout.margin,
           legend: baseLayout.legend,
           title: baseLayout.title,
+          dragmode: baseLayout.dragmode,
           xaxis: baseLayout.xaxis,
           yaxis: baseLayout.yaxis,
           xaxis2: baseLayout.xaxis2,
@@ -84,10 +109,18 @@ PLOT_RESPONSIVE_SCRIPT = """\
         };
 
     graph.parentElement.style.height = `${height}px`;
-    Plotly.react(graph, graph.data, { ...graph.layout, ...layout }, {
-      responsive: true,
-      displaylogo: false,
-    });
+    Plotly.react(graph, graph.data, { ...graph.layout, ...layout }, plotConfig);
+  }
+
+  window.resetPlotlyGraph = function () {
+    graph.parentElement.style.height = `${baseLayout.height}px`;
+    Plotly.react(graph, graph.data, baseLayout, plotConfig).then(applyResponsiveLayout);
+  };
+
+  resetButton?.addEventListener("click", window.resetPlotlyGraph);
+
+  if (!hasSecondPanel) {
+    return;
   }
 
   let pending = false;
@@ -135,7 +168,12 @@ def export_module(module_name: str) -> ExportedAssignment:
             output_path,
             include_plotlyjs="cdn",
             full_html=True,
-            config={"responsive": True, "displaylogo": False},
+            config={
+                "responsive": True,
+                "displaylogo": False,
+                "scrollZoom": False,
+                "doubleClick": "reset",
+            },
         )
         # Standalone Plotly pages need the same responsive subplot behavior because
         # they are also opened directly from the "Open graph" links.
