@@ -18,30 +18,9 @@ PLOT_PAGE_HEAD = """\
     min-height: 100%;
     margin: 0;
   }
-
-  .plot-reset {
-    position: fixed;
-    top: 12px;
-    right: 12px;
-    z-index: 20;
-    min-height: 38px;
-    border: 1px solid #d8dadd;
-    border-radius: 6px;
-    padding: 0 12px;
-    background: #ffffff;
-    color: #151515;
-    font: 700 14px Inter, Arial, sans-serif;
-    box-shadow: 0 8px 24px rgba(21, 21, 21, 0.12);
-  }
-
-  .plot-reset:hover,
-  .plot-reset:focus-visible {
-    background: #ececea;
-  }
 </style>
 """
 PLOT_RESPONSIVE_SCRIPT = """\
-<button class="plot-reset" type="button">Reset graph</button>
 <script>
 (function () {
   const graph = document.querySelector(".plotly-graph-div");
@@ -49,15 +28,10 @@ PLOT_RESPONSIVE_SCRIPT = """\
     return;
   }
 
-  const resetButton = document.querySelector(".plot-reset");
   const baseLayout = JSON.parse(JSON.stringify(graph.layout || {}));
   const baseAnnotations = JSON.parse(JSON.stringify(baseLayout.annotations || []));
   const plotConfig = { responsive: true, displaylogo: false, scrollZoom: false };
   const hasSecondPanel = baseLayout.xaxis2 && baseLayout.yaxis2;
-
-  if (resetButton && window.self !== window.top) {
-    resetButton.hidden = true;
-  }
 
   function mobileAnnotations() {
     return baseAnnotations.map((annotation, index) => ({
@@ -111,13 +85,6 @@ PLOT_RESPONSIVE_SCRIPT = """\
     graph.parentElement.style.height = `${height}px`;
     Plotly.react(graph, graph.data, { ...graph.layout, ...layout }, plotConfig);
   }
-
-  window.resetPlotlyGraph = function () {
-    graph.parentElement.style.height = `${baseLayout.height}px`;
-    Plotly.react(graph, graph.data, baseLayout, plotConfig).then(applyResponsiveLayout);
-  };
-
-  resetButton?.addEventListener("click", window.resetPlotlyGraph);
 
   if (!hasSecondPanel) {
     return;

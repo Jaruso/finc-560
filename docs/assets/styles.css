@@ -88,8 +88,7 @@ h3 {
 }
 
 .tab,
-.open-link,
-.reset-graph {
+.open-link {
   min-height: 2.35rem;
   border-radius: 6px;
   font: inherit;
@@ -139,16 +138,12 @@ main {
   gap: 1rem;
 }
 
-.open-link,
-.reset-graph {
+.open-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
   padding: 0 0.95rem;
-}
-
-.open-link {
   background: var(--accent);
   color: white;
   text-decoration: none;
@@ -157,18 +152,6 @@ main {
 .open-link:hover,
 .open-link:focus-visible {
   background: var(--accent-strong);
-}
-
-.reset-graph {
-  border: 1px solid var(--line);
-  background: var(--surface);
-  color: var(--ink);
-  cursor: pointer;
-}
-
-.reset-graph:hover,
-.reset-graph:focus-visible {
-  background: #ececea;
 }
 
 .overview-grid {
@@ -248,12 +231,6 @@ main {
   color: var(--muted);
 }
 
-.plot-actions {
-  display: flex;
-  flex: 0 0 auto;
-  gap: 0.5rem;
-}
-
 @keyframes reveal {
   from {
     opacity: 0;
@@ -313,13 +290,7 @@ main {
     gap: 0.75rem;
   }
 
-  .plot-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .open-link,
-  .reset-graph {
+  .open-link {
     width: 100%;
   }
 
