@@ -65,17 +65,18 @@ def long_revenue() -> pd.DataFrame:
 def apply_finance_theme(figure: go.Figure, height: int = 720) -> go.Figure:
     figure.update_layout(
         height=height,
-        # Keep a little extra top margin so Plotly's legend and title do not collide.
-        margin={"t": 92, "r": 28, "b": 64, "l": 64},
+        # The page already labels each panel, so the chart canvas only needs room
+        # for the legend and axes.
+        margin={"t": 78, "r": 28, "b": 58, "l": 64},
         paper_bgcolor="#ffffff",
         plot_bgcolor="#ffffff",
         font={"family": "Inter, Arial, sans-serif", "color": INK},
         dragmode=False,
         legend={
             "orientation": "h",
-            "y": 1.1,
-            "x": 1,
-            "xanchor": "right",
+            "y": 1.08,
+            "x": 0.5,
+            "xanchor": "center",
             "title": None,
         },
         hoverlabel={"bgcolor": "#ffffff", "bordercolor": LINE, "font_size": 13},
@@ -120,10 +121,7 @@ def annual_revenue_view() -> go.Figure:
             ),
         )
 
-    figure.update_layout(
-        title={"text": "Annual grouped columns", "x": 0.02, "xanchor": "left"},
-        barmode="group",
-    )
+    figure.update_layout(barmode="group")
     figure.update_yaxes(title="Revenue ($M)")
     figure.update_xaxes(title="Year", type="category")
     return apply_finance_theme(figure, height=500)
@@ -151,15 +149,9 @@ def quarterly_revenue_view() -> go.Figure:
             )
         )
 
-    figure.update_layout(
-        title={"text": "Quarterly interactive detail", "x": 0.02, "xanchor": "left"}
-    )
     figure.update_yaxes(title="Revenue ($M)")
-    figure.update_xaxes(
-        title="Quarter",
-        rangeslider={"visible": True, "thickness": 0.08},
-    )
-    return apply_finance_theme(figure, height=540)
+    figure.update_xaxes(title="Quarter")
+    return apply_finance_theme(figure, height=500)
 
 
 FIGURES = [
