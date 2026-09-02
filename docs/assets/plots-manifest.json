@@ -23,12 +23,6 @@
           "slug": "multi-tool-revenue-visualization",
           "description": "Uses the Week 2 assignment dataset to contrast a spreadsheet-friendly annual view with an interactive Plotly quarterly time series.",
           "path": "visualizations/week-02/multi-tool-revenue-visualization.html"
-        },
-        {
-          "title": "BI-style revenue summary",
-          "slug": "bi-style-revenue-summary",
-          "description": "A dashboard-style comparison of total scale and growth, matching the Week 2 BI discussion about executive summaries, KPI monitoring, and drill-down needs.",
-          "path": "visualizations/week-02/bi-style-revenue-summary.html"
         }
       ]
     }

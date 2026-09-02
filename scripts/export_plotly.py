@@ -18,15 +18,94 @@ PLOT_PAGE_HEAD = """\
     min-height: 100%;
     margin: 0;
   }
-
-  @media (max-width: 760px) {
-    body {
-      min-width: 820px;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-  }
 </style>
+"""
+PLOT_RESPONSIVE_SCRIPT = """\
+<script>
+(function () {
+  const graph = document.querySelector(".plotly-graph-div");
+  if (!graph || !window.Plotly) {
+    return;
+  }
+
+  const baseLayout = JSON.parse(JSON.stringify(graph.layout || {}));
+  const baseAnnotations = JSON.parse(JSON.stringify(baseLayout.annotations || []));
+  const hasSecondPanel = baseLayout.xaxis2 && baseLayout.yaxis2;
+
+  if (!hasSecondPanel) {
+    return;
+  }
+
+  function mobileAnnotations() {
+    return baseAnnotations.map((annotation, index) => ({
+      ...annotation,
+      x: 0.5,
+      xanchor: "center",
+      y: index === 0 ? 0.91 : 0.46,
+      yanchor: "bottom",
+    }));
+  }
+
+  function applyResponsiveLayout() {
+    const isMobile = window.matchMedia("(max-width: 760px)").matches;
+    const height = isMobile ? 1120 : baseLayout.height;
+    const layout = isMobile
+      ? {
+          height,
+          margin: { t: 96, r: 18, b: 64, l: 58 },
+          legend: {
+            ...(baseLayout.legend || {}),
+            orientation: "h",
+            x: 0,
+            xanchor: "left",
+            y: 1,
+          },
+          title: {
+            ...(baseLayout.title || {}),
+            x: 0.02,
+            y: 0.995,
+          },
+          xaxis: { ...baseLayout.xaxis, domain: [0, 1] },
+          yaxis: { ...baseLayout.yaxis, domain: [0.53, 0.88] },
+          xaxis2: { ...baseLayout.xaxis2, domain: [0, 1] },
+          yaxis2: { ...baseLayout.yaxis2, domain: [0.08, 0.43] },
+          annotations: mobileAnnotations(),
+        }
+      : {
+          height: baseLayout.height,
+          margin: baseLayout.margin,
+          legend: baseLayout.legend,
+          title: baseLayout.title,
+          xaxis: baseLayout.xaxis,
+          yaxis: baseLayout.yaxis,
+          xaxis2: baseLayout.xaxis2,
+          yaxis2: baseLayout.yaxis2,
+          annotations: baseAnnotations,
+        };
+
+    graph.parentElement.style.height = `${height}px`;
+    Plotly.react(graph, graph.data, { ...graph.layout, ...layout }, {
+      responsive: true,
+      displaylogo: false,
+    });
+  }
+
+  let pending = false;
+  function scheduleResponsiveLayout() {
+    if (pending) {
+      return;
+    }
+    pending = true;
+    window.requestAnimationFrame(() => {
+      pending = false;
+      applyResponsiveLayout();
+    });
+  }
+
+  applyResponsiveLayout();
+  window.addEventListener("resize", scheduleResponsiveLayout);
+})();
+</script>
 """
 
 sys.path.insert(0, str(ROOT))
@@ -58,13 +137,14 @@ def export_module(module_name: str) -> ExportedAssignment:
             full_html=True,
             config={"responsive": True, "displaylogo": False},
         )
-        # Standalone Plotly pages need their own viewport/min-width rules because
+        # Standalone Plotly pages need the same responsive subplot behavior because
         # they are also opened directly from the "Open graph" links.
         html = output_path.read_text(encoding="utf-8")
         html = html.replace(
             '<meta charset="utf-8" />\n    <style>html, body {height: 100%;}</style>',
             f'<meta charset="utf-8" />\n    {PLOT_PAGE_HEAD}',
         )
+        html = html.replace("</body>", f"{PLOT_RESPONSIVE_SCRIPT}\n</body>")
         output_path.write_text(html, encoding="utf-8")
         figures.append(
             {

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
@@ -62,15 +61,15 @@ def long_revenue() -> pd.DataFrame:
 def apply_finance_theme(figure: go.Figure, height: int = 720) -> go.Figure:
     figure.update_layout(
         height=height,
-        # The top margin leaves room for the shared title, legend, and subplot labels.
-        margin={"t": 156, "r": 44, "b": 72, "l": 72},
+        # The top margin leaves room for the legend and subplot labels.
+        margin={"t": 108, "r": 44, "b": 72, "l": 72},
         paper_bgcolor="#ffffff",
         plot_bgcolor="#ffffff",
         font={"family": "Inter, Arial, sans-serif", "color": INK},
         legend={
             "orientation": "h",
             # Keep the legend in its own band above the subplot titles.
-            "y": 1.2,
+            "y": 1.1,
             "x": 1,
             "xanchor": "right",
             "title": None,
@@ -104,14 +103,13 @@ def spreadsheet_vs_python_view() -> go.Figure:
     )
 
     figure = make_subplots(
-        rows=1,
-        cols=2,
+        rows=2,
+        cols=1,
         subplot_titles=(
-            "Spreadsheet-ready: yearly grouped columns",
-            "Plotly/Python: interactive quarterly detail",
+            "Annual grouped columns",
+            "Quarterly interactive detail",
         ),
-        # Add extra gap so the right subplot title has room to breathe near the legend.
-        horizontal_spacing=0.16,
+        vertical_spacing=0.16,
     )
 
     colors = {
@@ -150,131 +148,21 @@ def spreadsheet_vs_python_view() -> go.Figure:
                     f"{company}<br>%{{customdata[0]}}: $%{{y:.2f}}M<extra></extra>"
                 ),
             ),
-            row=1,
-            col=2,
+            row=2,
+            col=1,
         )
 
-    figure.update_layout(
-        title={
-            "text": "Same dataset, different tool strengths",
-            "x": 0.02,
-            "xanchor": "left",
-            "y": 0.98,
-        },
-        barmode="group",
-    )
-    # Nudge the subplot titles into a more stable position after the legend shift.
-    figure.for_each_annotation(lambda annotation: annotation.update(y=1.01))
+    figure.update_layout(barmode="group")
     figure.update_yaxes(title="Revenue ($M)", row=1, col=1)
-    figure.update_yaxes(title="Revenue ($M)", row=1, col=2)
+    figure.update_yaxes(title="Revenue ($M)", row=2, col=1)
     figure.update_xaxes(title="Year", type="category", row=1, col=1)
     figure.update_xaxes(
         title="Quarter",
         rangeslider={"visible": True, "thickness": 0.08},
-        row=1,
-        col=2,
-    )
-    return apply_finance_theme(figure, height=760)
-
-
-def tool_selection_matrix() -> go.Figure:
-    criteria = [
-        "Speed",
-        "Accessibility",
-        "Interactivity",
-        "Reproducibility",
-        "Large-data fit",
-        "Design control",
-    ]
-    scores = {
-        "Excel / Sheets": [5, 5, 2, 2, 2, 3],
-        "Tableau / Power BI": [3, 3, 5, 3, 5, 4],
-        "Python / Plotly": [2, 2, 5, 5, 4, 5],
-    }
-    score_frame = pd.DataFrame(scores, index=criteria)
-
-    figure = go.Figure(
-        data=go.Heatmap(
-            z=score_frame.T.values,
-            x=criteria,
-            y=score_frame.columns,
-            colorscale=[
-                [0, "#f3f4f6"],
-                [0.35, "#b7d7d2"],
-                [0.7, "#4fa397"],
-                [1, ACCENT],
-            ],
-            zmin=1,
-            zmax=5,
-            text=score_frame.T.values,
-            texttemplate="%{text}",
-            textfont={"color": INK, "size": 16},
-            colorbar={"title": "Fit", "tickvals": [1, 3, 5]},
-            hovertemplate="%{y}<br>%{x}: %{z}/5<extra></extra>",
-        )
-    )
-    figure.update_layout(
-        title={
-            "text": "Audience-purpose tool fit matrix",
-            "x": 0.02,
-            "xanchor": "left",
-        },
-    )
-    figure.update_xaxes(side="top")
-    return apply_finance_theme(figure, height=620)
-
-
-def growth_and_scale_dashboard() -> go.Figure:
-    data = quarterly_revenue()
-    totals = data[COMPANIES].sum().sort_values(ascending=True)
-    growth = ((data.loc[data.index[-1], COMPANIES] / data.loc[data.index[0], COMPANIES]) - 1) * 100
-
-    figure = make_subplots(
-        rows=1,
-        cols=2,
-        specs=[[{"type": "bar"}, {"type": "bar"}]],
-        subplot_titles=("Five-year revenue total", "Q1 2020 to Q4 2024 growth"),
-        horizontal_spacing=0.18,
-    )
-    figure.add_trace(
-        go.Bar(
-            x=totals.values,
-            y=totals.index,
-            orientation="h",
-            marker_color=[ACCENT, "#d1495b", "#2f4858"],
-            hovertemplate="%{y}<br>Total revenue: $%{x:.2f}M<extra></extra>",
-            text=[f"${value:.1f}M" for value in totals.values],
-            textposition="outside",
-            showlegend=False,
-        ),
-        row=1,
+        row=2,
         col=1,
     )
-    figure.add_trace(
-        go.Bar(
-            x=growth.index,
-            y=growth.values,
-            marker_color=[ACCENT, "#d1495b", "#2f4858"],
-            hovertemplate="%{x}<br>Growth: %{y:.1f}%<extra></extra>",
-            text=[f"{value:.0f}%" for value in growth.values],
-            textposition="outside",
-            showlegend=False,
-        ),
-        row=1,
-        col=2,
-    )
-    figure.update_layout(
-        title={
-            "text": "BI-style summary: scale and growth answer different questions",
-            "x": 0.02,
-            "xanchor": "left",
-        },
-    )
-    figure.update_xaxes(title="Revenue ($M)", row=1, col=1)
-    figure.update_yaxes(title=None, row=1, col=1)
-    figure.update_xaxes(tickangle=20, row=1, col=2)
-    figure.update_yaxes(title="Growth", ticksuffix="%", row=1, col=2)
-    return apply_finance_theme(figure, height=620)
+    return apply_finance_theme(figure, height=1120)
 
 
 FIGURES = [
@@ -286,14 +174,5 @@ FIGURES = [
             "annual view with an interactive Plotly quarterly time series."
         ),
         "figure": spreadsheet_vs_python_view(),
-    },
-    {
-        "title": "BI-style revenue summary",
-        "slug": "bi-style-revenue-summary",
-        "description": (
-            "A dashboard-style comparison of total scale and growth, matching the Week 2 "
-            "BI discussion about executive summaries, KPI monitoring, and drill-down needs."
-        ),
-        "figure": growth_and_scale_dashboard(),
     },
 ]
