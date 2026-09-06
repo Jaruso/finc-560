@@ -263,13 +263,13 @@ def profit_engine_shift() -> go.Figure:
 def entertainment_revenue_mix() -> go.Figure:
     fig = go.Figure()
     segments = [
-        ("Direct-to-Consumer", DTC_COLOR, lambda year: DTC[year]["Total Revenue"]),
-        ("Linear Networks", LINEAR_COLOR, lambda year: LINEAR[year]["Revenue"]),
-        ("Content Sales / Licensing", CONTENT_COLOR, lambda year: CONTENT[year]["Revenue"]),
+        ("Direct-to-Consumer", "DTC", DTC_COLOR, lambda year: DTC[year]["Total Revenue"]),
+        ("Linear Networks", "Linear", LINEAR_COLOR, lambda year: LINEAR[year]["Revenue"]),
+        ("Content Sales / Licensing", "Content", CONTENT_COLOR, lambda year: CONTENT[year]["Revenue"]),
     ]
     years = ["2023", "2024"]
 
-    for label, color, revenue_for_year in segments:
+    for label, short_label, color, revenue_for_year in segments:
         raw = [revenue_for_year(year) for year in years]
         share = [raw[i] / ENTERTAINMENT[year]["Revenue"] * 100 for i, year in enumerate(years)]
         fig.add_trace(
@@ -279,7 +279,7 @@ def entertainment_revenue_mix() -> go.Figure:
                 orientation="h",
                 name=label,
                 marker={"color": color},
-                text=[f"{value:.1f}%" for value in share],
+                text=[f"{short_label} {value:.1f}%" for value in share],
                 textposition="inside",
                 insidetextanchor="middle",
                 textfont={"color": "white", "size": 12},
@@ -288,11 +288,8 @@ def entertainment_revenue_mix() -> go.Figure:
             )
         )
 
-    fig = finish_figure(fig, height=300, left=72, right=28, showlegend=True)
-    fig.update_layout(
-        barmode="stack",
-        legend={"orientation": "h", "y": 1.12, "x": 0, "xanchor": "left"},
-    )
+    fig = finish_figure(fig, height=300, left=72, right=28)
+    fig.update_layout(barmode="stack")
     fig.update_yaxes(showgrid=False)
     fig.update_xaxes(
         title="Share of Entertainment revenue",
@@ -303,15 +300,6 @@ def entertainment_revenue_mix() -> go.Figure:
         zeroline=False,
     )
     fig.add_vline(x=50, line_width=1, line_dash="dot", line_color=NEUTRAL)
-    fig.add_annotation(
-        x=50,
-        y=1.13,
-        yref="paper",
-        text="50% majority threshold",
-        showarrow=False,
-        font={"size": 10, "color": MUTED},
-        bgcolor="#ffffff",
-    )
     return fig
 
 
