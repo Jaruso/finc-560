@@ -191,7 +191,6 @@ main { padding: clamp(1rem, 4vw, 4rem); }
   background: white;
 }
 
-/* Week 3 executive dashboard */
 .dashboard-panel {
   width: min(1240px, 100%);
   margin: 0 auto;
@@ -319,6 +318,7 @@ main { padding: clamp(1rem, 4vw, 4rem); }
 }
 
 .dashboard-chart-card .plot-title { margin-bottom: 0.25rem; }
+.dashboard-chart-card .chart-audience { display: none; }
 
 .dashboard-chart-card .plot-title h3 {
   margin-top: 0.25rem;
