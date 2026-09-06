@@ -31,30 +31,97 @@
       "title": "Visualizing financial statements",
       "figures": [
         {
-          "title": "How Disney Streaming Improved Operating Income by $2.64B",
+          "title": "The $2.64B streaming turnaround was overwhelmingly revenue-driven",
           "slug": "dtc-profitability-bridge",
-          "description": "Board-level waterfall showing the operational drivers behind Disney Direct-to-Consumer's $2.639 billion improvement in operating income.",
-          "path": "visualizations/week-03/dtc-profitability-bridge.html"
+          "description": "Board view of the operating drivers behind Disney Direct-to-Consumer's improvement in operating income.",
+          "path": "visualizations/week-03/dtc-profitability-bridge.html",
+          "audience": "Board of directors",
+          "takeaway": "Revenue growth contributed $2.89B of improvement, partially offset by $406M of higher SG&A."
         },
         {
-          "title": "Disney's Profit Engine Is Beginning to Shift",
+          "title": "Legacy TV still earns more — but streaming crossed the line into profit",
           "slug": "linear-vs-dtc-operating-income",
-          "description": "Investor-focused comparison showing declining Linear Networks profit alongside Disney streaming's transition from loss to profit.",
-          "path": "visualizations/week-03/linear-vs-dtc-operating-income.html"
+          "description": "Investor view comparing 2023 and 2024 operating income for Linear Networks and Direct-to-Consumer.",
+          "path": "visualizations/week-03/linear-vs-dtc-operating-income.html",
+          "audience": "Potential investors",
+          "takeaway": "Linear Networks lost $667M of operating income while DTC improved by $2.64B and became profitable."
         },
         {
-          "title": "Streaming Now Generates More Than Half of Entertainment Revenue",
+          "title": "Streaming became the majority of Entertainment revenue",
           "slug": "entertainment-revenue-mix",
-          "description": "Revenue mix view showing Direct-to-Consumer increasing from roughly 49% to 55% of Entertainment revenue.",
-          "path": "visualizations/week-03/entertainment-revenue-mix.html"
+          "description": "Entertainment revenue mix shifted materially toward Direct-to-Consumer in FY2024.",
+          "path": "visualizations/week-03/entertainment-revenue-mix.html",
+          "audience": "Supporting analysis",
+          "takeaway": "DTC rose from 48.9% to 55.3% of Entertainment revenue in one year."
         },
         {
-          "title": "Streaming Margin Recovered as Linear Network Margins Contracted",
+          "title": "Streaming margin recovered by 13.2 points",
           "slug": "operating-margin-shift",
-          "description": "Operating margin comparison showing Disney streaming's sharp profitability recovery alongside modest Linear Networks margin compression.",
-          "path": "visualizations/week-03/operating-margin-shift.html"
+          "description": "Before-and-after operating margin comparison for streaming and Linear Networks.",
+          "path": "visualizations/week-03/operating-margin-shift.html",
+          "audience": "Supporting analysis",
+          "takeaway": "DTC moved from a -12.6% margin to +0.6%, while Linear Networks compressed from 35.2% to 32.3%."
         }
-      ]
+      ],
+      "dashboard": {
+        "eyebrow": "The Walt Disney Company · FY2024",
+        "headline": "Streaming crossed into profitability while legacy television continued to contract.",
+        "summary": "Disney's Direct-to-Consumer business swung from a $2.50B operating loss to a $143M profit as streaming became the majority of Entertainment revenue. At the same time, Linear Networks remained highly profitable but moved in the opposite direction.",
+        "kpis": [
+          {
+            "label": "DTC revenue",
+            "value": "$22.8B",
+            "delta": "+14.5% YoY",
+            "tone": "positive"
+          },
+          {
+            "label": "DTC operating income",
+            "value": "$143M",
+            "delta": "+$2.64B YoY",
+            "tone": "positive"
+          },
+          {
+            "label": "DTC operating margin",
+            "value": "0.6%",
+            "delta": "+13.2 pts",
+            "tone": "positive"
+          },
+          {
+            "label": "Linear Networks op. income",
+            "value": "$3.45B",
+            "delta": "-16.2% YoY",
+            "tone": "negative"
+          }
+        ],
+        "groups": [
+          {
+            "label": "Board view",
+            "title": "What actually caused the streaming turnaround?",
+            "description": "Focus on the operating drivers management can act on, not just the headline result.",
+            "slugs": [
+              "dtc-profitability-bridge"
+            ]
+          },
+          {
+            "label": "Investor view",
+            "title": "The profit engine is beginning to shift.",
+            "description": "Show the strategic contrast quickly: legacy TV is declining while streaming crossed the profit threshold.",
+            "slugs": [
+              "linear-vs-dtc-operating-income"
+            ]
+          },
+          {
+            "label": "Supporting context",
+            "title": "The economics underneath the transition",
+            "description": "Revenue mix and margin movement explain why the shift matters beyond one year's operating-income swing.",
+            "slugs": [
+              "entertainment-revenue-mix",
+              "operating-margin-shift"
+            ],
+            "layout": "two-column"
+          }
+        ]
+      }
     }
   ]
 }
