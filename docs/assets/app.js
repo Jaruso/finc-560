@@ -1,12 +1,18 @@
 const tabsContainer = document.querySelector(".tabs");
 const assignmentsContainer = document.querySelector("#assignments");
-const ASSET_VERSION = "20260906-mobile-labels";
+const ASSET_VERSION = "20260906-term-glossary";
 const manifestUrl = `assets/plots-manifest.json?v=${ASSET_VERSION}`;
 const mobilePlotQuery = window.matchMedia("(max-width: 760px)");
 const mobilePlotSlugs = new Set([
   "dtc-profitability-bridge",
   "linear-vs-dtc-operating-income",
   "operating-margin-shift",
+]);
+const chartTermNotes = new Map([
+  [
+    "dtc-profitability-bridge",
+    "OpEx = operating expenses · SG&A = selling, general and administrative expenses · D&A = depreciation and amortization",
+  ],
 ]);
 
 function setActiveTab(tabId) {
@@ -242,12 +248,14 @@ function addAssignmentTab(assignment) {
 function createPlotCard(figure, extraClass = "") {
   const shell = document.createElement("article");
   shell.className = `plot-shell ${extraClass}`.trim();
+  const termNote = chartTermNotes.get(figure.slug);
   shell.innerHTML = `
     <div class="plot-title">
       <div>
         ${figure.audience ? `<p class="chart-audience">${figure.audience}</p>` : ""}
         <h3>${figure.title}</h3>
         ${figure.takeaway ? `<p class="chart-takeaway">${figure.takeaway}</p>` : figure.description ? `<p>${figure.description}</p>` : ""}
+        ${termNote ? `<p class="chart-takeaway"><strong>Terms:</strong> ${termNote}</p>` : ""}
       </div>
     </div>
     <div class="plot-viewport" aria-label="Interactive financial visualization">
