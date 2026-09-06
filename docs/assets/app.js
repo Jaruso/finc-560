@@ -1,6 +1,6 @@
 const tabsContainer = document.querySelector(".tabs");
 const assignmentsContainer = document.querySelector("#assignments");
-const manifestUrl = "assets/plots-manifest.json?v=20260906-course-wide";
+const manifestUrl = "assets/plots-manifest.json?v=20260906-week3-redesign";
 
 function setActiveTab(tabId) {
   document.querySelectorAll(".tab").forEach((tab) => {
@@ -21,14 +21,11 @@ function resizeFrame(frame) {
     const doc = frame.contentDocument;
     const graph = doc.querySelector(".plotly-graph-div");
     const graphHeight = graph?.getBoundingClientRect().height;
-    const documentHeight = Math.max(
-      doc.body.scrollHeight,
-      doc.documentElement.scrollHeight
-    );
+    const documentHeight = Math.max(doc.body.scrollHeight, doc.documentElement.scrollHeight);
     const height = Math.ceil(graphHeight || documentHeight);
-    frame.style.height = `${height + 4}px`;
+    frame.style.height = `${height + 2}px`;
   } catch {
-    frame.style.height = "640px";
+    frame.style.height = "420px";
   }
 }
 
@@ -42,14 +39,98 @@ function attachInteractions(scope = document) {
   });
 }
 
-function createAssignmentSection(assignment) {
+function addAssignmentTab(assignment) {
   const tab = document.createElement("button");
   tab.className = "tab";
   tab.type = "button";
   tab.dataset.tab = assignment.id;
   tab.textContent = assignment.label;
   tabsContainer.insertBefore(tab, tabsContainer.lastElementChild);
+  tab.addEventListener("click", () => setActiveTab(tab.dataset.tab));
+  return tab;
+}
 
+function createPlotCard(figure, extraClass = "") {
+  const shell = document.createElement("article");
+  shell.className = `plot-shell ${extraClass}`.trim();
+  shell.innerHTML = `
+    <div class="plot-title">
+      <div>
+        ${figure.audience ? `<p class="chart-audience">${figure.audience}</p>` : ""}
+        <h3>${figure.title}</h3>
+        ${figure.takeaway ? `<p class="chart-takeaway">${figure.takeaway}</p>` : figure.description ? `<p>${figure.description}</p>` : ""}
+      </div>
+    </div>
+    <div class="plot-viewport" aria-label="Interactive financial visualization">
+      <iframe
+        class="plot-frame"
+        title="${figure.title}"
+        src="${figure.path}"
+        loading="lazy"
+      ></iframe>
+    </div>
+  `;
+  return shell;
+}
+
+function createDashboardSection(assignment) {
+  const dashboard = assignment.dashboard;
+  const figuresBySlug = new Map(assignment.figures.map((figure) => [figure.slug, figure]));
+
+  const section = document.createElement("section");
+  section.className = "panel dashboard-panel";
+  section.id = assignment.id;
+  section.setAttribute("aria-labelledby", `${assignment.id}-title`);
+
+  const hero = document.createElement("header");
+  hero.className = "dashboard-hero";
+  hero.innerHTML = `
+    <p class="eyebrow">${dashboard.eyebrow}</p>
+    <h2 id="${assignment.id}-title">${dashboard.headline}</h2>
+    <p class="dashboard-summary">${dashboard.summary}</p>
+  `;
+  section.append(hero);
+
+  const kpis = document.createElement("div");
+  kpis.className = "kpi-grid";
+  dashboard.kpis.forEach((kpi) => {
+    const card = document.createElement("div");
+    card.className = "kpi-card";
+    card.innerHTML = `
+      <p class="kpi-label">${kpi.label}</p>
+      <p class="kpi-value">${kpi.value}</p>
+      <p class="kpi-delta is-${kpi.tone || "neutral"}">${kpi.delta}</p>
+    `;
+    kpis.append(card);
+  });
+  section.append(kpis);
+
+  dashboard.groups.forEach((group) => {
+    const groupSection = document.createElement("section");
+    groupSection.className = "dashboard-group";
+    groupSection.innerHTML = `
+      <div class="dashboard-group-heading">
+        <p class="dashboard-group-label">${group.label}</p>
+        <h3>${group.title}</h3>
+        <p>${group.description}</p>
+      </div>
+    `;
+
+    const chartGrid = document.createElement("div");
+    chartGrid.className = group.layout === "two-column" ? "dashboard-chart-grid is-two-column" : "dashboard-chart-grid";
+    group.slugs.forEach((slug) => {
+      const figure = figuresBySlug.get(slug);
+      if (figure) chartGrid.append(createPlotCard(figure, "dashboard-chart-card"));
+    });
+    groupSection.append(chartGrid);
+    section.append(groupSection);
+  });
+
+  assignmentsContainer.append(section);
+  attachInteractions(section);
+}
+
+function createStandardAssignmentSection(assignment) {
   const section = document.createElement("section");
   section.className = "panel";
   section.id = assignment.id;
@@ -64,33 +145,20 @@ function createAssignmentSection(assignment) {
 
   const list = document.createElement("div");
   list.className = "plot-list";
-
-  assignment.figures.forEach((figure) => {
-    const shell = document.createElement("article");
-    shell.className = "plot-shell";
-    shell.innerHTML = `
-      <div class="plot-title">
-        <div>
-          <h3>${figure.title}</h3>
-          ${figure.description ? `<p>${figure.description}</p>` : ""}
-        </div>
-      </div>
-      <div class="plot-viewport" aria-label="Scrollable visualization">
-        <iframe
-          class="plot-frame"
-          title="${figure.title}"
-          src="${figure.path}"
-          loading="lazy"
-        ></iframe>
-      </div>
-    `;
-    list.append(shell);
-  });
+  assignment.figures.forEach((figure) => list.append(createPlotCard(figure)));
 
   section.append(heading, list);
   assignmentsContainer.append(section);
   attachInteractions(section);
-  tab.addEventListener("click", () => setActiveTab(tab.dataset.tab));
+}
+
+function createAssignmentSection(assignment) {
+  addAssignmentTab(assignment);
+  if (assignment.dashboard) {
+    createDashboardSection(assignment);
+  } else {
+    createStandardAssignmentSection(assignment);
+  }
 }
 
 async function loadAssignments() {
