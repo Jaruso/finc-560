@@ -139,8 +139,9 @@ def dtc_profitability_bridge() -> go.Figure:
         hovertemplate="%{x}<br>Impact: $%{y:,.0f}M<extra></extra>"
     ))
     
+    fig = apply_finance_theme(fig)
     fig.update_yaxes(title="Operating Income ($M)", zeroline=True, zerolinewidth=1.5, zerolinecolor=INK)
-    return apply_finance_theme(fig)
+    return fig
 
 
 def linear_vs_dtc_operating_income() -> go.Figure:
@@ -176,7 +177,6 @@ def linear_vs_dtc_operating_income() -> go.Figure:
     ))
     
     fig.update_layout(barmode="group")
-    fig.update_yaxes(title="Operating Income ($M)", zeroline=True, zerolinewidth=2, zerolinecolor=INK)
     
     # Tasteful annotations
     fig.add_annotation(
@@ -192,7 +192,9 @@ def linear_vs_dtc_operating_income() -> go.Figure:
         font={"color": LINEAR_COLOR, "weight": "bold"}
     )
     
-    return apply_finance_theme(fig)
+    fig = apply_finance_theme(fig)
+    fig.update_yaxes(title="Operating Income ($M)", zeroline=True, zerolinewidth=2, zerolinecolor=INK)
+    return fig
 
 
 def entertainment_revenue_mix() -> go.Figure:
@@ -244,8 +246,9 @@ def entertainment_revenue_mix() -> go.Figure:
     ))
     
     fig.update_layout(barmode="stack")
+    fig = apply_finance_theme(fig)
     fig.update_yaxes(title="Percentage of Entertainment Revenue", range=[0, 100], ticksuffix="%")
-    return apply_finance_theme(fig)
+    return fig
 
 
 def operating_margin_shift() -> go.Figure:
@@ -287,11 +290,12 @@ def operating_margin_shift() -> go.Figure:
         hovertemplate="Direct-to-Consumer<br>Margin: %{y:.2f}%<extra></extra>"
     ))
     
+    fig = apply_finance_theme(fig)
     fig.update_yaxes(title="Operating Margin (%)", zeroline=True, zerolinewidth=1.5, zerolinecolor=INK, ticksuffix="%")
     # Add a little padding to the y-axis
     fig.update_layout(yaxis_range=[-18, 45])
     
-    return apply_finance_theme(fig)
+    return fig
 
 
 FIGURES = [
