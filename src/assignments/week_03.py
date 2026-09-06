@@ -14,7 +14,7 @@ GRID = "#e7eaed"
 DTC_COLOR = "#0b7f73"
 LINEAR_COLOR = "#314b5c"
 NEGATIVE_COLOR = "#c94b5d"
-CONTENT_COLOR = "#c96b4b"
+CONTENT_COLOR = "#8a713c"
 NEUTRAL = "#8b949e"
 SOURCE = "Source: The Walt Disney Company, 2024 Annual Report (FY ended September 28, 2024)"
 
