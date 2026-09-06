@@ -386,20 +386,20 @@ DASHBOARD = {
     "groups": [
         {
             "label": "Board view",
-            "title": "What actually caused the streaming turnaround?",
-            "description": "Focus on the operating drivers management can act on, not just the headline result.",
+            "title": "Operating drivers of the streaming turnaround",
+            "description": "Revenue growth added $2.89B to DTC operating income, while higher SG&A offset $406M of the gain.",
             "slugs": ["dtc-profitability-bridge"],
         },
         {
             "label": "Investor view",
-            "title": "The profit engine is beginning to shift.",
-            "description": "Show the strategic contrast quickly: legacy TV is declining while streaming crossed the profit threshold.",
+            "title": "Profit contribution is shifting from linear TV toward streaming",
+            "description": "Linear Networks operating income fell $667M while DTC improved $2.64B and moved into profitability.",
             "slugs": ["linear-vs-dtc-operating-income"],
         },
         {
             "label": "Supporting context",
-            "title": "The economics underneath the transition",
-            "description": "Revenue mix and margin movement explain why the shift matters beyond one year's operating-income swing.",
+            "title": "Revenue mix and margin economics",
+            "description": "DTC reached 55.3% of Entertainment revenue as its operating margin improved 13.2 points year over year.",
             "slugs": ["entertainment-revenue-mix", "operating-margin-shift"],
             "layout": "two-column",
         },
