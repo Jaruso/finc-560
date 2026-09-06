@@ -5,11 +5,12 @@ import json
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
 ASSIGNMENT_MODULES = ["src.assignments.week_02", "src.assignments.week_03"]
+
 PLOT_PAGE_HEAD = """\
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
@@ -17,98 +18,35 @@ PLOT_PAGE_HEAD = """\
   body {
     min-height: 100%;
     margin: 0;
+    background: #ffffff;
+    overflow: hidden;
+  }
+  .plotly-graph-div {
+    width: 100% !important;
+  }
+  .modebar {
+    display: none !important;
   }
 </style>
 """
+
 PLOT_RESPONSIVE_SCRIPT = """\
 <script>
 (function () {
   const graph = document.querySelector(".plotly-graph-div");
-  if (!graph || !window.Plotly) {
-    return;
-  }
-
-  const baseLayout = JSON.parse(JSON.stringify(graph.layout || {}));
-  const baseAnnotations = JSON.parse(JSON.stringify(baseLayout.annotations || []));
-  const plotConfig = {
-    responsive: true,
-    displaylogo: false,
-    scrollZoom: false,
-    modeBarButtonsToRemove: ["select2d", "lasso2d"],
-  };
-  const hasSecondPanel = baseLayout.xaxis2 && baseLayout.yaxis2;
-
-  function mobileAnnotations() {
-    return baseAnnotations.map((annotation, index) => ({
-      ...annotation,
-      x: 0.5,
-      xanchor: "center",
-      y: index === 0 ? 0.91 : 0.46,
-      yanchor: "bottom",
-    }));
-  }
-
-  function applyResponsiveLayout() {
-    const isMobile = window.matchMedia("(max-width: 760px)").matches;
-    const height = isMobile ? 1120 : baseLayout.height;
-    const layout = isMobile
-      ? {
-          height,
-          margin: { t: 96, r: 18, b: 64, l: 58 },
-          legend: {
-            ...(baseLayout.legend || {}),
-            orientation: "h",
-            x: 0,
-            xanchor: "left",
-            y: 1,
-          },
-          title: {
-            ...(baseLayout.title || {}),
-            x: 0.02,
-            y: 0.995,
-          },
-          dragmode: false,
-          xaxis: { ...baseLayout.xaxis, domain: [0, 1] },
-          yaxis: { ...baseLayout.yaxis, domain: [0.53, 0.88] },
-          xaxis2: { ...baseLayout.xaxis2, domain: [0, 1] },
-          yaxis2: { ...baseLayout.yaxis2, domain: [0.08, 0.43] },
-          annotations: mobileAnnotations(),
-        }
-      : {
-          height: baseLayout.height,
-          margin: baseLayout.margin,
-          legend: baseLayout.legend,
-          title: baseLayout.title,
-          dragmode: baseLayout.dragmode,
-          xaxis: baseLayout.xaxis,
-          yaxis: baseLayout.yaxis,
-          xaxis2: baseLayout.xaxis2,
-          yaxis2: baseLayout.yaxis2,
-          annotations: baseAnnotations,
-        };
-
-    graph.parentElement.style.height = `${height}px`;
-    Plotly.react(graph, graph.data, { ...graph.layout, ...layout }, plotConfig);
-  }
-
-  if (!hasSecondPanel) {
-    return;
-  }
+  if (!graph || !window.Plotly) return;
 
   let pending = false;
-  function scheduleResponsiveLayout() {
-    if (pending) {
-      return;
-    }
+  function resizePlot() {
+    if (pending) return;
     pending = true;
     window.requestAnimationFrame(() => {
       pending = false;
-      applyResponsiveLayout();
+      Plotly.Plots.resize(graph);
     });
   }
 
-  applyResponsiveLayout();
-  window.addEventListener("resize", scheduleResponsiveLayout);
+  window.addEventListener("resize", resizePlot);
 })();
 </script>
 """
@@ -121,13 +59,14 @@ class ExportedAssignment:
     id: str
     label: str
     title: str
-    figures: list[dict[str, str]]
+    figures: list[dict[str, Any]]
+    dashboard: dict[str, Any] | None = None
 
 
 def export_module(module_name: str) -> ExportedAssignment:
     module = importlib.import_module(module_name)
     assignment = module.ASSIGNMENT
-    figures = []
+    figures: list[dict[str, Any]] = []
     output_dir = DOCS / "visualizations" / assignment
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -136,48 +75,52 @@ def export_module(module_name: str) -> ExportedAssignment:
         title = item["title"]
         figure = item["figure"]
         output_path = output_dir / f"{slug}.html"
+
         figure.write_html(
             output_path,
             include_plotlyjs="cdn",
             full_html=True,
             config={
                 "responsive": True,
+                "displayModeBar": False,
                 "displaylogo": False,
                 "scrollZoom": False,
-                "doubleClick": "reset",
-                "modeBarButtonsToRemove": ["select2d", "lasso2d"],
+                "doubleClick": False,
             },
         )
-        # Standalone Plotly pages need the same responsive behavior as the embedded views.
+
         html = output_path.read_text(encoding="utf-8")
         html = html.replace(
-            '<meta charset="utf-8" />\n    <style>html, body {height: 100%;}</style>',
+            '<meta charset="utf-8" />',
             f'<meta charset="utf-8" />\n    {PLOT_PAGE_HEAD}',
+            1,
         )
-        html = html.replace("</body>", f"{PLOT_RESPONSIVE_SCRIPT}\n</body>")
+        html = html.replace("</body>", f"{PLOT_RESPONSIVE_SCRIPT}\n</body>", 1)
         output_path.write_text(html, encoding="utf-8")
-        figures.append(
-            {
-                "title": title,
-                "slug": slug,
-                "description": item.get("description", ""),
-                "path": str(output_path.relative_to(DOCS)),
-            }
-        )
+
+        exported = {
+            "title": title,
+            "slug": slug,
+            "description": item.get("description", ""),
+            "path": str(output_path.relative_to(DOCS)),
+        }
+        for optional_key in ("audience", "takeaway"):
+            if item.get(optional_key):
+                exported[optional_key] = item[optional_key]
+        figures.append(exported)
 
     return ExportedAssignment(
         id=assignment,
         label=module.ASSIGNMENT_LABEL,
         title=module.ASSIGNMENT_TITLE,
         figures=figures,
+        dashboard=getattr(module, "DASHBOARD", None),
     )
 
 
 def main() -> None:
     assignments = [export_module(module_name) for module_name in ASSIGNMENT_MODULES]
-    manifest = {
-        "assignments": [assignment.__dict__ for assignment in assignments],
-    }
+    manifest = {"assignments": [assignment.__dict__ for assignment in assignments]}
     manifest_path = DOCS / "assets" / "plots-manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     figure_count = sum(len(assignment.figures) for assignment in assignments)
