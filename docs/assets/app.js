@@ -1,6 +1,13 @@
 const tabsContainer = document.querySelector(".tabs");
 const assignmentsContainer = document.querySelector("#assignments");
-const manifestUrl = "assets/plots-manifest.json?v=20260906-week3-redesign";
+const ASSET_VERSION = "20260906-mobile-layout";
+const manifestUrl = `assets/plots-manifest.json?v=${ASSET_VERSION}`;
+const mobilePlotQuery = window.matchMedia("(max-width: 760px)");
+const mobilePlotSlugs = new Set([
+  "dtc-profitability-bridge",
+  "linear-vs-dtc-operating-income",
+  "operating-margin-shift",
+]);
 
 function setActiveTab(tabId) {
   document.querySelectorAll(".tab").forEach((tab) => {
@@ -29,13 +36,173 @@ function resizeFrame(frame) {
   }
 }
 
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function mobileSourceAnnotation(annotation) {
+  if (!String(annotation.text || "").startsWith("Source:")) return annotation;
+  return {
+    ...annotation,
+    x: 0,
+    y: -0.29,
+    xanchor: "left",
+    yanchor: "top",
+    font: { ...(annotation.font || {}), size: 8 },
+  };
+}
+
+function mobileDriverLayout(baseLayout) {
+  const layout = cloneJson(baseLayout);
+  layout.height = 370;
+  layout.margin = { t: 48, r: 24, b: 88, l: 78 };
+  layout.xaxis = {
+    ...(layout.xaxis || {}),
+    title: { text: "" },
+    tickmode: "array",
+    tickvals: [-500, 0, 1000, 2000, 3000],
+    ticktext: ["−0.5B", "0", "1B", "2B", "3B"],
+    tickangle: 0,
+    tickfont: { size: 10 },
+  };
+  layout.yaxis = {
+    ...(layout.yaxis || {}),
+    tickmode: "array",
+    tickvals: ["Revenue growth", "Lower operating expenses", "Higher SG&A", "Lower D&A"],
+    ticktext: ["Revenue", "OpEx", "SG&A", "D&A"],
+    tickfont: { size: 11 },
+  };
+  layout.annotations = (layout.annotations || []).map((annotation) => {
+    const updated = mobileSourceAnnotation(annotation);
+    if (String(updated.text || "").includes("Net improvement")) {
+      return { ...updated, x: 0.5, xanchor: "center", y: 1.09 };
+    }
+    return updated;
+  });
+  return layout;
+}
+
+function addMobileRowLabels(layout) {
+  layout.annotations = [
+    ...(layout.annotations || []),
+    {
+      xref: "paper",
+      x: 0.01,
+      xanchor: "left",
+      yref: "y",
+      y: 1,
+      yshift: 31,
+      text: "<b>Linear Networks</b>",
+      showarrow: false,
+      font: { size: 11, color: "#17212b" },
+    },
+    {
+      xref: "paper",
+      x: 0.01,
+      xanchor: "left",
+      yref: "y",
+      y: 0,
+      yshift: 31,
+      text: "<b>Streaming (DTC)</b>",
+      showarrow: false,
+      font: { size: 11, color: "#17212b" },
+    },
+  ];
+}
+
+function mobileDumbbellLayout(baseLayout, slug) {
+  const layout = cloneJson(baseLayout);
+  layout.height = 340;
+  layout.margin = { t: 58, r: 18, b: 86, l: 22 };
+  layout.yaxis = {
+    ...(layout.yaxis || {}),
+    showticklabels: false,
+    ticks: "",
+  };
+
+  if (slug === "linear-vs-dtc-operating-income") {
+    layout.xaxis = {
+      ...(layout.xaxis || {}),
+      title: { text: "" },
+      tickmode: "array",
+      tickvals: [-2000, 0, 2000, 4000],
+      ticktext: ["−$2B", "$0", "$2B", "$4B"],
+      tickangle: 0,
+      tickfont: { size: 10 },
+    };
+  } else {
+    layout.xaxis = {
+      ...(layout.xaxis || {}),
+      title: { text: "" },
+      tickmode: "array",
+      tickvals: [-10, 0, 20, 40],
+      ticktext: ["−10%", "0%", "20%", "40%"],
+      tickangle: 0,
+      tickfont: { size: 10 },
+    };
+  }
+
+  layout.annotations = (layout.annotations || []).map((annotation) => {
+    const updated = mobileSourceAnnotation(annotation);
+    if (String(updated.text || "").includes("○ 2023")) {
+      return { ...updated, x: 0.5, xanchor: "center", y: 1.12 };
+    }
+    return updated;
+  });
+  addMobileRowLabels(layout);
+  return layout;
+}
+
+function applyResponsivePlotLayout(frame) {
+  const slug = frame.dataset.plotSlug;
+  if (!mobilePlotSlugs.has(slug)) {
+    resizeFrame(frame);
+    return;
+  }
+
+  try {
+    const win = frame.contentWindow;
+    const graph = frame.contentDocument?.querySelector(".plotly-graph-div");
+    if (!win?.Plotly || !graph) {
+      resizeFrame(frame);
+      return;
+    }
+
+    if (!frame._basePlotLayout) {
+      frame._basePlotLayout = cloneJson(graph.layout || {});
+    }
+
+    const baseLayout = frame._basePlotLayout;
+    const nextLayout = !mobilePlotQuery.matches
+      ? cloneJson(baseLayout)
+      : slug === "dtc-profitability-bridge"
+        ? mobileDriverLayout(baseLayout)
+        : mobileDumbbellLayout(baseLayout, slug);
+
+    win.Plotly.react(
+      graph,
+      graph.data,
+      nextLayout,
+      {
+        responsive: true,
+        displayModeBar: false,
+        displaylogo: false,
+        scrollZoom: false,
+        doubleClick: false,
+      }
+    ).then(() => resizeFrame(frame));
+  } catch {
+    resizeFrame(frame);
+  }
+}
+
 function attachInteractions(scope = document) {
   scope.querySelectorAll(".tab").forEach((tab) => {
     tab.addEventListener("click", () => setActiveTab(tab.dataset.tab));
   });
 
   scope.querySelectorAll(".plot-frame").forEach((frame) => {
-    frame.addEventListener("load", () => resizeFrame(frame));
+    frame.addEventListener("load", () => applyResponsivePlotLayout(frame));
   });
 }
 
@@ -64,8 +231,9 @@ function createPlotCard(figure, extraClass = "") {
     <div class="plot-viewport" aria-label="Interactive financial visualization">
       <iframe
         class="plot-frame"
+        data-plot-slug="${figure.slug}"
         title="${figure.title}"
-        src="${figure.path}"
+        src="${figure.path}?v=${ASSET_VERSION}"
         loading="lazy"
       ></iframe>
     </div>
@@ -166,6 +334,16 @@ async function loadAssignments() {
   const manifest = await response.json();
   manifest.assignments.forEach(createAssignmentSection);
 }
+
+let resizePending = false;
+window.addEventListener("resize", () => {
+  if (resizePending) return;
+  resizePending = true;
+  window.requestAnimationFrame(() => {
+    resizePending = false;
+    document.querySelectorAll(".plot-frame").forEach((frame) => applyResponsivePlotLayout(frame));
+  });
+});
 
 const initialTab = location.hash.slice(1);
 attachInteractions();
