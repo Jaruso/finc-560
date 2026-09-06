@@ -1,6 +1,6 @@
 const tabsContainer = document.querySelector(".tabs");
 const assignmentsContainer = document.querySelector("#assignments");
-const manifestUrl = "assets/plots-manifest.json?v=20260902-week2-only";
+const manifestUrl = "assets/plots-manifest.json?v=20260906-course-wide";
 
 function setActiveTab(tabId) {
   document.querySelectorAll(".tab").forEach((tab) => {

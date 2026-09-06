@@ -24,6 +24,37 @@
           "path": "visualizations/week-02/indexed-revenue-growth.html"
         }
       ]
+    },
+    {
+      "id": "week-03",
+      "label": "Week 03",
+      "title": "Visualizing financial statements",
+      "figures": [
+        {
+          "title": "How Disney Streaming Improved Operating Income by $2.64B",
+          "slug": "dtc-profitability-bridge",
+          "description": "Board-level waterfall showing the operational drivers behind Disney Direct-to-Consumer's $2.639 billion improvement in operating income.",
+          "path": "visualizations/week-03/dtc-profitability-bridge.html"
+        },
+        {
+          "title": "Disney's Profit Engine Is Beginning to Shift",
+          "slug": "linear-vs-dtc-operating-income",
+          "description": "Investor-focused comparison showing declining Linear Networks profit alongside Disney streaming's transition from loss to profit.",
+          "path": "visualizations/week-03/linear-vs-dtc-operating-income.html"
+        },
+        {
+          "title": "Streaming Now Generates More Than Half of Entertainment Revenue",
+          "slug": "entertainment-revenue-mix",
+          "description": "Revenue mix view showing Direct-to-Consumer increasing from roughly 49% to 55% of Entertainment revenue.",
+          "path": "visualizations/week-03/entertainment-revenue-mix.html"
+        },
+        {
+          "title": "Streaming Margin Recovered as Linear Network Margins Contracted",
+          "slug": "operating-margin-shift",
+          "description": "Operating margin comparison showing Disney streaming's sharp profitability recovery alongside modest Linear Networks margin compression.",
+          "path": "visualizations/week-03/operating-margin-shift.html"
+        }
+      ]
     }
   ]
 }
