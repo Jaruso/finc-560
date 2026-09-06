@@ -1,6 +1,7 @@
 const tabsContainer = document.querySelector(".tabs");
 const assignmentsContainer = document.querySelector("#assignments");
-const manifestUrl = "assets/plots-manifest.json?v=20260906-week3-redesign";
+const assetVersion = "20260906-week3-redesign-2";
+const manifestUrl = `assets/plots-manifest.json?v=${assetVersion}`;
 
 function setActiveTab(tabId) {
   document.querySelectorAll(".tab").forEach((tab) => {
@@ -53,6 +54,7 @@ function addAssignmentTab(assignment) {
 function createPlotCard(figure, extraClass = "") {
   const shell = document.createElement("article");
   shell.className = `plot-shell ${extraClass}`.trim();
+  const plotUrl = `${figure.path}?v=${assetVersion}`;
   shell.innerHTML = `
     <div class="plot-title">
       <div>
@@ -65,7 +67,7 @@ function createPlotCard(figure, extraClass = "") {
       <iframe
         class="plot-frame"
         title="${figure.title}"
-        src="${figure.path}"
+        src="${plotUrl}"
         loading="lazy"
       ></iframe>
     </div>
