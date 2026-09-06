@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import plotly.graph_objects as go
 
 ASSIGNMENT = "week-03"
@@ -14,7 +16,6 @@ LINEAR_COLOR = "#314b5c"
 NEGATIVE_COLOR = "#c94b5d"
 CONTENT_COLOR = "#c96b4b"
 NEUTRAL = "#8b949e"
-
 SOURCE = "Source: The Walt Disney Company, 2024 Annual Report (FY ended September 28, 2024)"
 
 DATA = {
@@ -54,23 +55,67 @@ DATA = {
     },
 }
 
+DTC = DATA["Direct-to-Consumer"]
+LINEAR = DATA["Linear Networks"]
+CONTENT = DATA["Content Sales / Licensing"]
+ENTERTAINMENT = DATA["Total Entertainment"]
 
-def _money_b(value_m: float) -> str:
-    sign = "-" if value_m < 0 else ""
-    return f"{sign}${abs(value_m) / 1000:.2f}B"
+
+@dataclass(frozen=True)
+class DumbbellRow:
+    label: str
+    y: int
+    start: float
+    end: float
+    color: str
+    start_text: str
+    end_text: str
+    delta_text: str
 
 
-def _base_layout(fig: go.Figure, *, height: int, left: int = 82, right: int = 42) -> go.Figure:
+def operating_margin(income_m: float, revenue_m: float) -> float:
+    return income_m / revenue_m * 100
+
+
+def validate_data() -> None:
+    for year in ("2023", "2024"):
+        dtc = DTC[year]
+        assert dtc["Subscription"] + dtc["Advertising"] + dtc["Other"] == dtc["Total Revenue"]
+        assert (
+            LINEAR[year]["Revenue"]
+            + DTC[year]["Total Revenue"]
+            + CONTENT[year]["Revenue"]
+            == ENTERTAINMENT[year]["Revenue"]
+        )
+
+    drivers = [
+        DTC["2024"]["Total Revenue"] - DTC["2023"]["Total Revenue"],
+        DTC["2023"]["Operating expenses"] - DTC["2024"]["Operating expenses"],
+        DTC["2023"]["SG&A and other"] - DTC["2024"]["SG&A and other"],
+        DTC["2023"]["Depreciation and amortization"] - DTC["2024"]["Depreciation and amortization"],
+    ]
+    assert DTC["2023"]["Operating Income"] + sum(drivers) == DTC["2024"]["Operating Income"]
+
+
+def finish_figure(
+    fig: go.Figure,
+    *,
+    height: int,
+    left: int,
+    right: int,
+    showlegend: bool = False,
+) -> go.Figure:
     fig.update_layout(
+        template=None,
         height=height,
         autosize=True,
         margin={"t": 34, "r": right, "b": 54, "l": left},
         paper_bgcolor="#ffffff",
         plot_bgcolor="#ffffff",
         font={"family": "Inter, Arial, sans-serif", "color": INK, "size": 13},
-        showlegend=False,
         hoverlabel={"bgcolor": "#ffffff", "bordercolor": GRID, "font_size": 13},
         dragmode=False,
+        showlegend=showlegend,
     )
     fig.add_annotation(
         text=SOURCE,
@@ -86,58 +131,81 @@ def _base_layout(fig: go.Figure, *, height: int, left: int = 82, right: int = 42
     return fig
 
 
+def add_dumbbell(fig: go.Figure, row: DumbbellRow) -> None:
+    fig.add_trace(
+        go.Scatter(
+            x=[row.start, row.end],
+            y=[row.y, row.y],
+            mode="lines",
+            line={"color": row.color, "width": 5},
+            hoverinfo="skip",
+            showlegend=False,
+        )
+    )
+    for value, text, year, filled, position in (
+        (row.start, row.start_text, "2023", False, "bottom center" if row.y == 0 else "top center"),
+        (row.end, row.end_text, "2024", True, "top center" if row.y == 0 else "bottom center"),
+    ):
+        fig.add_trace(
+            go.Scatter(
+                x=[value],
+                y=[row.y],
+                mode="markers+text",
+                marker={
+                    "size": 15,
+                    "color": row.color if filled else "#ffffff",
+                    "line": {"color": row.color, "width": 2 if filled else 3},
+                },
+                text=[text],
+                textposition=position,
+                textfont={"color": row.color, "size": 12},
+                customdata=[[row.label, year]],
+                hovertemplate="%{customdata[0]}<br>%{customdata[1]}: %{text}<extra></extra>",
+                showlegend=False,
+            )
+        )
+
+    fig.add_annotation(
+        x=row.end,
+        y=row.y,
+        text=f"<b>{row.delta_text}</b>",
+        showarrow=False,
+        xshift=62 if row.y == 0 else -62,
+        font={"size": 12, "color": row.color},
+        bgcolor="#ffffff",
+        borderpad=3,
+    )
+
+
 def dtc_profitability_drivers() -> go.Figure:
-    """Board view: isolate the drivers of the $2.639B DTC operating-income swing."""
-    d23 = DATA["Direct-to-Consumer"]["2023"]
-    d24 = DATA["Direct-to-Consumer"]["2024"]
-
-    drivers = [
-        "Revenue growth",
-        "Lower operating expenses",
-        "Higher SG&A",
-        "Lower D&A",
+    labels = ["Revenue growth", "Lower operating expenses", "Higher SG&A", "Lower D&A"]
+    values = [
+        DTC["2024"]["Total Revenue"] - DTC["2023"]["Total Revenue"],
+        DTC["2023"]["Operating expenses"] - DTC["2024"]["Operating expenses"],
+        DTC["2023"]["SG&A and other"] - DTC["2024"]["SG&A and other"],
+        DTC["2023"]["Depreciation and amortization"] - DTC["2024"]["Depreciation and amortization"],
     ]
-    impacts = [
-        d24["Total Revenue"] - d23["Total Revenue"],
-        d23["Operating expenses"] - d24["Operating expenses"],
-        d23["SG&A and other"] - d24["SG&A and other"],
-        d23["Depreciation and amortization"] - d24["Depreciation and amortization"],
-    ]
-    assert d23["Operating Income"] + sum(impacts) == d24["Operating Income"]
-
-    colors = [DTC_COLOR if value >= 0 else NEGATIVE_COLOR for value in impacts]
-    labels = [f"+${v:,.0f}M" if v >= 0 else f"-${abs(v):,.0f}M" for v in impacts]
 
     fig = go.Figure(
         go.Bar(
-            y=drivers,
-            x=impacts,
+            y=labels,
+            x=values,
             orientation="h",
-            marker={"color": colors},
-            text=labels,
+            marker={"color": [DTC_COLOR if value >= 0 else NEGATIVE_COLOR for value in values]},
+            text=[f"+${v:,.0f}M" if v >= 0 else f"-${abs(v):,.0f}M" for v in values],
             textposition="outside",
             cliponaxis=False,
-            customdata=[[d23["Operating Income"], d24["Operating Income"]]] * len(drivers),
-            hovertemplate=(
-                "%{y}<br>Contribution: $%{x:,.0f}M"
-                "<br>2023 DTC operating income: $%{customdata[0]:,.0f}M"
-                "<br>2024 DTC operating income: $%{customdata[1]:,.0f}M<extra></extra>"
-            ),
+            hovertemplate="%{y}<br>Contribution: $%{x:,.0f}M<extra></extra>",
         )
     )
-    fig.update_yaxes(
-        categoryorder="array",
-        categoryarray=list(reversed(drivers)),
-        showgrid=False,
-        tickfont={"size": 13, "color": INK},
-    )
+    fig.update_yaxes(categoryorder="array", categoryarray=list(reversed(labels)), showgrid=False)
     fig.update_xaxes(
         title="Contribution to operating income improvement ($M)",
         range=[-750, 3250],
+        gridcolor=GRID,
         zeroline=True,
         zerolinecolor=INK,
         zerolinewidth=1.5,
-        gridcolor=GRID,
         tickformat=",",
     )
     fig.add_annotation(
@@ -146,80 +214,21 @@ def dtc_profitability_drivers() -> go.Figure:
         x=1,
         y=1.08,
         xanchor="right",
-        showarrow=False,
         text="<b>Net improvement: +$2.64B</b>",
+        showarrow=False,
         font={"size": 13, "color": DTC_COLOR},
     )
-    return _base_layout(fig, height=350, left=172, right=76)
+    return finish_figure(fig, height=350, left=172, right=76)
 
 
 def profit_engine_shift() -> go.Figure:
-    """Investor view: compact before/after dumbbell chart around the profit threshold."""
-    linear = [
-        DATA["Linear Networks"]["2023"]["Operating Income"],
-        DATA["Linear Networks"]["2024"]["Operating Income"],
-    ]
-    dtc = [
-        DATA["Direct-to-Consumer"]["2023"]["Operating Income"],
-        DATA["Direct-to-Consumer"]["2024"]["Operating Income"],
-    ]
-
     fig = go.Figure()
     rows = [
-        ("Linear Networks", 1, linear, LINEAR_COLOR, "-$667M"),
-        ("Streaming (DTC)", 0, dtc, DTC_COLOR, "+$2.64B"),
+        DumbbellRow("Linear Networks", 1, 4119, 3452, LINEAR_COLOR, "$4.12B", "$3.45B", "-$667M"),
+        DumbbellRow("Streaming (DTC)", 0, -2496, 143, DTC_COLOR, "-$2.50B", "$0.14B", "+$2.64B"),
     ]
-
-    for label, y, values, color, delta in rows:
-        fig.add_trace(
-            go.Scatter(
-                x=values,
-                y=[y, y],
-                mode="lines",
-                line={"color": color, "width": 5},
-                hoverinfo="skip",
-                showlegend=False,
-            )
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=[values[0]],
-                y=[y],
-                mode="markers+text",
-                marker={"size": 15, "color": "#ffffff", "line": {"color": color, "width": 3}},
-                text=[_money_b(values[0])],
-                textposition="bottom center" if y == 0 else "top center",
-                textfont={"color": color, "size": 12},
-                customdata=[[label, "2023"]],
-                hovertemplate="%{customdata[0]}<br>%{customdata[1]}: %{text}<extra></extra>",
-                showlegend=False,
-            )
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=[values[1]],
-                y=[y],
-                mode="markers+text",
-                marker={"size": 15, "color": color, "line": {"color": color, "width": 2}},
-                text=[_money_b(values[1])],
-                textposition="top center" if y == 0 else "bottom center",
-                textfont={"color": color, "size": 12},
-                customdata=[[label, "2024"]],
-                hovertemplate="%{customdata[0]}<br>%{customdata[1]}: %{text}<extra></extra>",
-                showlegend=False,
-            )
-        )
-        fig.add_annotation(
-            x=values[1],
-            y=y,
-            text=f"<b>{delta}</b>",
-            showarrow=False,
-            xshift=62 if y == 0 else -62,
-            yshift=0,
-            font={"size": 12, "color": color},
-            bgcolor="#ffffff",
-            borderpad=3,
-        )
+    for row in rows:
+        add_dumbbell(fig, row)
 
     fig.update_yaxes(
         tickmode="array",
@@ -228,7 +237,6 @@ def profit_engine_shift() -> go.Figure:
         range=[-0.55, 1.55],
         showgrid=False,
         zeroline=False,
-        tickfont={"size": 13, "color": INK},
     )
     fig.update_xaxes(
         title="Operating income ($M)",
@@ -249,50 +257,43 @@ def profit_engine_shift() -> go.Figure:
         showarrow=False,
         font={"size": 11, "color": MUTED},
     )
-    return _base_layout(fig, height=330, left=138, right=62)
+    return finish_figure(fig, height=330, left=138, right=62)
 
 
 def entertainment_revenue_mix() -> go.Figure:
-    totals = {
-        "2023": DATA["Total Entertainment"]["2023"]["Revenue"],
-        "2024": DATA["Total Entertainment"]["2024"]["Revenue"],
-    }
-    segments = [
-        ("Direct-to-Consumer", DTC_COLOR, "Total Revenue"),
-        ("Linear Networks", LINEAR_COLOR, "Revenue"),
-        ("Content Sales / Licensing", CONTENT_COLOR, "Revenue"),
-    ]
-
     fig = go.Figure()
-    for segment, color, revenue_key in segments:
-        values = []
-        raw = []
-        for year in ["2023", "2024"]:
-            revenue = DATA[segment][year][revenue_key]
-            values.append(revenue / totals[year] * 100)
-            raw.append(revenue)
+    segments = [
+        ("Direct-to-Consumer", DTC_COLOR, lambda year: DTC[year]["Total Revenue"]),
+        ("Linear Networks", LINEAR_COLOR, lambda year: LINEAR[year]["Revenue"]),
+        ("Content Sales / Licensing", CONTENT_COLOR, lambda year: CONTENT[year]["Revenue"]),
+    ]
+    years = ["2023", "2024"]
+
+    for label, color, revenue_for_year in segments:
+        raw = [revenue_for_year(year) for year in years]
+        share = [raw[i] / ENTERTAINMENT[year]["Revenue"] * 100 for i, year in enumerate(years)]
         fig.add_trace(
             go.Bar(
-                y=["2023", "2024"],
-                x=values,
+                y=years,
+                x=share,
                 orientation="h",
-                name=segment,
+                name=label,
                 marker={"color": color},
-                text=[f"{v:.1f}%" for v in values],
+                text=[f"{value:.1f}%" for value in share],
                 textposition="inside",
                 insidetextanchor="middle",
                 textfont={"color": "white", "size": 12},
-                customdata=[[raw[0]], [raw[1]]],
-                hovertemplate=f"{segment}<br>%{{y}} revenue: $%{{customdata[0]:,.0f}}M<br>Mix: %{{x:.1f}}%<extra></extra>",
+                customdata=[[value] for value in raw],
+                hovertemplate=f"{label}<br>%{{y}} revenue: $%{{customdata[0]:,.0f}}M<br>Mix: %{{x:.1f}}%<extra></extra>",
             )
         )
 
+    fig = finish_figure(fig, height=300, left=72, right=28, showlegend=True)
     fig.update_layout(
         barmode="stack",
-        showlegend=True,
-        legend={"orientation": "h", "y": 1.10, "x": 0, "xanchor": "left"},
+        legend={"orientation": "h", "y": 1.12, "x": 0, "xanchor": "left"},
     )
-    fig.update_yaxes(showgrid=False, tickfont={"size": 13, "color": INK})
+    fig.update_yaxes(showgrid=False)
     fig.update_xaxes(
         title="Share of Entertainment revenue",
         range=[0, 100],
@@ -311,80 +312,36 @@ def entertainment_revenue_mix() -> go.Figure:
         font={"size": 10, "color": MUTED},
         bgcolor="#ffffff",
     )
-    return _base_layout(fig, height=300, left=72, right=28)
+    return fig
 
 
 def operating_margin_shift() -> go.Figure:
-    dtc_23 = DATA["Direct-to-Consumer"]["2023"]
-    dtc_24 = DATA["Direct-to-Consumer"]["2024"]
-    linear_23 = DATA["Linear Networks"]["2023"]
-    linear_24 = DATA["Linear Networks"]["2024"]
-
     rows = [
-        (
+        DumbbellRow(
             "Linear Networks",
             1,
-            linear_23["Operating Income"] / linear_23["Revenue"] * 100,
-            linear_24["Operating Income"] / linear_24["Revenue"] * 100,
+            operating_margin(LINEAR["2023"]["Operating Income"], LINEAR["2023"]["Revenue"]),
+            operating_margin(LINEAR["2024"]["Operating Income"], LINEAR["2024"]["Revenue"]),
             LINEAR_COLOR,
+            "35.2%",
+            "32.3%",
+            "-2.9 pts",
         ),
-        (
+        DumbbellRow(
             "Streaming (DTC)",
             0,
-            dtc_23["Operating Income"] / dtc_23["Total Revenue"] * 100,
-            dtc_24["Operating Income"] / dtc_24["Total Revenue"] * 100,
+            operating_margin(DTC["2023"]["Operating Income"], DTC["2023"]["Total Revenue"]),
+            operating_margin(DTC["2024"]["Operating Income"], DTC["2024"]["Total Revenue"]),
             DTC_COLOR,
+            "-12.6%",
+            "0.6%",
+            "+13.2 pts",
         ),
     ]
 
     fig = go.Figure()
-    for label, y, start, end, color in rows:
-        fig.add_trace(
-            go.Scatter(
-                x=[start, end],
-                y=[y, y],
-                mode="lines",
-                line={"color": color, "width": 5},
-                hoverinfo="skip",
-                showlegend=False,
-            )
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=[start],
-                y=[y],
-                mode="markers+text",
-                marker={"size": 14, "color": "white", "line": {"color": color, "width": 3}},
-                text=[f"{start:.1f}%"],
-                textposition="bottom center" if y == 0 else "top center",
-                textfont={"color": color},
-                hovertemplate=f"{label}<br>2023 margin: {start:.2f}%<extra></extra>",
-                showlegend=False,
-            )
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=[end],
-                y=[y],
-                mode="markers+text",
-                marker={"size": 14, "color": color, "line": {"color": color, "width": 2}},
-                text=[f"{end:.1f}%"],
-                textposition="top center" if y == 0 else "bottom center",
-                textfont={"color": color},
-                hovertemplate=f"{label}<br>2024 margin: {end:.2f}%<extra></extra>",
-                showlegend=False,
-            )
-        )
-        delta = end - start
-        fig.add_annotation(
-            x=end,
-            y=y,
-            xshift=68 if y == 0 else -68,
-            text=f"<b>{delta:+.1f} pts</b>",
-            showarrow=False,
-            font={"size": 12, "color": color},
-            bgcolor="white",
-        )
+    for row in rows:
+        add_dumbbell(fig, row)
 
     fig.update_yaxes(
         tickmode="array",
@@ -393,7 +350,6 @@ def operating_margin_shift() -> go.Figure:
         range=[-0.55, 1.55],
         showgrid=False,
         zeroline=False,
-        tickfont={"size": 13, "color": INK},
     )
     fig.update_xaxes(
         title="Operating margin",
@@ -415,29 +371,15 @@ def operating_margin_shift() -> go.Figure:
         showarrow=False,
         font={"size": 11, "color": MUTED},
     )
-    return _base_layout(fig, height=300, left=138, right=48)
+    return finish_figure(fig, height=300, left=138, right=48)
 
 
-DTC_REVENUE_GROWTH = (
-    DATA["Direct-to-Consumer"]["2024"]["Total Revenue"]
-    / DATA["Direct-to-Consumer"]["2023"]["Total Revenue"]
-    - 1
-) * 100
-DTC_MARGIN_2023 = (
-    DATA["Direct-to-Consumer"]["2023"]["Operating Income"]
-    / DATA["Direct-to-Consumer"]["2023"]["Total Revenue"]
-    * 100
-)
-DTC_MARGIN_2024 = (
-    DATA["Direct-to-Consumer"]["2024"]["Operating Income"]
-    / DATA["Direct-to-Consumer"]["2024"]["Total Revenue"]
-    * 100
-)
-LINEAR_OI_CHANGE = (
-    DATA["Linear Networks"]["2024"]["Operating Income"]
-    / DATA["Linear Networks"]["2023"]["Operating Income"]
-    - 1
-) * 100
+validate_data()
+
+DTC_REVENUE_GROWTH = (DTC["2024"]["Total Revenue"] / DTC["2023"]["Total Revenue"] - 1) * 100
+DTC_MARGIN_2023 = operating_margin(DTC["2023"]["Operating Income"], DTC["2023"]["Total Revenue"])
+DTC_MARGIN_2024 = operating_margin(DTC["2024"]["Operating Income"], DTC["2024"]["Total Revenue"])
+LINEAR_OI_CHANGE = (LINEAR["2024"]["Operating Income"] / LINEAR["2023"]["Operating Income"] - 1) * 100
 
 DASHBOARD = {
     "eyebrow": "The Walt Disney Company · FY2024",
