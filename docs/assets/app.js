@@ -1,6 +1,6 @@
 const tabsContainer = document.querySelector(".tabs");
 const assignmentsContainer = document.querySelector("#assignments");
-const ASSET_VERSION = "20260906-mobile-layout";
+const ASSET_VERSION = "20260906-mobile-labels";
 const manifestUrl = `assets/plots-manifest.json?v=${ASSET_VERSION}`;
 const mobilePlotQuery = window.matchMedia("(max-width: 760px)");
 const mobilePlotSlugs = new Set([
@@ -80,6 +80,20 @@ function mobileDriverLayout(baseLayout) {
     return updated;
   });
   return layout;
+}
+
+function mobileDriverData(baseData) {
+  const data = cloneJson(baseData);
+  data.forEach((trace) => {
+    if (trace.type !== "bar" || trace.orientation !== "h") return;
+    trace.text = ["+$2.89B", "+$111M", "−$406M", "+$44M"];
+    trace.textposition = ["inside", "outside", "inside", "outside"];
+    trace.insidetextanchor = "middle";
+    trace.insidetextfont = { ...(trace.insidetextfont || {}), color: "#ffffff", size: 10 };
+    trace.outsidetextfont = { ...(trace.outsidetextfont || {}), color: "#17212b", size: 10 };
+    trace.cliponaxis = false;
+  });
+  return data;
 }
 
 function addMobileRowLabels(layout) {
@@ -171,17 +185,25 @@ function applyResponsivePlotLayout(frame) {
     if (!frame._basePlotLayout) {
       frame._basePlotLayout = cloneJson(graph.layout || {});
     }
+    if (!frame._basePlotData) {
+      frame._basePlotData = cloneJson(graph.data || []);
+    }
 
     const baseLayout = frame._basePlotLayout;
-    const nextLayout = !mobilePlotQuery.matches
+    const baseData = frame._basePlotData;
+    const isMobile = mobilePlotQuery.matches;
+    const nextLayout = !isMobile
       ? cloneJson(baseLayout)
       : slug === "dtc-profitability-bridge"
         ? mobileDriverLayout(baseLayout)
         : mobileDumbbellLayout(baseLayout, slug);
+    const nextData = isMobile && slug === "dtc-profitability-bridge"
+      ? mobileDriverData(baseData)
+      : cloneJson(baseData);
 
     win.Plotly.react(
       graph,
-      graph.data,
+      nextData,
       nextLayout,
       {
         responsive: true,
