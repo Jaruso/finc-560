@@ -1,6 +1,6 @@
 const tabsContainer = document.querySelector(".tabs");
 const assignmentsContainer = document.querySelector("#assignments");
-const ASSET_VERSION = "20260906-term-glossary";
+const ASSET_VERSION = "20260909-no-chart-sources";
 const manifestUrl = `assets/plots-manifest.json?v=${ASSET_VERSION}`;
 const mobilePlotQuery = window.matchMedia("(max-width: 760px)");
 const mobilePlotSlugs = new Set([
@@ -29,8 +29,22 @@ function setActiveTab(tabId) {
   }
 }
 
+function removeSourceAnnotations(frame) {
+  try {
+    const doc = frame.contentDocument;
+    doc.querySelectorAll(".annotation").forEach((annotation) => {
+      if (String(annotation.textContent || "").trim().startsWith("Source:")) {
+        annotation.remove();
+      }
+    });
+  } catch {
+    // Cross-frame access should be same-origin on GitHub Pages; fail quietly if unavailable.
+  }
+}
+
 function resizeFrame(frame) {
   try {
+    removeSourceAnnotations(frame);
     const doc = frame.contentDocument;
     const graph = doc.querySelector(".plotly-graph-div");
     const graphHeight = graph?.getBoundingClientRect().height;
@@ -176,6 +190,7 @@ function mobileDumbbellLayout(baseLayout, slug) {
 function applyResponsivePlotLayout(frame) {
   const slug = frame.dataset.plotSlug;
   if (!mobilePlotSlugs.has(slug)) {
+    removeSourceAnnotations(frame);
     resizeFrame(frame);
     return;
   }
@@ -184,6 +199,7 @@ function applyResponsivePlotLayout(frame) {
     const win = frame.contentWindow;
     const graph = frame.contentDocument?.querySelector(".plotly-graph-div");
     if (!win?.Plotly || !graph) {
+      removeSourceAnnotations(frame);
       resizeFrame(frame);
       return;
     }
@@ -218,8 +234,12 @@ function applyResponsivePlotLayout(frame) {
         scrollZoom: false,
         doubleClick: false,
       }
-    ).then(() => resizeFrame(frame));
+    ).then(() => {
+      removeSourceAnnotations(frame);
+      resizeFrame(frame);
+    });
   } catch {
+    removeSourceAnnotations(frame);
     resizeFrame(frame);
   }
 }
