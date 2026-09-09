@@ -384,7 +384,7 @@ DASHBOARD = {
     ],
     "groups": [
         {
-            "label": "Insight 1",
+            "label": "Insight A",
             "title": "Streaming moved from a major loss to profitability while Linear Networks declined.",
             "description": (
                 "DTC operating income improved by $2.64B, from a $2.50B loss to a $143M profit, while "
@@ -394,7 +394,7 @@ DASHBOARD = {
             "slugs": ["dtc-profitability-bridge", "linear-vs-dtc-operating-income"],
         },
         {
-            "label": "Insight 2",
+            "label": "Insight B",
             "title": "Streaming became the majority of Entertainment revenue, but its margins remain far below traditional TV.",
             "description": (
                 "DTC increased from 48.9% to 55.3% of Entertainment revenue and its operating margin improved "
@@ -412,7 +412,7 @@ FIGURES = [
         "slug": "dtc-profitability-bridge",
         "description": "Board view of the operating drivers behind Disney Direct-to-Consumer's improvement in operating income.",
         "takeaway": "Revenue growth contributed $2.89B of improvement, partially offset by $406M of higher SG&A.",
-        "audience": "Board of directors",
+        "audience": "Visualization A · Board of directors",
         "figure": dtc_profitability_drivers(),
     },
     {
@@ -420,7 +420,7 @@ FIGURES = [
         "slug": "linear-vs-dtc-operating-income",
         "description": "Investor view comparing 2023 and 2024 operating income for Linear Networks and Direct-to-Consumer.",
         "takeaway": "Linear Networks lost $667M of operating income while DTC improved by $2.64B and became profitable.",
-        "audience": "Potential investors",
+        "audience": "Visualization B · Potential investors",
         "figure": profit_engine_shift(),
     },
     {
@@ -428,7 +428,7 @@ FIGURES = [
         "slug": "operating-margin-shift",
         "description": "Board view comparing the operating-margin change in streaming and Linear Networks.",
         "takeaway": "DTC moved from a -12.6% margin to +0.6%, while Linear Networks compressed from 35.2% to 32.3%.",
-        "audience": "Board of directors",
+        "audience": "Visualization A · Board of directors",
         "figure": operating_margin_shift(),
     },
     {
@@ -436,7 +436,7 @@ FIGURES = [
         "slug": "entertainment-revenue-mix",
         "description": "Investor view of the shift in Entertainment revenue mix toward Direct-to-Consumer.",
         "takeaway": "DTC rose from 48.9% to 55.3% of Entertainment revenue in one year.",
-        "audience": "Potential investors",
+        "audience": "Visualization B · Potential investors",
         "figure": entertainment_revenue_mix(),
     },
 ]
