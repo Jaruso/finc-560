@@ -6,6 +6,21 @@
     <title>FINC 560 Financial Visualizations</title>
     <link rel="icon" href="data:," />
     <link rel="stylesheet" href="assets/styles.css?v=20260906-week3-redesign" />
+    <style>
+      .chart-source {
+        margin: 0.35rem 1.25rem 1rem;
+        color: #64707d;
+        font-size: 0.78rem;
+        line-height: 1.35;
+      }
+
+      @media (max-width: 760px) {
+        .chart-source {
+          margin: 0.3rem 1rem 0.9rem;
+          font-size: 0.72rem;
+        }
+      }
+    </style>
   </head>
   <body>
     <header class="site-header">
@@ -59,5 +74,34 @@
     </main>
 
     <script src="assets/app.js?v=20260909-no-chart-sources"></script>
+    <script>
+      (() => {
+        const sourceText = "Source: The Walt Disney Company, 2024 Annual Report, fiscal year ended September 28, 2024.";
+        const week3Slugs = new Set([
+          "dtc-profitability-bridge",
+          "linear-vs-dtc-operating-income",
+          "entertainment-revenue-mix",
+          "operating-margin-shift",
+        ]);
+        const assignments = document.querySelector("#assignments");
+
+        function addSourceFooters() {
+          document.querySelectorAll(".plot-frame").forEach((frame) => {
+            if (!week3Slugs.has(frame.dataset.plotSlug)) return;
+            const card = frame.closest(".plot-shell");
+            if (!card || card.querySelector(".chart-source")) return;
+
+            const source = document.createElement("p");
+            source.className = "chart-source";
+            source.textContent = sourceText;
+            card.append(source);
+          });
+        }
+
+        const observer = new MutationObserver(addSourceFooters);
+        observer.observe(assignments, { childList: true, subtree: true });
+        addSourceFooters();
+      })();
+    </script>
   </body>
 </html>
