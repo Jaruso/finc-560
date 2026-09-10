@@ -304,40 +304,65 @@ def entertainment_revenue_mix() -> go.Figure:
 
 
 def operating_margin_shift() -> go.Figure:
-    rows = [
-        DumbbellRow(
-            "Linear Networks",
-            1,
-            operating_margin(LINEAR["2023"]["Operating Income"], LINEAR["2023"]["Revenue"]),
-            operating_margin(LINEAR["2024"]["Operating Income"], LINEAR["2024"]["Revenue"]),
-            LINEAR_COLOR,
-            "35.2%",
-            "32.3%",
-            "-2.9 pts",
-        ),
-        DumbbellRow(
-            "Streaming (DTC)",
-            0,
-            operating_margin(DTC["2023"]["Operating Income"], DTC["2023"]["Total Revenue"]),
-            operating_margin(DTC["2024"]["Operating Income"], DTC["2024"]["Total Revenue"]),
-            DTC_COLOR,
-            "-12.6%",
-            "0.6%",
-            "+13.2 pts",
-        ),
+    categories = ["Streaming (DTC)", "Linear Networks"]
+    margins_2023 = [
+        operating_margin(DTC["2023"]["Operating Income"], DTC["2023"]["Total Revenue"]),
+        operating_margin(LINEAR["2023"]["Operating Income"], LINEAR["2023"]["Revenue"]),
     ]
+    margins_2024 = [
+        operating_margin(DTC["2024"]["Operating Income"], DTC["2024"]["Total Revenue"]),
+        operating_margin(LINEAR["2024"]["Operating Income"], LINEAR["2024"]["Revenue"]),
+    ]
+    margin_gap_2024 = margins_2024[1] - margins_2024[0]
 
     fig = go.Figure()
-    for row in rows:
-        add_dumbbell(fig, row)
-
+    fig.add_trace(
+        go.Bar(
+            y=categories,
+            x=margins_2023,
+            orientation="h",
+            name="2023",
+            marker={"color": "#aeb7bf"},
+            text=[f"{value:.1f}%" for value in margins_2023],
+            textposition="outside",
+            cliponaxis=False,
+            customdata=[[category, "2023"] for category in categories],
+            hovertemplate="%{customdata[0]}<br>%{customdata[1]} operating margin: %{x:.1f}%<extra></extra>",
+        )
+    )
+    fig.add_trace(
+        go.Bar(
+            y=categories,
+            x=margins_2024,
+            orientation="h",
+            name="2024",
+            marker={"color": LINEAR_COLOR},
+            text=[f"{value:.1f}%" for value in margins_2024],
+            textposition="outside",
+            cliponaxis=False,
+            customdata=[[category, "2024"] for category in categories],
+            hovertemplate="%{customdata[0]}<br>%{customdata[1]} operating margin: %{x:.1f}%<extra></extra>",
+        )
+    )
+    fig.update_layout(
+        barmode="group",
+        bargap=0.34,
+        bargroupgap=0.08,
+        legend={
+            "orientation": "h",
+            "x": 0,
+            "y": 1.12,
+            "xanchor": "left",
+            "yanchor": "bottom",
+            "font": {"size": 11, "color": MUTED},
+            "itemclick": False,
+            "itemdoubleclick": False,
+        },
+    )
     fig.update_yaxes(
-        tickmode="array",
-        tickvals=[0, 1],
-        ticktext=["Streaming (DTC)", "Linear Networks"],
-        range=[-0.55, 1.55],
         showgrid=False,
-        zeroline=False,
+        categoryorder="array",
+        categoryarray=["Streaming (DTC)", "Linear Networks"],
     )
     fig.update_xaxes(
         title="Operating margin",
@@ -347,19 +372,20 @@ def operating_margin_shift() -> go.Figure:
         gridcolor=GRID,
         zeroline=True,
         zerolinecolor=INK,
-        zerolinewidth=2,
+        zerolinewidth=1.7,
     )
     fig.add_annotation(
         xref="paper",
         yref="paper",
-        x=0,
-        y=1.08,
-        xanchor="left",
-        text="○ 2023 &nbsp;&nbsp; ● 2024",
+        x=1,
+        y=1.12,
+        xanchor="right",
+        yanchor="bottom",
+        text=f"<b>2024 margin gap: {margin_gap_2024:.1f} pts</b>",
         showarrow=False,
-        font={"size": 11, "color": MUTED},
+        font={"size": 13, "color": DTC_COLOR},
     )
-    return finish_figure(fig, height=300, left=138, right=48)
+    return finish_figure(fig, height=320, left=138, right=70, showlegend=True)
 
 
 validate_data()
@@ -398,8 +424,8 @@ DASHBOARD = {
             "title": "Streaming became the majority of Entertainment revenue, but its margins remain far below traditional TV.",
             "description": (
                 "DTC increased from 48.9% to 55.3% of Entertainment revenue and its operating margin improved "
-                "from -12.6% to +0.6%. The board view focuses on margin economics; the investor view focuses "
-                "on the change in revenue mix."
+                "from -12.6% to +0.6%. The board view benchmarks the remaining 31.7-point margin gap; the "
+                "investor view focuses on the change in revenue mix."
             ),
             "slugs": ["operating-margin-shift", "entertainment-revenue-mix"],
         },
@@ -424,10 +450,10 @@ FIGURES = [
         "figure": profit_engine_shift(),
     },
     {
-        "title": "Streaming margin recovered by 13.2 points",
+        "title": "Streaming's margin gap remains 31.7 points behind Linear Networks",
         "slug": "operating-margin-shift",
-        "description": "Board view comparing the operating-margin change in streaming and Linear Networks.",
-        "takeaway": "DTC moved from a -12.6% margin to +0.6%, while Linear Networks compressed from 35.2% to 32.3%.",
+        "description": "Board view benchmarking 2023 and 2024 operating margins for streaming and Linear Networks.",
+        "takeaway": "DTC improved 13.2 points to a 0.6% margin, but Linear Networks still earned a 32.3% margin in 2024.",
         "audience": "Visualization A · Board of directors",
         "figure": operating_margin_shift(),
     },
