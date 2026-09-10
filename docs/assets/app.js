@@ -1,12 +1,11 @@
 const tabsContainer = document.querySelector(".tabs");
 const assignmentsContainer = document.querySelector("#assignments");
-const ASSET_VERSION = "20260909-no-chart-sources";
+const ASSET_VERSION = "20260910-margin-bars";
 const manifestUrl = `assets/plots-manifest.json?v=${ASSET_VERSION}`;
 const mobilePlotQuery = window.matchMedia("(max-width: 760px)");
 const mobilePlotSlugs = new Set([
   "dtc-profitability-bridge",
   "linear-vs-dtc-operating-income",
-  "operating-margin-shift",
 ]);
 const chartTermNotes = new Map([
   [
@@ -350,8 +349,8 @@ function createDashboardSection(assignment) {
 
 function createStandardAssignmentSection(assignment) {
   const section = document.createElement("section");
-  section.className = "panel";
   section.id = assignment.id;
+  section.className = "panel";
   section.setAttribute("aria-labelledby", `${assignment.id}-title`);
 
   const heading = document.createElement("div");
