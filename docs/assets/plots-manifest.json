@@ -47,12 +47,12 @@
           "takeaway": "Linear Networks lost $667M of operating income while DTC improved by $2.64B and became profitable."
         },
         {
-          "title": "Streaming margin recovered by 13.2 points",
+          "title": "Streaming's margin gap remains 31.7 points behind Linear Networks",
           "slug": "operating-margin-shift",
-          "description": "Board view comparing the operating-margin change in streaming and Linear Networks.",
+          "description": "Board view benchmarking 2023 and 2024 operating margins for streaming and Linear Networks.",
           "path": "visualizations/week-03/operating-margin-shift.html",
           "audience": "Visualization A · Board of directors",
-          "takeaway": "DTC moved from a -12.6% margin to +0.6%, while Linear Networks compressed from 35.2% to 32.3%."
+          "takeaway": "DTC improved 13.2 points to a 0.6% margin, but Linear Networks still earned a 32.3% margin in 2024."
         },
         {
           "title": "Streaming became the majority of Entertainment revenue",
@@ -106,7 +106,7 @@
           {
             "label": "Insight B",
             "title": "Streaming became the majority of Entertainment revenue, but its margins remain far below traditional TV.",
-            "description": "DTC increased from 48.9% to 55.3% of Entertainment revenue and its operating margin improved from -12.6% to +0.6%. The board view focuses on margin economics; the investor view focuses on the change in revenue mix.",
+            "description": "DTC increased from 48.9% to 55.3% of Entertainment revenue and its operating margin improved from -12.6% to +0.6%. The board view benchmarks the remaining 31.7-point margin gap; the investor view focuses on the change in revenue mix.",
             "slugs": [
               "operating-margin-shift",
               "entertainment-revenue-mix"
