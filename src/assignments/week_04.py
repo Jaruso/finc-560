@@ -46,12 +46,14 @@ SECTOR_COLORS = {
     "Energy": "#8a713c",
     "Consumer Discretionary": NEGATIVE_COLOR,
     "Domestic Equity Fund": "#5a8f7b",
-    "International Equity Fund": "#7a9bb0",
+    # Darkened for white-text contrast on the treemap (static/PDF readability):
+    # these three were the lightest fills (WCAG < ~3.2 against white).
+    "International Equity Fund": "#587989",
     "Fixed Income Fund": "#6b7280",
-    "Consumer Staples": "#b08968",
+    "Consumer Staples": "#8f6b4c",
     "Communication Services": "#9c6b8e",
     "Real Estate Fund": "#a86b5a",
-    "Commodities/Gold": "#c9a13b",
+    "Commodities/Gold": "#8f6f22",
 }
 
 
@@ -442,7 +444,7 @@ def indexed_growth_since_purchase() -> go.Figure:
         line_width=1.5,
         line_dash="dash",
         line_color=NAVY,
-        annotation_text=f"Total portfolio {TOTAL_RETURN_PCT:+.1f}%",
+        annotation_text=f"Aggregate gain vs. portfolio cost basis: {TOTAL_RETURN_PCT:+.1f}%",
         annotation_position="top",
         annotation_font={"size": 11, "color": NAVY},
     )
@@ -523,7 +525,7 @@ def risk_return_scatter() -> go.Figure:
         line_width=1.3,
         line_dash="dot",
         line_color=MUTED,
-        annotation_text=f"Value-weighted avg volatility {WEIGHTED_VOL:.1f}%",
+        annotation_text=f"Value-weighted avg of holding volatilities {WEIGHTED_VOL:.1f}% (not actual portfolio volatility)",
         annotation_position="top",
         annotation_font={"size": 10, "color": MUTED},
     )
@@ -532,7 +534,7 @@ def risk_return_scatter() -> go.Figure:
         line_width=1.3,
         line_dash="dot",
         line_color=NAVY,
-        annotation_text=f"Value-weighted avg holding CAGR {WEIGHTED_CAGR:.1f}%",
+        annotation_text=f"Value-weighted avg of holding CAGRs {WEIGHTED_CAGR:.1f}% (not actual portfolio CAGR)",
         annotation_position="bottom right",
         annotation_font={"size": 10, "color": NAVY},
     )
@@ -752,7 +754,7 @@ FIGURES = [
         "figure": sector_asset_class_allocation(),
     },
     {
-        "title": "Growth of $100: individual holdings vs. the total portfolio",
+        "title": "Purchase-to-12/31/2024 endpoint return: individual holdings vs. portfolio (not a time series)",
         "slug": "indexed-growth-since-purchase",
         "description": "Each holding indexed to 100 at its purchase date and marked at its 12/31/2024 value, alongside the total portfolio. Built from the two supplied observations per holding, not a continuous price history.",
         "takeaway": "Returns vary sharply across holdings — NVDA and VTI sit far above the portfolio line while AMZN and BND fall well below it.",

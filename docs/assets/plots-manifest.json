@@ -138,7 +138,7 @@
           "takeaway": "Technology is the largest directly classified allocation; diversified funds such as VTI and VEA may add further technology exposure that the dataset does not disclose."
         },
         {
-          "title": "Growth of $100: individual holdings vs. the total portfolio",
+          "title": "Purchase-to-12/31/2024 endpoint return: individual holdings vs. portfolio (not a time series)",
           "slug": "indexed-growth-since-purchase",
           "description": "Each holding indexed to 100 at its purchase date and marked at its 12/31/2024 value, alongside the total portfolio. Built from the two supplied observations per holding, not a continuous price history.",
           "path": "visualizations/week-04/indexed-growth-since-purchase.html",
