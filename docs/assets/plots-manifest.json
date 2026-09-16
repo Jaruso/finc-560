@@ -23,7 +23,8 @@
           "description": "A normalized view that compares each company's growth from its Q1 2020 baseline.",
           "path": "visualizations/week-02/indexed-revenue-growth.html"
         }
-      ]
+      ],
+      "dashboard": null
     },
     {
       "id": "week-03",
@@ -35,15 +36,15 @@
           "slug": "dtc-profitability-bridge",
           "description": "Board view of the operating drivers behind Disney Direct-to-Consumer's improvement in operating income.",
           "path": "visualizations/week-03/dtc-profitability-bridge.html",
-          "audience": "Visualization A · Board of directors",
+          "audience": "Visualization A \u00b7 Board of directors",
           "takeaway": "Revenue growth contributed $2.89B of improvement, partially offset by $406M of higher SG&A."
         },
         {
-          "title": "Legacy TV still earns more — but streaming crossed the line into profit",
+          "title": "Legacy TV still earns more \u2014 but streaming crossed the line into profit",
           "slug": "linear-vs-dtc-operating-income",
           "description": "Investor view comparing 2023 and 2024 operating income for Linear Networks and Direct-to-Consumer.",
           "path": "visualizations/week-03/linear-vs-dtc-operating-income.html",
-          "audience": "Visualization B · Potential investors",
+          "audience": "Visualization B \u00b7 Potential investors",
           "takeaway": "Linear Networks lost $667M of operating income while DTC improved by $2.64B and became profitable."
         },
         {
@@ -51,7 +52,7 @@
           "slug": "operating-margin-shift",
           "description": "Board view benchmarking 2023 and 2024 operating margins for streaming and Linear Networks.",
           "path": "visualizations/week-03/operating-margin-shift.html",
-          "audience": "Visualization A · Board of directors",
+          "audience": "Visualization A \u00b7 Board of directors",
           "takeaway": "DTC improved 13.2 points to a 0.6% margin, but Linear Networks still earned a 32.3% margin in 2024."
         },
         {
@@ -59,12 +60,12 @@
           "slug": "entertainment-revenue-mix",
           "description": "Investor view of the shift in Entertainment revenue mix toward Direct-to-Consumer.",
           "path": "visualizations/week-03/entertainment-revenue-mix.html",
-          "audience": "Visualization B · Potential investors",
+          "audience": "Visualization B \u00b7 Potential investors",
           "takeaway": "DTC rose from 48.9% to 55.3% of Entertainment revenue in one year."
         }
       ],
       "dashboard": {
-        "eyebrow": "The Walt Disney Company · FY2024",
+        "eyebrow": "The Walt Disney Company \u00b7 FY2024",
         "headline": "Disney's streaming transition, organized by financial insight and audience.",
         "summary": "Each insight below is presented twice: first for the board of directors, then for potential investors. The financial data is the same, but the chart design and level of detail change with the decision context.",
         "kpis": [
@@ -110,6 +111,121 @@
             "slugs": [
               "operating-margin-shift",
               "entertainment-revenue-mix"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "week-04",
+      "label": "Week 04",
+      "title": "Stock market investment visualizations",
+      "figures": [
+        {
+          "title": "Where the $491.7K sits: a tech-heavy, equity-dominated mix",
+          "slug": "portfolio-allocation-treemap",
+          "description": "Portfolio market value broken down by sector and then by individual holding.",
+          "path": "visualizations/week-04/portfolio-allocation-treemap.html",
+          "audience": "Asset allocation \u00b7 Composition map",
+          "takeaway": "Technology (Apple, Microsoft, NVIDIA) is the largest sector, and individual stocks outweigh the diversifying funds."
+        },
+        {
+          "title": "Technology is the largest concentration at 26% of assets",
+          "slug": "sector-allocation-concentration",
+          "description": "Each sector's share of total portfolio value, ranked to surface concentration.",
+          "path": "visualizations/week-04/sector-allocation-concentration.html",
+          "audience": "Asset allocation \u00b7 Sector concentration",
+          "takeaway": "No single sector besides Technology exceeds 10%, but the tech tilt drives both the portfolio's upside and its volatility."
+        },
+        {
+          "title": "The portfolio gained $39.9K \u2014 but the result is highly uneven",
+          "slug": "portfolio-gain-loss-bridge",
+          "description": "A waterfall from total cost basis to current value, with each holding's dollar contribution.",
+          "path": "visualizations/week-04/portfolio-gain-loss-bridge.html",
+          "audience": "Performance \u00b7 Contribution to P&L",
+          "takeaway": "VTI, NVDA, and MSFT drove most of the gain, while AMZN and BND together erased nearly $29K."
+        },
+        {
+          "title": "Longer-held and well-timed positions delivered the biggest returns",
+          "slug": "return-vs-holding-period",
+          "description": "Each holding's total return since purchase, plotted against its purchase date and sized by current value.",
+          "path": "visualizations/week-04/return-vs-holding-period.html",
+          "audience": "Performance \u00b7 Return vs holding period",
+          "takeaway": "Positions bought in 2020-2021 (VTI, MSFT) generally outperformed; AMZN is the clear outlier despite an early entry."
+        },
+        {
+          "title": "Risk and reward: NVIDIA is the high-risk, high-return corner",
+          "slug": "risk-return-profile",
+          "description": "Annualized volatility versus total return, sized by position value, against portfolio averages.",
+          "path": "visualizations/week-04/risk-return-profile.html",
+          "audience": "Risk \u00b7 Risk\u2013return profile",
+          "takeaway": "BND anchors the low-risk corner, NVDA/VTI reward their risk, and AMZN carries high volatility with a deep loss."
+        },
+        {
+          "title": "Which positions punch above their weight in risk",
+          "slug": "risk-vs-capital-contribution",
+          "description": "Each holding's share of invested capital compared with its share of portfolio risk (weight \u00d7 volatility).",
+          "path": "visualizations/week-04/risk-vs-capital-contribution.html",
+          "audience": "Risk \u00b7 Capital vs risk",
+          "takeaway": "NVDA, AMZN, and XOM contribute more risk than capital, while BND and PG dampen it."
+        }
+      ],
+      "dashboard": {
+        "eyebrow": "Balanced Growth Portfolio \u00b7 As of December 31, 2024",
+        "headline": "A tech-tilted growth portfolio: where the money sits, how it performed, and where the risk hides.",
+        "summary": "Fourteen holdings worth $491,650 are examined through three lenses \u2014 asset allocation, performance, and risk. The same portfolio is read three ways so that composition, returns, and risk concentration can each be judged on their own terms.",
+        "kpis": [
+          {
+            "label": "Portfolio value",
+            "value": "$491.7K",
+            "delta": "+8.8% total return",
+            "tone": "positive"
+          },
+          {
+            "label": "Total gain / loss",
+            "value": "+$39.9K",
+            "delta": "10 of 14 holdings up",
+            "tone": "positive"
+          },
+          {
+            "label": "Weighted beta",
+            "value": "0.93",
+            "delta": "vs. 1.00 market",
+            "tone": "neutral"
+          },
+          {
+            "label": "Technology weight",
+            "value": "26.3%",
+            "delta": "largest sector",
+            "tone": "neutral"
+          }
+        ],
+        "groups": [
+          {
+            "label": "Asset allocation",
+            "title": "Equities dominate, and Technology is the single largest bet.",
+            "description": "The treemap maps every position by market value; the ranked bar isolates sector weights and flags the portfolio's concentration in Technology.",
+            "slugs": [
+              "portfolio-allocation-treemap",
+              "sector-allocation-concentration"
+            ]
+          },
+          {
+            "label": "Performance over time",
+            "title": "A few winners carried the portfolio; entry timing explains much of the spread.",
+            "description": "The bridge decomposes each holding's contribution to total profit and loss; the scatter relates each position's return to when it was purchased.",
+            "slugs": [
+              "portfolio-gain-loss-bridge",
+              "return-vs-holding-period"
+            ]
+          },
+          {
+            "label": "Risk analysis",
+            "title": "High-volatility positions carry more risk than their size suggests.",
+            "description": "The risk-return scatter locates every holding against portfolio averages; the contribution bars compare each position's share of capital with its share of portfolio risk.",
+            "slugs": [
+              "risk-return-profile",
+              "risk-vs-capital-contribution"
             ]
           }
         ]
