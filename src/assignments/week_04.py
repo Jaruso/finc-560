@@ -188,7 +188,7 @@ def finish_figure(
         paper_bgcolor="#ffffff",
         plot_bgcolor="#ffffff",
         font={"family": "Inter, Arial, sans-serif", "color": INK, "size": 13},
-        hoverlabel={"bgcolor": "#ffffff", "bordercolor": GRID, "font_size": 13},
+        hoverlabel={"bgcolor": "#ffffff", "bordercolor": GRID, "font_size": 13, "font_color": INK},
         dragmode=False,
         showlegend=showlegend,
     )
