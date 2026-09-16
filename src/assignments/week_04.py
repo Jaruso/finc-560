@@ -426,12 +426,12 @@ def indexed_growth_since_purchase() -> go.Figure:
                 ),
                 textfont={"size": 10, "color": color},
                 cliponaxis=False,
-                customdata=[[h.name, h.purchase_date, h.holding_years, index_end]],
+                customdata=[[h.name, h.purchase_date, h.holding_years, index_end, h.gain_pct]],
                 hovertemplate=(
                     "<b>%{y}</b> — %{customdata[0]}<br>"
                     "Purchased %{customdata[1]} · held %{customdata[2]:.1f} yrs<br>"
                     "Indexed value: %{customdata[3]:.0f} (start 100)<br>"
-                    "Total return: %{x:+.1f}%<extra></extra>"
+                    "Total return: %{customdata[4]:+.1f}%<extra></extra>"
                 ),
             )
         )
