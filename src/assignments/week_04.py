@@ -717,7 +717,7 @@ DASHBOARD = {
             "label": "Performance over time",
             "title": "Returns vary sharply across holdings, with several major outliers.",
             "description": (
-                "Primary: growth of $100 from each holding's purchase to 12/31/2024, versus the total "
+                "Primary: purchase-to-12/31/2024 endpoint return for each holding, versus the total "
                 "portfolio. Supplemental: a bridge decomposing each holding's dollar contribution to total "
                 "profit and loss. Both use only the two supplied observations per holding."
             ),
