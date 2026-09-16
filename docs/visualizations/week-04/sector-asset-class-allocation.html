@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  html,
+  body {
+    min-height: 100%;
+    margin: 0;
+    background: #ffffff;
+    overflow: hidden;
+  }
+  .plotly-graph-div {
+    width: 100% !important;
+  }
+  .modebar {
+    display: none !important;
+  }
+</style>
+
+    <style>html, body {height: 100%;}</style>
+</head>
+<body>
+    <div style="height:440px; width:100%;">                        <script>window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
+        <script charset="utf-8" src="https://cdn.plot.ly/plotly-4.0.0.min.js" integrity="sha256-FEYfO0yRyLtZCpnW0Dw/0DHKQO7Afrq3ml4+rBB818o=" crossorigin="anonymous"></script>                <div id="ecb92853-5a3d-4a3a-99ce-068350345f1a" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("ecb92853-5a3d-4a3a-99ce-068350345f1a")) {                    Plotly.newPlot(                        "ecb92853-5a3d-4a3a-99ce-068350345f1a",                        [{"cliponaxis":false,"hovertemplate":"%{y}\u003cbr\u003eWeight: %{x:.1f}% of portfolio value\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":["#c2ccd3","#c2ccd3","#c2ccd3","#c2ccd3","#c2ccd3","#c2ccd3","#c2ccd3","#c2ccd3","#c2ccd3","#c2ccd3","#c2ccd3","#0b7f73"]},"orientation":"h","text":["3.0%","3.0%","3.6%","4.8%","6.7%","7.4%","7.8%","8.8%","9.1%","9.7%","9.7%","26.3%"],"textposition":"outside","x":[2.974677107698566,3.0102715346282927,3.6408013830977324,4.832706193430285,6.727346689718296,7.423980473914369,7.769754906945998,8.835553747584663,9.132512966541238,9.686769043018408,9.702023797416862,26.263602156005287],"y":["Commodities\u002fGold","Consumer Discretionary","Real Estate Fund","International Equity Fund","Communication Services","Financials","Consumer Staples","Fixed Income Fund","Energy","Healthcare","Domestic Equity Fund","Technology"],"type":"bar"}],                        {"template":{},"yaxis":{"showgrid":false},"xaxis":{"title":{"text":"Share of portfolio value"},"range":[0,30],"ticksuffix":"%","dtick":5,"gridcolor":"#e7eaed","zeroline":true,"zerolinecolor":"#17212b","zerolinewidth":1.4},"annotations":[{"font":{"color":"#0b7f73","size":12},"showarrow":false,"text":"\u003cb\u003eTechnology: 26.3% \u2014 largest directly classified allocation\u003c\u002fb\u003e","x":1,"xanchor":"right","xref":"paper","y":1.06,"yref":"paper"},{"font":{"color":"#64707d","size":10},"showarrow":false,"text":"Source: FINC-560 Week 4 assignment dataset \u2014 Balanced Growth Portfolio, holdings as of December 31, 2024","x":0,"xanchor":"left","xref":"paper","y":-0.18,"yanchor":"top","yref":"paper"}],"margin":{"t":34,"r":70,"b":54,"l":150},"font":{"family":"Inter, Arial, sans-serif","color":"#17212b","size":13},"hoverlabel":{"font":{"size":13},"bgcolor":"#ffffff","bordercolor":"#e7eaed"},"height":440,"autosize":true,"paper_bgcolor":"#ffffff","plot_bgcolor":"#ffffff","dragmode":false,"showlegend":false},                        {"responsive": true, "displayModeBar": false, "displaylogo": false, "scrollZoom": false, "doubleClick": false}                    )                };            </script>        </div>
+<script>
+(function () {
+  const graph = document.querySelector(".plotly-graph-div");
+  if (!graph || !window.Plotly) return;
+
+  let pending = false;
+  function resizePlot() {
+    if (pending) return;
+    pending = true;
+    window.requestAnimationFrame(() => {
+      pending = false;
+      Plotly.Plots.resize(graph);
+    });
+  }
+
+  window.addEventListener("resize", resizePlot);
+})();
+</script>
+
+</body>
+</html>

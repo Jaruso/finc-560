@@ -124,56 +124,79 @@
         {
           "title": "Where the $491.7K sits: a tech-heavy, equity-dominated mix",
           "slug": "portfolio-allocation-treemap",
-          "description": "Portfolio market value broken down by sector and then by individual holding.",
+          "description": "Portfolio market value broken down by sector / asset-class category and then by individual holding.",
           "path": "visualizations/week-04/portfolio-allocation-treemap.html",
-          "audience": "Asset allocation \u00b7 Composition map",
-          "takeaway": "Technology (Apple, Microsoft, NVIDIA) is the largest sector, and individual stocks outweigh the diversifying funds."
+          "audience": "Primary assignment visualization \u00b7 Asset allocation",
+          "takeaway": "Technology (Apple, Microsoft, NVIDIA) is the largest directly classified allocation, and individual stocks outweigh the diversifying funds."
         },
         {
-          "title": "Technology is the largest concentration at 26% of assets",
-          "slug": "sector-allocation-concentration",
-          "description": "Each sector's share of total portfolio value, ranked to surface concentration.",
-          "path": "visualizations/week-04/sector-allocation-concentration.html",
-          "audience": "Asset allocation \u00b7 Sector concentration",
-          "takeaway": "No single sector besides Technology exceeds 10%, but the tech tilt drives both the portfolio's upside and its volatility."
+          "title": "Technology is the largest directly classified allocation at 26% of assets",
+          "slug": "sector-asset-class-allocation",
+          "description": "Each sector / asset-class category's share of total portfolio value, ranked to surface concentration.",
+          "path": "visualizations/week-04/sector-asset-class-allocation.html",
+          "audience": "Supplemental analysis \u00b7 Asset allocation",
+          "takeaway": "Technology is the largest directly classified allocation; diversified funds such as VTI and VEA may add further technology exposure that the dataset does not disclose."
+        },
+        {
+          "title": "Growth of $100: individual holdings vs. the total portfolio",
+          "slug": "indexed-growth-since-purchase",
+          "description": "Each holding indexed to 100 at its purchase date and marked at its 12/31/2024 value, alongside the total portfolio. Built from the two supplied observations per holding, not a continuous price history.",
+          "path": "visualizations/week-04/indexed-growth-since-purchase.html",
+          "audience": "Primary assignment visualization \u00b7 Performance over time",
+          "takeaway": "Returns vary sharply across holdings \u2014 NVDA and VTI sit far above the portfolio line while AMZN and BND fall well below it."
         },
         {
           "title": "The portfolio gained $39.9K \u2014 but the result is highly uneven",
           "slug": "portfolio-gain-loss-bridge",
           "description": "A waterfall from total cost basis to current value, with each holding's dollar contribution.",
           "path": "visualizations/week-04/portfolio-gain-loss-bridge.html",
-          "audience": "Performance \u00b7 Contribution to P&L",
-          "takeaway": "VTI, NVDA, and MSFT drove most of the gain, while AMZN and BND together erased nearly $29K."
+          "audience": "Supplemental analysis \u00b7 Performance over time",
+          "takeaway": "VTI, NVDA, and MSFT account for most of the gain, while AMZN and BND together offset nearly $29K."
         },
         {
-          "title": "Longer-held and well-timed positions delivered the biggest returns",
-          "slug": "return-vs-holding-period",
-          "description": "Each holding's total return since purchase, plotted against its purchase date and sized by current value.",
-          "path": "visualizations/week-04/return-vs-holding-period.html",
-          "audience": "Performance \u00b7 Return vs holding period",
-          "takeaway": "Positions bought in 2020-2021 (VTI, MSFT) generally outperformed; AMZN is the clear outlier despite an early entry."
-        },
-        {
-          "title": "Risk and reward: NVIDIA is the high-risk, high-return corner",
+          "title": "Risk and return: annualized return vs. annualized volatility",
           "slug": "risk-return-profile",
-          "description": "Annualized volatility versus total return, sized by position value, against portfolio averages.",
+          "description": "Annualized return (CAGR through 12/31/2024) versus annualized volatility, sized by position value, against value-weighted averages.",
           "path": "visualizations/week-04/risk-return-profile.html",
-          "audience": "Risk \u00b7 Risk\u2013return profile",
-          "takeaway": "BND anchors the low-risk corner, NVDA/VTI reward their risk, and AMZN carries high volatility with a deep loss."
+          "audience": "Primary assignment visualization \u00b7 Risk analysis",
+          "takeaway": "BND sits in the low-volatility corner; NVDA and VTI pair high volatility with high annualized returns, while AMZN pairs high volatility with a negative annualized return."
         },
         {
-          "title": "Which positions punch above their weight in risk",
-          "slug": "risk-vs-capital-contribution",
-          "description": "Each holding's share of invested capital compared with its share of portfolio risk (weight \u00d7 volatility).",
-          "path": "visualizations/week-04/risk-vs-capital-contribution.html",
-          "audience": "Risk \u00b7 Capital vs risk",
-          "takeaway": "NVDA, AMZN, and XOM contribute more risk than capital, while BND and PG dampen it."
+          "title": "Which positions weigh more in volatility than in capital",
+          "slug": "volatility-weighted-exposure",
+          "description": "Each holding's capital weight compared with its volatility-weighted exposure (weight \u00d7 standalone annualized volatility; correlations not modeled).",
+          "path": "visualizations/week-04/volatility-weighted-exposure.html",
+          "audience": "Supplemental analysis \u00b7 Risk analysis",
+          "takeaway": "NVDA, AMZN, and XOM show more volatility-weighted exposure than capital weight, while BND and PG show less."
         }
       ],
       "dashboard": {
         "eyebrow": "Balanced Growth Portfolio \u00b7 As of December 31, 2024",
         "headline": "A tech-tilted growth portfolio: where the money sits, how it performed, and where the risk hides.",
-        "summary": "Fourteen holdings worth $491,650 are examined through three lenses \u2014 asset allocation, performance, and risk. The same portfolio is read three ways so that composition, returns, and risk concentration can each be judged on their own terms.",
+        "summary": "Fourteen holdings worth $491,650 are examined through three lenses \u2014 asset allocation, performance, and risk. Each lens has one primary assignment figure plus a supplemental chart. The supplied dataset provides two price observations per holding (purchase and 12/31/2024), not a continuous history, so the performance views are built only from those endpoints.",
+        "methodology": [
+          "Data reconciliation: holding-level current values in the supplied dataset sum to $491,650, while the dataset header reports $487,350. This analysis uses the sum of holding-level values so portfolio totals and weights reconcile consistently.",
+          {
+            "label": "Performance over time",
+            "text": "The dataset provides two observations per holding \u2014 the purchase-date price and the 12/31/2024 price \u2014 not a continuous historical price series. Performance charts use only these endpoints; connecting lines link them and do not represent actual intraperiod paths. No intermediate prices are interpolated or fabricated."
+          },
+          {
+            "label": "Annualized return (CAGR)",
+            "text": "CAGR = (current price / purchase price) ^ (1 / holding years) \u2212 1, where holding years = calendar days from purchase to 12/31/2024 \u00f7 365.25. It is capital-only (dividends are not compounded, since only a static current yield is supplied)."
+          },
+          {
+            "label": "Portfolio annualized return",
+            "text": "Holdings have different purchase dates, so no single defensible annualized portfolio return is computed. The risk-return reference line is the value-weighted average of individual holding CAGRs, not a money-weighted portfolio return."
+          },
+          {
+            "label": "Volatility-weighted exposure",
+            "text": "Volatility-weighted exposure = portfolio weight \u00d7 standalone annualized volatility, rescaled to sum to 100%. It is not covariance-aware risk contribution and ignores correlations among holdings (the single-snapshot dataset has no return series to estimate them)."
+          },
+          {
+            "label": "Technology allocation",
+            "text": "Sector / asset-class labels are taken directly from the dataset. The 26.3% Technology figure is the directly classified allocation; diversified funds (e.g., VTI, VEA) may hold additional technology exposure the dataset does not disclose."
+          }
+        ],
         "kpis": [
           {
             "label": "Portfolio value",
@@ -196,36 +219,36 @@
           {
             "label": "Technology weight",
             "value": "26.3%",
-            "delta": "largest sector",
+            "delta": "directly classified",
             "tone": "neutral"
           }
         ],
         "groups": [
           {
             "label": "Asset allocation",
-            "title": "Equities dominate, and Technology is the single largest bet.",
-            "description": "The treemap maps every position by market value; the ranked bar isolates sector weights and flags the portfolio's concentration in Technology.",
+            "title": "Equities dominate, and Technology is the largest directly classified allocation.",
+            "description": "Primary: the treemap maps every position by market value. Supplemental: the ranked bar compares sector and asset-class categories and flags the Technology tilt.",
             "slugs": [
               "portfolio-allocation-treemap",
-              "sector-allocation-concentration"
+              "sector-asset-class-allocation"
             ]
           },
           {
             "label": "Performance over time",
-            "title": "A few winners carried the portfolio; entry timing explains much of the spread.",
-            "description": "The bridge decomposes each holding's contribution to total profit and loss; the scatter relates each position's return to when it was purchased.",
+            "title": "Returns vary sharply across holdings, with several major outliers.",
+            "description": "Primary: growth of $100 from each holding's purchase to 12/31/2024, versus the total portfolio. Supplemental: a bridge decomposing each holding's dollar contribution to total profit and loss. Both use only the two supplied observations per holding.",
             "slugs": [
-              "portfolio-gain-loss-bridge",
-              "return-vs-holding-period"
+              "indexed-growth-since-purchase",
+              "portfolio-gain-loss-bridge"
             ]
           },
           {
             "label": "Risk analysis",
-            "title": "High-volatility positions carry more risk than their size suggests.",
-            "description": "The risk-return scatter locates every holding against portfolio averages; the contribution bars compare each position's share of capital with its share of portfolio risk.",
+            "title": "Some positions weigh more in volatility terms than in capital terms.",
+            "description": "Primary: annualized return (CAGR) versus annualized volatility, sized by position value. Supplemental: each holding's capital weight against its volatility-weighted exposure (weight \u00d7 standalone volatility, correlations not modeled).",
             "slugs": [
               "risk-return-profile",
-              "risk-vs-capital-contribution"
+              "volatility-weighted-exposure"
             ]
           }
         ]

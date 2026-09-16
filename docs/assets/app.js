@@ -322,6 +322,28 @@ function createDashboardSection(assignment) {
   });
   section.append(kpis);
 
+  if (Array.isArray(dashboard.methodology) && dashboard.methodology.length) {
+    const notes = document.createElement("section");
+    notes.className = "dashboard-notes";
+    const heading = document.createElement("p");
+    heading.className = "dashboard-notes-title";
+    heading.textContent = "Methodology & data notes";
+    const list = document.createElement("ul");
+    dashboard.methodology.forEach((note) => {
+      const item = document.createElement("li");
+      if (typeof note === "string") {
+        item.textContent = note;
+      } else {
+        const label = document.createElement("strong");
+        label.textContent = `${note.label}: `;
+        item.append(label, document.createTextNode(note.text));
+      }
+      list.append(item);
+    });
+    notes.append(heading, list);
+    section.append(notes);
+  }
+
   dashboard.groups.forEach((group) => {
     const groupSection = document.createElement("section");
     groupSection.className = "dashboard-group";

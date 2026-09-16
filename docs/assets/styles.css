@@ -258,6 +258,37 @@ main { padding: clamp(1rem, 4vw, 4rem); }
 .kpi-delta.is-negative { color: var(--negative); }
 .kpi-delta.is-neutral { color: var(--muted); }
 
+.dashboard-notes {
+  margin: -0.8rem 0 2.6rem;
+  padding: 1.1rem 1.3rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.dashboard-notes-title {
+  margin: 0 0 0.55rem;
+  color: var(--muted);
+  font-size: 0.73rem;
+  font-weight: 850;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
+.dashboard-notes ul {
+  margin: 0;
+  padding-left: 1.15rem;
+}
+
+.dashboard-notes li {
+  margin: 0.35rem 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.dashboard-notes li strong { color: var(--ink); }
+
 .dashboard-group {
   padding: 2.3rem 0;
   border-top: 1px solid var(--line);
