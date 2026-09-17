@@ -223,7 +223,7 @@ def _legend_bottom(fig: go.Figure, y: float = 1.1) -> go.Figure:
     return fig
 
 
-def _bubble_sizeref(values: list[float], max_marker: float = 54.0) -> float:
+def _bubble_sizeref(values: list[float], max_marker: float = 36.0) -> float:
     return 2.0 * max(values) / (max_marker**2)
 
 
@@ -235,7 +235,8 @@ def allocation_treemap() -> go.Figure:
     values = [TOTAL_VALUE]
     colors = ["#ffffff"]
     text = [""]
-    customdata: list[list] = [[100.0]]
+    # customdata: [weight %, " — Full Name" for the hover (leaves only)]
+    customdata: list[list] = [[100.0, ""]]
 
     for sector, sector_value in sorted(SECTOR_VALUE.items(), key=lambda kv: -kv[1]):
         ids.append(sector)
@@ -244,7 +245,7 @@ def allocation_treemap() -> go.Figure:
         values.append(sector_value)
         colors.append(SECTOR_COLORS.get(sector, NEUTRAL))
         text.append("")
-        customdata.append([sector_value / TOTAL_VALUE * 100])
+        customdata.append([sector_value / TOTAL_VALUE * 100, ""])
 
     for h in sorted(HOLDINGS, key=lambda x: -x.current_value):
         ids.append(h.ticker)
@@ -253,7 +254,7 @@ def allocation_treemap() -> go.Figure:
         values.append(h.current_value)
         colors.append(SECTOR_COLORS.get(h.sector, NEUTRAL))
         text.append(f"${h.current_value / 1000:,.1f}K")
-        customdata.append([weight(h) * 100])
+        customdata.append([weight(h) * 100, f" — {h.name}"])
 
     fig = go.Figure(
         go.Treemap(
@@ -264,15 +265,22 @@ def allocation_treemap() -> go.Figure:
             branchvalues="total",
             marker={"colors": colors, "line": {"color": "#ffffff", "width": 1.5}},
             text=text,
-            texttemplate="<b>%{label}</b><br>%{text}<br>%{customdata[0]:.1f}%",
+            # Tiles show ticker + $ value only (weight % lives in the hover),
+            # enlarged and centered.
+            texttemplate="<b>%{label}</b><br>%{text}",
+            textposition="middle center",
             customdata=customdata,
-            hovertemplate="<b>%{label}</b><br>Value: $%{value:,.0f}<br>Weight: %{customdata[0]:.1f}%<extra></extra>",
+            hovertemplate=(
+                "<b>%{label}%{customdata[1]}</b><br>"
+                "Value: $%{value:,.0f}<br>"
+                "Weight: %{customdata[0]:.1f}%<extra></extra>"
+            ),
             tiling={"pad": 2},
             pathbar={"visible": False},
             sort=True,
         )
     )
-    fig.update_traces(insidetextfont={"color": "#ffffff", "size": 13})
+    fig.update_traces(insidetextfont={"color": "#ffffff", "size": 17})
     return finish_figure(fig, height=440, left=6, right=6, top=10, bottom=30)
 
 
@@ -372,25 +380,24 @@ def pnl_waterfall() -> go.Figure:
 
 
 def indexed_growth_since_purchase() -> go.Figure:
-    """Growth of $100 from each holding's purchase to 12/31/2024 (dumbbell).
+    """Purchase-to-12/31/2024 total return per holding (dumbbell).
 
     Only two observations exist per holding (the purchase price and the
     12/31/2024 endpoint price). Each dumbbell shows just those two points — an
-    open marker at 100 (purchase) and a filled marker at the 12/31/2024 indexed
-    value. No intraperiod prices are interpolated or implied. The dashed line is
-    the total portfolio's indexed value (aggregate current value / aggregate
-    cost basis), a total (not annualized) return used purely as a benchmark.
+    open marker at 0% (purchase) and a filled marker at the holding's total
+    return through 12/31/2024. No intraperiod prices are interpolated or
+    implied. The x-axis is the total (not annualized) return; each marker is
+    labeled with the nominal dollar gain/loss (the same figure shown in the P&L
+    waterfall). The dashed line is the aggregate portfolio return, a benchmark.
     """
-    rows = sorted(HOLDINGS, key=lambda h: h.current_price / h.purchase_price)
-    portfolio_index = TOTAL_VALUE / TOTAL_COST * 100
+    rows = sorted(HOLDINGS, key=lambda h: h.gain_pct)
 
     fig = go.Figure()
     for h in rows:
-        index_end = h.current_price / h.purchase_price * 100
-        color = ACCENT if index_end >= 100 else NEGATIVE_COLOR
+        color = ACCENT if h.gain_pct >= 0 else NEGATIVE_COLOR
         fig.add_trace(
             go.Scatter(
-                x=[100.0, index_end],
+                x=[0.0, h.gain_pct],
                 y=[h.ticker, h.ticker],
                 mode="lines",
                 line={"color": color, "width": 3},
@@ -400,7 +407,7 @@ def indexed_growth_since_purchase() -> go.Figure:
         )
         fig.add_trace(
             go.Scatter(
-                x=[100.0],
+                x=[0.0],
                 y=[h.ticker],
                 mode="markers",
                 marker={"size": 11, "color": "#ffffff", "line": {"color": NEUTRAL, "width": 2}},
@@ -408,43 +415,45 @@ def indexed_growth_since_purchase() -> go.Figure:
                 showlegend=False,
             )
         )
+        # The x-axis carries the % return; the nominal dollar gain/loss is shown
+        # as the marker label (a dollar amount cannot share the % axis because it
+        # depends on each holding's cost basis).
+        gain_label = f"{'+' if h.gain >= 0 else '-'}${abs(h.gain) / 1000:,.1f}K"
         fig.add_trace(
             go.Scatter(
-                x=[index_end],
+                x=[h.gain_pct],
                 y=[h.ticker],
                 mode="markers+text",
                 marker={"size": 13, "color": color, "line": {"color": "#ffffff", "width": 1}},
-                text=[f"{h.gain_pct:+.1f}%"],
-                # Keep labels off the 100 baseline and off the axis edges:
-                #  - moderate gainers to the right of their dot
-                #  - the far-right outlier (NVDA) to the left, to avoid clipping
-                #  - deep losers (dot far left) to the right, into the gap before
-                #    the baseline, so the label clears the y-axis ticks
-                #  - mild losers to the left of their dot
-                textposition=(
-                    "middle right"
-                    if (100 <= index_end <= 320 or index_end < 70)
-                    else "middle left"
-                ),
+                text=[gain_label],
+                # Label each dot on its outward side, away from the connector
+                # line: gainers to the right of their dot, losers to the left.
+                # The x-range is padded so even the outliers (NVDA, AMZN) keep
+                # their label off the line rather than on top of it.
+                textposition="middle right" if h.gain_pct >= 0 else "middle left",
                 textfont={"size": 10, "color": color},
                 cliponaxis=False,
-                customdata=[[h.name, h.purchase_date, h.holding_years, index_end, h.gain_pct]],
+                customdata=[[h.name, h.purchase_date, h.holding_years,
+                             h.gain_pct, gain_label, h.cost_basis, h.current_value]],
                 hovertemplate=(
                     "<b>%{y}</b> — %{customdata[0]}<br>"
                     "Purchased %{customdata[1]} · held %{customdata[2]:.1f} yrs<br>"
-                    "Indexed value: %{customdata[3]:.0f} (start 100)<br>"
-                    "Total return: %{customdata[4]:+.1f}%<extra></extra>"
+                    "Total return: %{customdata[3]:+.1f}% · gain/loss: %{customdata[4]}<br>"
+                    "Cost basis $%{customdata[5]:,.0f} → value $%{customdata[6]:,.0f}<extra></extra>"
                 ),
             )
         )
 
-    fig.add_vline(x=100, line_width=1.4, line_color=INK)
+    fig.add_vline(x=0, line_width=1.4, line_color=INK)
     fig.add_vline(
-        x=portfolio_index,
+        x=TOTAL_RETURN_PCT,
         line_width=1.5,
         line_dash="dash",
         line_color=NAVY,
-        annotation_text=f"Aggregate gain vs. portfolio cost basis: {TOTAL_RETURN_PCT:+.1f}%",
+        annotation_text=(
+            f"Aggregate gain vs. portfolio cost basis: {TOTAL_RETURN_PCT:+.1f}% "
+            f"(+${TOTAL_GAIN / 1000:,.1f}K)"
+        ),
         annotation_position="top",
         annotation_font={"size": 11, "color": NAVY},
     )
@@ -454,9 +463,10 @@ def indexed_growth_since_purchase() -> go.Figure:
         categoryarray=[h.ticker for h in rows],
     )
     fig.update_xaxes(
-        title="Indexed value (100 = purchase price)",
-        range=[0, 390],
+        title="Total return since purchase",
+        range=[-90, 290],
         dtick=50,
+        ticksuffix="%",
         gridcolor=GRID,
         zeroline=False,
     )
@@ -469,7 +479,7 @@ def indexed_growth_since_purchase() -> go.Figure:
         yanchor="top",
         align="left",
         text=(
-            "○ purchase (100)&nbsp;&nbsp;● Dec 31, 2024 — two observations per holding; "
+            "○ purchase (0%)&nbsp;&nbsp;● Dec 31, 2024 — two observations per holding; "
             "endpoints only, not an actual price path."
         ),
         showarrow=False,
@@ -482,6 +492,16 @@ def indexed_growth_since_purchase() -> go.Figure:
 def risk_return_scatter() -> go.Figure:
     values = [h.current_value for h in HOLDINGS]
     sizeref = _bubble_sizeref(values)
+    # Move labels for the tight clusters around 15%-18% and 23%-24%
+    # volatility so nearby holdings remain distinguishable.
+    label_positions = {
+        "AAPL": "top right",
+        "JNJ": "bottom left",
+        "JPM": "bottom right",
+        "PG": "top right",
+        "VEA": "bottom right",
+        "GLD": "top left",
+    }
 
     fig = go.Figure()
     for asset_class in CLASS_ORDER:
@@ -495,19 +515,26 @@ def risk_return_scatter() -> go.Figure:
                 mode="markers+text",
                 name=asset_class,
                 text=[h.ticker for h in members],
-                textposition="top center",
+                textposition=[label_positions.get(h.ticker, "top center") for h in members],
                 textfont={"size": 9, "color": MUTED},
                 marker={
                     "size": [h.current_value for h in members],
                     "sizemode": "area",
                     "sizeref": sizeref,
-                    "sizemin": 5,
+                    "sizemin": 10,
                     "color": CLASS_COLORS[asset_class],
                     "line": {"color": "#ffffff", "width": 1},
                     "opacity": 0.85,
                 },
                 customdata=[
-                    [h.name, h.sharpe, h.current_value, h.gain_pct, h.holding_years]
+                    [
+                        h.name,
+                        h.sharpe,
+                        h.current_value,
+                        h.gain_pct,
+                        h.holding_years,
+                        weight(h) * 100,
+                    ]
                     for h in members
                 ],
                 hovertemplate=(
@@ -515,7 +542,9 @@ def risk_return_scatter() -> go.Figure:
                     "Annualized volatility: %{x:.1f}%<br>"
                     "Annualized return (CAGR): %{y:.1f}%<br>"
                     "Total return: %{customdata[3]:+.1f}% over %{customdata[4]:.1f} yrs<br>"
-                    "Sharpe: %{customdata[1]:.2f} · Value: $%{customdata[2]:,.0f}<extra></extra>"
+                    "Sharpe: %{customdata[1]:.2f}<br>"
+                    "Position value: $%{customdata[2]:,.0f} (%{customdata[5]:.1f}% of portfolio)"
+                    "<extra></extra>"
                 ),
             )
         )
@@ -727,7 +756,8 @@ DASHBOARD = {
             "label": "Risk analysis",
             "title": "Some positions weigh more in volatility terms than in capital terms.",
             "description": (
-                "Primary: annualized return (CAGR) versus annualized volatility, sized by position value. "
+                "Primary: annualized return (CAGR) versus annualized volatility; bubble area represents "
+                "current position value. "
                 "Supplemental: each holding's capital weight against its volatility-weighted exposure "
                 "(weight × standalone volatility, correlations not modeled)."
             ),
@@ -754,7 +784,7 @@ FIGURES = [
         "figure": sector_asset_class_allocation(),
     },
     {
-        "title": "Purchase-to-12/31/2024 endpoint return: individual holdings vs. portfolio (not a time series)",
+        "title": "Purchase-to-12/31/2024 endpoint return: individual holdings vs. portfolio",
         "slug": "indexed-growth-since-purchase",
         "description": "Each holding indexed to 100 at its purchase date and marked at its 12/31/2024 value, alongside the total portfolio. Built from the two supplied observations per holding, not a continuous price history.",
         "takeaway": "Returns vary sharply across holdings — NVDA and VTI sit far above the portfolio line while AMZN and BND fall well below it.",
@@ -770,9 +800,9 @@ FIGURES = [
         "figure": pnl_waterfall(),
     },
     {
-        "title": "Risk and return: annualized return vs. annualized volatility",
+        "title": "Risk and return (bubble area = current position value)",
         "slug": "risk-return-profile",
-        "description": "Annualized return (CAGR through 12/31/2024) versus annualized volatility, sized by position value, against value-weighted averages.",
+        "description": "Annualized return (CAGR through 12/31/2024) versus annualized volatility. Bubble area represents current position value; dotted lines show value-weighted averages.",
         "takeaway": "BND sits in the low-volatility corner; NVDA and VTI pair high volatility with high annualized returns, while AMZN pairs high volatility with a negative annualized return.",
         "audience": "Primary assignment visualization · Risk analysis",
         "figure": risk_return_scatter(),

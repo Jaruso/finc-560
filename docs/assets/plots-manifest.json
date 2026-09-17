@@ -138,7 +138,7 @@
           "takeaway": "Technology is the largest directly classified allocation; diversified funds such as VTI and VEA may add further technology exposure that the dataset does not disclose."
         },
         {
-          "title": "Purchase-to-12/31/2024 endpoint return: individual holdings vs. portfolio (not a time series)",
+          "title": "Purchase-to-12/31/2024 endpoint return: individual holdings vs. portfolio",
           "slug": "indexed-growth-since-purchase",
           "description": "Each holding indexed to 100 at its purchase date and marked at its 12/31/2024 value, alongside the total portfolio. Built from the two supplied observations per holding, not a continuous price history.",
           "path": "visualizations/week-04/indexed-growth-since-purchase.html",
@@ -154,9 +154,9 @@
           "takeaway": "VTI, NVDA, and MSFT account for most of the gain, while AMZN and BND together offset nearly $29K."
         },
         {
-          "title": "Risk and return: annualized return vs. annualized volatility",
+          "title": "Risk and return (bubble area = current position value)",
           "slug": "risk-return-profile",
-          "description": "Annualized return (CAGR through 12/31/2024) versus annualized volatility, sized by position value, against value-weighted averages.",
+          "description": "Annualized return (CAGR through 12/31/2024) versus annualized volatility. Bubble area represents current position value; dotted lines show value-weighted averages.",
           "path": "visualizations/week-04/risk-return-profile.html",
           "audience": "Primary assignment visualization \u00b7 Risk analysis",
           "takeaway": "BND sits in the low-volatility corner; NVDA and VTI pair high volatility with high annualized returns, while AMZN pairs high volatility with a negative annualized return."
@@ -245,7 +245,7 @@
           {
             "label": "Risk analysis",
             "title": "Some positions weigh more in volatility terms than in capital terms.",
-            "description": "Primary: annualized return (CAGR) versus annualized volatility, sized by position value. Supplemental: each holding's capital weight against its volatility-weighted exposure (weight \u00d7 standalone volatility, correlations not modeled).",
+            "description": "Primary: annualized return (CAGR) versus annualized volatility; bubble area represents current position value. Supplemental: each holding's capital weight against its volatility-weighted exposure (weight \u00d7 standalone volatility, correlations not modeled).",
             "slugs": [
               "risk-return-profile",
               "volatility-weighted-exposure"
