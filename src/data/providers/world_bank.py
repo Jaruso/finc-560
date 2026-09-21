@@ -2,24 +2,57 @@ from __future__ import annotations
 
 import pandas as pd
 from pandas_datareader import wb
+
 from src.data.cache import MacroCache
 
 cache = MacroCache()
 
-def fetch_wb_series(indicator: str, countries: list[str] | str = "all", start: int = 2000, end: int = 2024) -> pd.DataFrame:
+
+def fetch_wb_series(
+    indicator: str,
+    countries: list[str] | str = "all",
+    start: int = 2000,
+    end: int | None = None,
+    *,
+    max_age_hours: float = 24,
+) -> pd.DataFrame:
     """
-    Fetches series from World Bank and caches the result.
+    Fetch a World Bank indicator and cache the normalized tabular response.
     """
+    requested_end = end or pd.Timestamp.now(tz="UTC").year
     if isinstance(countries, list):
         c_str = "_".join(sorted(countries))
     else:
         c_str = countries
-        
-    name = f"wb_{indicator}_{c_str}_{start}_{end}"
-    
-    def fetch_fn():
-        df = wb.download(indicator=indicator, country=countries, start=start, end=end)
-        return df.reset_index()
-        
-    df = cache.get_dataframe("world_bank", name, fetch_fn)
-    return df
+
+    end_key = end if end is not None else "latest"
+    name = f"wb_{indicator}_{c_str}_{start}_{end_key}"
+
+    def fetch_fn() -> pd.DataFrame:
+        frame = wb.download(
+            indicator=indicator,
+            country=countries,
+            start=start,
+            end=requested_end,
+        )
+        return frame.reset_index()
+
+    return cache.get_dataframe(
+        "world_bank",
+        name,
+        fetch_fn,
+        max_age_hours=max_age_hours,
+    )
+
+
+def fetch_wb_countries(*, max_age_hours: float = 24 * 30) -> pd.DataFrame:
+    """
+    Fetch World Bank country metadata so aggregate regions can be separated
+    from actual countries before geographic visualization.
+    """
+    return cache.get_dataframe(
+        "world_bank",
+        "country_metadata",
+        wb.get_countries,
+        max_age_hours=max_age_hours,
+    )
