@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import plotly.graph_objects as go
 
 ASSIGNMENT = "week-03"
-ASSIGNMENT_LABEL = "Week 03"
+ASSIGNMENT_LABEL = "Week 3"
 ASSIGNMENT_TITLE = "Visualizing financial statements"
 
 INK = "#17212b"

@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 
 
 ASSIGNMENT = "week-02"
-ASSIGNMENT_LABEL = "Week 02"
+ASSIGNMENT_LABEL = "Week 2"
 ASSIGNMENT_TITLE = "Tools of financial visualization"
 
 COMPANIES = ["TechCorp Inc.", "DataSystems LLC", "CloudServices Co."]

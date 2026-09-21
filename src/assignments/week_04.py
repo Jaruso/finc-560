@@ -6,7 +6,7 @@ from datetime import date
 import plotly.graph_objects as go
 
 ASSIGNMENT = "week-04"
-ASSIGNMENT_LABEL = "Week 04"
+ASSIGNMENT_LABEL = "Week 4"
 ASSIGNMENT_TITLE = "Stock market investment visualizations"
 
 # --- House style (shared with earlier weeks) ---------------------------------
