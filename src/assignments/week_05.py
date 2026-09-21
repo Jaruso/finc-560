@@ -412,7 +412,7 @@ def global_growth_map() -> go.Figure:
 
     metadata = metadata.copy()
     metadata["region_name"] = metadata["region"].map(region_name)
-    metadata = metadata.rename(columns={"name": "country_name", "id": "iso3"})
+    metadata = metadata.rename(columns={"name": "country_name", "iso3c": "iso3"})
 
     df["year"] = pd.to_numeric(df["year"], errors="coerce")
     merged = df.merge(
