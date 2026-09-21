@@ -197,6 +197,51 @@ INDICATORS = {
         "transform": "level",
         "unit_display": "$/Barrel"
     },
+    "labor_force_participation": {
+        "title": "Civilian Labor Force Participation Rate",
+        "provider": "fred",
+        "series_id": "CIVPART",
+        "original_source": "BLS",
+        "frequency": "M",
+        "transform": "level",
+        "unit_display": "%"
+    },
+    "prime_age_epop": {
+        "title": "Employment-Population Ratio, Ages 25-54",
+        "provider": "fred",
+        "series_id": "LNS12300060",
+        "original_source": "BLS",
+        "frequency": "M",
+        "transform": "level",
+        "unit_display": "%"
+    },
+    "average_hourly_earnings": {
+        "title": "Average Hourly Earnings, Total Private",
+        "provider": "fred",
+        "series_id": "CES0500000003",
+        "original_source": "BLS",
+        "frequency": "M",
+        "transform": "yoy_pct",
+        "unit_display": "% YoY"
+    },
+    "oecd_cli": {
+        "title": "OECD Composite Leading Indicator, United States",
+        "provider": "fred",
+        "series_id": "USALOLITOAASTSAM",
+        "original_source": "OECD",
+        "frequency": "M",
+        "transform": "level",
+        "unit_display": "Index"
+    },
+    "cfnai_3m": {
+        "title": "Chicago Fed National Activity Index, 3-Month Average",
+        "provider": "fred",
+        "series_id": "CFNAIMA3",
+        "original_source": "Federal Reserve Bank of Chicago",
+        "frequency": "M",
+        "transform": "level",
+        "unit_display": "Index"
+    },
     "natural_gas": {
         "title": "Henry Hub Natural Gas Spot Price",
         "provider": "fred",

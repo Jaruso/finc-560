@@ -659,6 +659,453 @@ def commodity_shocks() -> go.Figure:
     return apply_finance_theme(fig)
 
 
+
+# --- 10. Labor Supply & Wage Pressure ---
+def labor_supply_wage_pressure() -> go.Figure:
+    df = fetch_fred_indicators(
+        ["labor_force_participation", "prime_age_epop", "average_hourly_earnings"],
+        years_ago(15),
+    )
+    df["wage_growth_yoy"] = df["average_hourly_earnings"].pct_change(12) * 100
+
+    fig = make_subplots(
+        rows=2,
+        cols=1,
+        row_heights=[0.56, 0.44],
+        vertical_spacing=0.14,
+        shared_xaxes=True,
+        subplot_titles=("Labor supply", "Nominal wage pressure"),
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=df.index,
+            y=df["labor_force_participation"],
+            name="Labor force participation",
+            line={"color": NEUTRAL, "width": 2.2},
+        ),
+        row=1,
+        col=1,
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=df.index,
+            y=df["prime_age_epop"],
+            name="Prime-age employment/population",
+            line={"color": ACCENT, "width": 2.2},
+        ),
+        row=1,
+        col=1,
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=df.index,
+            y=df["wage_growth_yoy"],
+            name="Avg. hourly earnings YoY",
+            line={"color": NEGATIVE, "width": 2.3},
+        ),
+        row=2,
+        col=1,
+    )
+    fig.add_hline(y=0, line_dash="dot", line_color=LINE, row=2, col=1)
+    fig.update_yaxes(title="Percent of population", row=1, col=1)
+    fig.update_yaxes(title="YoY %", row=2, col=1)
+    add_metadata_footer(fig, "U.S. Bureau of Labor Statistics via FRED", _latest_date(df))
+    return apply_finance_theme(fig, height=610)
+
+
+# --- 11. Leading vs Coincident Business-Cycle Signal ---
+def leading_coincident_cycle() -> go.Figure:
+    df = fetch_fred_indicators(
+        ["oecd_cli", "cfnai_3m"],
+        years_ago(20),
+    )
+    cli_gap = df["oecd_cli"] - 100
+
+    fig = make_subplots(
+        rows=2,
+        cols=1,
+        row_heights=[0.5, 0.5],
+        vertical_spacing=0.15,
+        shared_xaxes=True,
+        subplot_titles=("OECD composite leading indicator", "Chicago Fed coincident activity"),
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=df.index,
+            y=cli_gap,
+            name="CLI deviation from 100",
+            line={"color": ACCENT, "width": 2.4},
+            fill="tozeroy",
+            fillcolor="rgba(13,127,111,0.08)",
+        ),
+        row=1,
+        col=1,
+    )
+    fig.add_hline(y=0, line_dash="dash", line_color=MUTED, row=1, col=1)
+
+    fig.add_trace(
+        go.Scatter(
+            x=df.index,
+            y=df["cfnai_3m"],
+            name="CFNAI 3-month average",
+            line={"color": NEUTRAL, "width": 2.3},
+            fill="tozeroy",
+            fillcolor="rgba(47,72,88,0.08)",
+        ),
+        row=2,
+        col=1,
+    )
+    fig.add_hline(y=0, line_dash="dash", line_color=MUTED, row=2, col=1)
+    fig.update_yaxes(title="Index pts vs 100", row=1, col=1)
+    fig.update_yaxes(title="Index", row=2, col=1)
+    add_metadata_footer(
+        fig,
+        "OECD and Federal Reserve Bank of Chicago via FRED",
+        _latest_date(df),
+    )
+    return apply_finance_theme(fig, height=610)
+
+
+# --- 12. Global External Imbalances ---
+def current_account_imbalances() -> go.Figure:
+    indicator = "BN.CAB.XOKA.GD.ZS"
+    df = fetch_wb_series(
+        indicator,
+        "all",
+        TODAY.year - 4,
+        TODAY.year,
+    ).dropna(subset=[indicator])
+    metadata = fetch_wb_countries().copy()
+
+    def region_name(value):
+        if isinstance(value, dict):
+            return value.get("value")
+        return value
+
+    metadata["region_name"] = metadata["region"].map(region_name)
+    metadata = metadata.rename(columns={"name": "country_name", "iso3c": "iso3"})
+    df["year"] = pd.to_numeric(df["year"], errors="coerce")
+
+    merged = df.merge(
+        metadata[["country_name", "iso3", "region_name"]],
+        left_on="country",
+        right_on="country_name",
+        how="left",
+    )
+    merged = merged[
+        merged["iso3"].notna()
+        & merged["region_name"].notna()
+        & (merged["region_name"].astype(str).str.lower() != "aggregates")
+    ]
+    latest = (
+        merged.sort_values("year")
+        .groupby("iso3", as_index=False)
+        .tail(1)
+        .copy()
+    )
+
+    fig = px.choropleth(
+        latest,
+        locations="iso3",
+        locationmode="ISO-3",
+        color=indicator,
+        hover_name="country",
+        hover_data={"year": True, "iso3": False, indicator: ":.1f"},
+        color_continuous_scale="RdBu",
+        color_continuous_midpoint=0,
+        labels={indicator: "Current account (% GDP)", "year": "Latest year"},
+    )
+    fig.update_layout(
+        height=500,
+        margin={"t": 10, "r": 0, "b": 72, "l": 0},
+        paper_bgcolor="#ffffff",
+        font={"family": "Inter, Arial, sans-serif", "color": INK},
+        geo={"showframe": False, "showcoastlines": True, "projection_type": "equirectangular"},
+    )
+    add_metadata_footer(
+        fig,
+        "World Bank World Development Indicators",
+        f"latest available by country ({int(latest['year'].min())}–{int(latest['year'].max())})",
+    )
+    return fig
+
+
+# --- 13. Global Trade Momentum ---
+def trade_momentum() -> go.Figure:
+    export_indicator = "NE.EXP.GNFS.KD.ZG"
+    import_indicator = "NE.IMP.GNFS.KD.ZG"
+    countries = ["US", "CN", "DE", "JP", "GB", "CA", "MX", "IN"]
+
+    exports = fetch_wb_series(
+        export_indicator,
+        countries,
+        TODAY.year - 9,
+        TODAY.year,
+    ).dropna(subset=[export_indicator])
+    imports = fetch_wb_series(
+        import_indicator,
+        countries,
+        TODAY.year - 9,
+        TODAY.year,
+    ).dropna(subset=[import_indicator])
+
+    for frame in (exports, imports):
+        frame["year"] = pd.to_numeric(frame["year"], errors="coerce")
+
+    export_pivot = exports.pivot(index="country", columns="year", values=export_indicator)
+    import_pivot = imports.pivot(index="country", columns="year", values=import_indicator)
+
+    desired_names = [
+        "United States",
+        "China",
+        "Germany",
+        "Japan",
+        "United Kingdom",
+        "Canada",
+        "Mexico",
+        "India",
+    ]
+    common_years = sorted(set(export_pivot.columns).intersection(import_pivot.columns))[-6:]
+    export_pivot = export_pivot.reindex(index=desired_names, columns=common_years)
+    import_pivot = import_pivot.reindex(index=desired_names, columns=common_years)
+
+    values = pd.concat(
+        [export_pivot.stack(future_stack=True), import_pivot.stack(future_stack=True)]
+    ).dropna()
+    max_abs = max(float(values.abs().max()), 1.0)
+
+    fig = make_subplots(
+        rows=1,
+        cols=2,
+        horizontal_spacing=0.08,
+        subplot_titles=("Real export growth", "Real import growth"),
+    )
+    fig.add_trace(
+        go.Heatmap(
+            z=export_pivot.values,
+            x=[str(int(y)) for y in common_years],
+            y=export_pivot.index,
+            zmin=-max_abs,
+            zmax=max_abs,
+            zmid=0,
+            colorscale="RdBu",
+            colorbar={"title": "Annual %", "x": 0.46, "len": 0.82},
+            hovertemplate="%{y}<br>%{x}<br>Export growth: %{z:.1f}%<extra></extra>",
+        ),
+        row=1,
+        col=1,
+    )
+    fig.add_trace(
+        go.Heatmap(
+            z=import_pivot.values,
+            x=[str(int(y)) for y in common_years],
+            y=import_pivot.index,
+            zmin=-max_abs,
+            zmax=max_abs,
+            zmid=0,
+            colorscale="RdBu",
+            showscale=False,
+            hovertemplate="%{y}<br>%{x}<br>Import growth: %{z:.1f}%<extra></extra>",
+        ),
+        row=1,
+        col=2,
+    )
+    fig.update_xaxes(title="Year", row=1, col=1)
+    fig.update_xaxes(title="Year", row=1, col=2)
+    add_metadata_footer(
+        fig,
+        "World Bank World Development Indicators",
+        int(max(common_years)),
+    )
+    return apply_finance_theme(fig, height=560)
+
+
+# --- 14. Fiscal Space Snapshot ---
+def fiscal_space_snapshot() -> go.Figure:
+    debt_series = {
+        "United States": "QUSGAM770A",
+        "Germany": "QDEGAM770A",
+        "Japan": "QJPGAM770A",
+        "United Kingdom": "QGBGAM770A",
+    }
+    yield_series = {
+        "United States": "IRLTLT01USM156N",
+        "Germany": "IRLTLT01DEM156N",
+        "Japan": "IRLTLT01JPM156N",
+        "United Kingdom": "IRLTLT01GBM156N",
+    }
+
+    debt_df = fetch_fred_series(list(debt_series.values()), years_ago(5))
+    yield_df = fetch_fred_series(list(yield_series.values()), years_ago(3))
+    gdp_indicator = "NY.GDP.MKTP.CD"
+    gdp = fetch_wb_series(
+        gdp_indicator,
+        ["US", "DE", "JP", "GB"],
+        TODAY.year - 3,
+        TODAY.year,
+    ).dropna(subset=[gdp_indicator])
+    gdp["year"] = pd.to_numeric(gdp["year"], errors="coerce")
+    gdp_latest = gdp.sort_values("year").groupby("country").tail(1)
+    gdp_map = gdp_latest.set_index("country")[gdp_indicator].to_dict()
+    gdp_year_map = gdp_latest.set_index("country")["year"].to_dict()
+
+    rows = []
+    for country in debt_series:
+        debt = debt_df[debt_series[country]].dropna()
+        yld = yield_df[yield_series[country]].dropna()
+        if debt.empty or yld.empty or country not in gdp_map:
+            continue
+        rows.append(
+            {
+                "Country": country,
+                "Government credit / GDP": float(debt.iloc[-1]),
+                "10Y government yield": float(yld.iloc[-1]),
+                "GDP (USD bn)": float(gdp_map[country]) / 1e9,
+                "Debt date": debt.index[-1].strftime("%Y-Q%q").replace("%q", str(((debt.index[-1].month - 1) // 3) + 1)),
+                "Yield date": yld.index[-1].strftime("%Y-%m"),
+                "GDP year": int(gdp_year_map[country]),
+            }
+        )
+
+    plot_df = pd.DataFrame(rows)
+    if plot_df.empty:
+        raise ValueError("No overlapping fiscal-space data were returned.")
+
+    fig = px.scatter(
+        plot_df,
+        x="Government credit / GDP",
+        y="10Y government yield",
+        size="GDP (USD bn)",
+        color="Country",
+        text="Country",
+        size_max=55,
+        hover_name="Country",
+        hover_data={
+            "Government credit / GDP": ":.1f",
+            "10Y government yield": ":.2f",
+            "GDP (USD bn)": ":,.0f",
+            "Debt date": True,
+            "Yield date": True,
+            "GDP year": True,
+        },
+    )
+    fig.update_traces(textposition="top center")
+    fig.update_xaxes(title="General-government credit (% of GDP)")
+    fig.update_yaxes(title="10-year government bond yield (%)")
+    fig.update_layout(hovermode="closest")
+    add_metadata_footer(
+        fig,
+        "BIS credit series and OECD bond yields via FRED; World Bank GDP",
+        _latest_date(yield_df),
+    )
+    return apply_finance_theme(fig, height=520)
+
+
+# --- 15. Credit Leverage & Debt-Service Pressure ---
+def credit_cycle_risk() -> go.Figure:
+    credit_series = {
+        "United States": "QUSPAM770A",
+        "China": "QCNPAM770A",
+        "Japan": "QJPPAM770A",
+        "Germany": "QDEPAM770A",
+        "United Kingdom": "QGBPAM770A",
+    }
+    credit_df = fetch_fred_series(list(credit_series.values()), years_ago(12))
+
+    rows = []
+    for country, series_id in credit_series.items():
+        series = credit_df[series_id].dropna()
+        if series.empty:
+            continue
+        latest_date = series.index[-1]
+        target = latest_date - pd.DateOffset(years=5)
+        prior_candidates = series.loc[:target]
+        prior = prior_candidates.iloc[-1] if not prior_candidates.empty else series.iloc[0]
+        rows.append(
+            {
+                "Country": country,
+                "Private credit / GDP": float(series.iloc[-1]),
+                "5Y change": float(series.iloc[-1] - prior),
+                "Latest quarter": f"{latest_date.year} Q{((latest_date.month - 1) // 3) + 1}",
+            }
+        )
+    leverage = pd.DataFrame(rows)
+
+    dsr = fetch_fred_series(["TDSP", "MDSP", "CDSP"], years_ago(15))
+
+    fig = make_subplots(
+        rows=2,
+        cols=1,
+        row_heights=[0.48, 0.52],
+        vertical_spacing=0.17,
+        subplot_titles=("Cross-country private leverage", "U.S. household debt-service burden"),
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=leverage["Private credit / GDP"],
+            y=leverage["5Y change"],
+            mode="markers+text",
+            text=leverage["Country"],
+            textposition="top center",
+            customdata=leverage[["Latest quarter"]],
+            marker={"size": 16, "color": ACCENT, "line": {"color": "#ffffff", "width": 1}},
+            hovertemplate=(
+                "%{text}<br>Private credit/GDP: %{x:.1f}%"
+                "<br>5Y change: %{y:+.1f} pp"
+                "<br>Latest: %{customdata[0]}<extra></extra>"
+            ),
+            name="Private credit / GDP",
+        ),
+        row=1,
+        col=1,
+    )
+    fig.add_hline(y=0, line_dash="dash", line_color=MUTED, row=1, col=1)
+
+    fig.add_trace(
+        go.Scatter(
+            x=dsr.index,
+            y=dsr["TDSP"],
+            name="Total household DSR",
+            line={"color": NEUTRAL, "width": 2.5},
+        ),
+        row=2,
+        col=1,
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=dsr.index,
+            y=dsr["MDSP"],
+            name="Mortgage DSR",
+            line={"color": ACCENT, "width": 2},
+        ),
+        row=2,
+        col=1,
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=dsr.index,
+            y=dsr["CDSP"],
+            name="Consumer DSR",
+            line={"color": NEGATIVE, "width": 2},
+        ),
+        row=2,
+        col=1,
+    )
+
+    fig.update_xaxes(title="Private credit (% of GDP)", row=1, col=1)
+    fig.update_yaxes(title="5-year change (pp)", row=1, col=1)
+    fig.update_yaxes(title="% of disposable income", row=2, col=1)
+    add_metadata_footer(
+        fig,
+        "BIS private-credit series and Federal Reserve household DSR via FRED",
+        max(_latest_date(credit_df), _latest_date(dsr)),
+    )
+    fig = apply_finance_theme(fig, height=680)
+    fig.update_layout(hovermode="closest")
+    return fig
+
+
 FIGURES = [
     {
         "title": "U.S. Inflation & Policy Regime",
@@ -714,12 +1161,48 @@ FIGURES = [
         "description": "The broad dollar, WTI crude and Henry Hub natural gas are indexed to a common 2020 baseline to compare the scale and timing of major market shocks.",
         "figure": commodity_shocks(),
     },
+    {
+        "title": "Labor Supply & Wage Pressure",
+        "slug": "labor-supply-wage-pressure",
+        "description": "Labor-force participation and prime-age employment are paired with nominal wage growth so labor supply and compensation pressure can be read together without duplicating the Beveridge Curve.",
+        "figure": labor_supply_wage_pressure(),
+    },
+    {
+        "title": "Leading vs Coincident Business-Cycle Signal",
+        "slug": "leading-coincident-cycle",
+        "description": "The OECD composite leading indicator is paired with the Chicago Fed's broad activity index to compare forward-looking momentum with coincident economic performance.",
+        "figure": leading_coincident_cycle(),
+    },
+    {
+        "title": "Global Current-Account Imbalances",
+        "slug": "current-account-imbalances",
+        "description": "A latest-available country choropleth shows current-account balances as a share of GDP, separating external-surplus economies from external-deficit economies.",
+        "figure": current_account_imbalances(),
+    },
+    {
+        "title": "Global Trade Momentum",
+        "slug": "trade-momentum",
+        "description": "Real export and import growth are shown on the same color scale across major economies, making trade acceleration, contraction and divergence directly comparable.",
+        "figure": trade_momentum(),
+    },
+    {
+        "title": "Fiscal Space Snapshot",
+        "slug": "fiscal-space",
+        "description": "General-government credit burdens are compared with 10-year sovereign borrowing costs, while bubble area represents nominal GDP.",
+        "figure": fiscal_space_snapshot(),
+    },
+    {
+        "title": "Credit Leverage & Debt-Service Pressure",
+        "slug": "credit-cycle-risk",
+        "description": "BIS private-credit ratios and their five-year change provide a cross-country leverage view; U.S. household debt-service ratios add a direct measure of servicing pressure.",
+        "figure": credit_cycle_risk(),
+    },
 ]
 
 DASHBOARD = {
     "eyebrow": "Macroeconomic Monitoring Terminal",
     "headline": "Automatically Refreshed Macroeconomic Dashboard",
-    "summary": "Nine complementary views combine official statistical and market-data APIs into a compact macro framework: prices and policy, rates, labor, business-cycle momentum, global divergence, currencies and commodity transmission.",
+    "summary": "Fifteen complementary views combine official statistical and market-data APIs into a broad macro framework: prices and policy, rates, labor, business-cycle momentum, global growth and imbalances, trade, currencies, commodities, fiscal space and credit risk.",
     "kpis": [],
     "methodology": [
         {
@@ -732,7 +1215,7 @@ DASHBOARD = {
         },
         {
             "label": "Sources",
-            "text": "FRED (including Federal Reserve, BLS, BEA, EIA and OECD series) and World Bank World Development Indicators.",
+            "text": "FRED (including Federal Reserve, BLS, BEA, EIA, OECD and BIS series) and World Bank World Development Indicators.",
         },
         {
             "label": "Comparison design",
@@ -752,14 +1235,21 @@ DASHBOARD = {
             "title": "Labor Market & Business Cycle",
             "description": "How tight is the labor market, and is broad economic activity accelerating or weakening?",
             "layout": "single-column",
-            "slugs": ["beveridge-curve", "activity-pulse"],
+            "slugs": ["beveridge-curve", "labor-supply-wage-pressure", "activity-pulse", "leading-coincident-cycle"],
         },
         {
             "label": "Block 3",
             "title": "Global Divergence & Shock Transmission",
-            "description": "How different are national inflation and growth regimes, and how are currency and commodity shocks moving across markets?",
+            "description": "How different are national inflation, growth and external-balance regimes, and how are trade, currency and commodity shocks moving across markets?",
             "layout": "single-column",
-            "slugs": ["g7-inflation", "global-growth-map", "fx-heatmap", "commodity-shocks"],
+            "slugs": ["g7-inflation", "global-growth-map", "current-account-imbalances", "trade-momentum", "fx-heatmap", "commodity-shocks"],
+        },
+        {
+            "label": "Block 4",
+            "title": "Fiscal & Credit Risk",
+            "description": "How much balance-sheet room do major economies have, and where are leverage and debt-service pressures building?",
+            "layout": "single-column",
+            "slugs": ["fiscal-space", "credit-cycle-risk"],
         },
     ],
 }
