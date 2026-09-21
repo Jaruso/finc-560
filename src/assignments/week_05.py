@@ -836,7 +836,7 @@ def current_account_imbalances() -> go.Figure:
 def trade_momentum() -> go.Figure:
     export_indicator = "NE.EXP.GNFS.KD.ZG"
     import_indicator = "NE.IMP.GNFS.KD.ZG"
-    countries = ["US", "CN", "DE", "JP", "GB", "CA", "MX", "IN"]
+    countries = ["US", "KR", "DE", "JP", "GB", "CA", "MX", "IN"]
 
     exports = fetch_wb_series(
         export_indicator,
@@ -859,7 +859,7 @@ def trade_momentum() -> go.Figure:
 
     desired_names = [
         "United States",
-        "China",
+        "Korea, Rep.",
         "Germany",
         "Japan",
         "United Kingdom",
