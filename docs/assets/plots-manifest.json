@@ -262,78 +262,86 @@
         {
           "title": "U.S. Inflation & Policy Regime",
           "slug": "us-inflation-policy-regime",
-          "description": "",
+          "description": "Headline CPI, core PCE and the monthly federal funds rate in one regime view, with the 2% inflation objective for context.",
           "path": "visualizations/week-05/us-inflation-policy-regime.html"
         },
         {
           "title": "Treasury Yield-Curve Regime",
           "slug": "treasury-yield-curve",
-          "description": "",
+          "description": "Current, year-earlier and January 2022 curve snapshots paired with the long-run 10Y\u22122Y spread so curve shape and inversion history are not split across redundant charts.",
           "path": "visualizations/week-05/treasury-yield-curve.html"
         },
         {
           "title": "Beveridge Curve (Labor Market Tightness)",
           "slug": "beveridge-curve",
-          "description": "",
+          "description": "Monthly unemployment and job-openings rates plotted in labor-market phase space; color shows the historical path and the latest observation is highlighted.",
           "path": "visualizations/week-05/beveridge-curve.html"
         },
         {
           "title": "U.S. Economic Activity Pulse",
           "slug": "activity-pulse",
-          "description": "",
+          "description": "A common z-score scale compares annualized three-month momentum in industrial production, real retail sales, payrolls and housing starts without four separate charts.",
           "path": "visualizations/week-05/activity-pulse.html"
         },
         {
           "title": "G7 Inflation Divergence",
           "slug": "g7-inflation",
-          "description": "",
+          "description": "Comparable annual CPI inflation across the G7 shows whether price regimes are converging or diverging internationally.",
           "path": "visualizations/week-05/g7-inflation.html"
         },
         {
-          "title": "Global Growth Outlook",
+          "title": "Global Growth: Latest Available Actual",
           "slug": "global-growth-map",
-          "description": "",
+          "description": "A country-only choropleth uses each economy's latest available World Bank real-GDP growth observation and excludes aggregate regions.",
           "path": "visualizations/week-05/global-growth-map.html"
         },
         {
-          "title": "International Monetary Stance",
+          "title": "International Inflation vs Short-Rate Stance",
           "slug": "international-stance",
-          "description": "",
+          "description": "Latest OECD overnight-rate proxies are compared with the latest annual inflation reading; bubble area represents nominal GDP. This is a cross-country stance proxy, not a claim that the short rate equals each central bank's policy rate.",
           "path": "visualizations/week-05/international-stance.html"
         },
         {
           "title": "Global FX Regime Heatmap",
           "slug": "fx-heatmap",
-          "description": "",
+          "description": "Major bilateral quotes are normalized to a common USD-strength direction before calculating 1-, 3- and 12-month percentage changes.",
           "path": "visualizations/week-05/fx-heatmap.html"
         },
         {
           "title": "Dollar & Commodity Shock Transmission",
           "slug": "commodity-shocks",
-          "description": "",
+          "description": "The broad dollar, WTI crude and Henry Hub natural gas are indexed to a common 2020 baseline to compare the scale and timing of major market shocks.",
           "path": "visualizations/week-05/commodity-shocks.html"
         }
       ],
       "dashboard": {
         "eyebrow": "Macroeconomic Monitoring Terminal",
-        "headline": "Release-Live Macroeconomic Dashboard",
-        "summary": "This dashboard is built around official statistical APIs, with each visualization answering a specific analytical question about the state of the global economy.",
+        "headline": "Automatically Refreshed Macroeconomic Dashboard",
+        "summary": "Nine complementary views combine official statistical and market-data APIs into a compact macro framework: prices and policy, rates, labor, business-cycle momentum, global divergence, currencies and commodity transmission.",
         "kpis": [],
         "methodology": [
           {
-            "label": "Data Architecture",
-            "text": "Separate retrieval, normalization, and visualization layers. Cached via MacroClient."
+            "label": "Refresh",
+            "text": "Week 5 is regenerated automatically from current API observations; each chart displays its source, latest observation and retrieval date."
+          },
+          {
+            "label": "Data architecture",
+            "text": "Provider adapters separate retrieval from visualization, with a freshness-aware local cache and stale-on-error fallback for resilient builds."
           },
           {
             "label": "Sources",
-            "text": "FRED, BLS, BEA, World Bank."
+            "text": "FRED (including Federal Reserve, BLS, BEA, EIA and OECD series) and World Bank World Development Indicators."
+          },
+          {
+            "label": "Comparison design",
+            "text": "Related indicators are intentionally combined where they answer one analytical question, reducing redundant stand-alone charts."
           }
         ],
         "groups": [
           {
             "label": "Block 1",
-            "title": "Inflation & Monetary Policy",
-            "description": "Are price pressures easing, and how restrictive is policy?",
+            "title": "Inflation, Monetary Policy & Rates",
+            "description": "Are price pressures easing, how does short-rate policy compare with inflation, and what is the Treasury curve signaling?",
             "layout": "two-column",
             "slugs": [
               "us-inflation-policy-regime",
@@ -344,7 +352,7 @@
           {
             "label": "Block 2",
             "title": "Labor Market & Business Cycle",
-            "description": "How tight is the labor market, and is economic activity accelerating or weakening?",
+            "description": "How tight is the labor market, and is broad economic activity accelerating or weakening?",
             "layout": "two-column",
             "slugs": [
               "beveridge-curve",
@@ -353,8 +361,8 @@
           },
           {
             "label": "Block 3",
-            "title": "Global Divergence & Trade",
-            "description": "Which economies are experiencing different regimes, and how are shocks transmitting?",
+            "title": "Global Divergence & Shock Transmission",
+            "description": "How different are national inflation and growth regimes, and how are currency and commodity shocks moving across markets?",
             "layout": "two-column",
             "slugs": [
               "g7-inflation",
