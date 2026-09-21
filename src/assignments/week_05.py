@@ -32,7 +32,7 @@ def years_ago(years: int) -> str:
 def apply_finance_theme(figure: go.Figure, height: int = 450) -> go.Figure:
     figure.update_layout(
         height=height,
-        margin={"t": 60, "r": 28, "b": 76, "l": 64},
+        margin={"t": 60, "r": 32, "b": 104, "l": 72},
         paper_bgcolor="#ffffff",
         plot_bgcolor="#ffffff",
         font={"family": "Inter, Arial, sans-serif", "color": INK},
@@ -52,6 +52,7 @@ def apply_finance_theme(figure: go.Figure, height: int = 450) -> go.Figure:
         linecolor=LINE,
         tickfont={"color": MUTED},
         title_font={"color": MUTED},
+        automargin=True,
     )
     figure.update_yaxes(
         gridcolor="#ececea",
@@ -59,6 +60,7 @@ def apply_finance_theme(figure: go.Figure, height: int = 450) -> go.Figure:
         linecolor=LINE,
         tickfont={"color": MUTED},
         title_font={"color": MUTED},
+        automargin=True,
     )
     return figure
 
@@ -96,7 +98,7 @@ def add_metadata_footer(
         xref="paper",
         yref="paper",
         x=0,
-        y=-0.18,
+        y=-0.12,
         showarrow=False,
         font={"size": 10, "color": MUTED},
         xanchor="left",
@@ -446,7 +448,7 @@ def global_growth_map() -> go.Figure:
     )
     fig.update_layout(
         height=500,
-        margin={"t": 10, "r": 0, "b": 72, "l": 0},
+        margin={"t": 10, "r": 8, "b": 92, "l": 8},
         paper_bgcolor="#ffffff",
         font={"family": "Inter, Arial, sans-serif", "color": INK},
         geo={"showframe": False, "showcoastlines": True, "projection_type": "equirectangular"},
@@ -912,12 +914,17 @@ def trade_momentum() -> go.Figure:
     )
     fig.update_xaxes(title="Year", row=1, col=1)
     fig.update_xaxes(title="Year", row=1, col=2)
+    # Put the second heatmap's country labels on its outer edge so long names
+    # such as "United Kingdom" cannot be clipped in the inter-panel gap.
+    fig.update_yaxes(side="right", row=1, col=2, automargin=True)
     add_metadata_footer(
         fig,
         "World Bank World Development Indicators",
         int(max(common_years)),
     )
-    return apply_finance_theme(fig, height=560)
+    fig = apply_finance_theme(fig, height=560)
+    fig.update_layout(margin={"t": 60, "r": 120, "b": 104, "l": 84})
+    return fig
 
 
 # --- 14. Fiscal Space Snapshot ---
