@@ -312,12 +312,48 @@
           "slug": "commodity-shocks",
           "description": "The broad dollar, WTI crude and Henry Hub natural gas are indexed to a common 2020 baseline to compare the scale and timing of major market shocks.",
           "path": "visualizations/week-05/commodity-shocks.html"
+        },
+        {
+          "title": "Labor Supply & Wage Pressure",
+          "slug": "labor-supply-wage-pressure",
+          "description": "Labor-force participation and prime-age employment are paired with nominal wage growth so labor supply and compensation pressure can be read together without duplicating the Beveridge Curve.",
+          "path": "visualizations/week-05/labor-supply-wage-pressure.html"
+        },
+        {
+          "title": "Leading vs Coincident Business-Cycle Signal",
+          "slug": "leading-coincident-cycle",
+          "description": "The OECD composite leading indicator is paired with the Chicago Fed's broad activity index to compare forward-looking momentum with coincident economic performance.",
+          "path": "visualizations/week-05/leading-coincident-cycle.html"
+        },
+        {
+          "title": "Global Current-Account Imbalances",
+          "slug": "current-account-imbalances",
+          "description": "A latest-available country choropleth shows current-account balances as a share of GDP, separating external-surplus economies from external-deficit economies.",
+          "path": "visualizations/week-05/current-account-imbalances.html"
+        },
+        {
+          "title": "Global Trade Momentum",
+          "slug": "trade-momentum",
+          "description": "Real export and import growth are shown on the same color scale across major economies, making trade acceleration, contraction and divergence directly comparable.",
+          "path": "visualizations/week-05/trade-momentum.html"
+        },
+        {
+          "title": "Fiscal Space Snapshot",
+          "slug": "fiscal-space",
+          "description": "General-government credit burdens are compared with 10-year sovereign borrowing costs, while bubble area represents nominal GDP.",
+          "path": "visualizations/week-05/fiscal-space.html"
+        },
+        {
+          "title": "Credit Leverage & Debt-Service Pressure",
+          "slug": "credit-cycle-risk",
+          "description": "BIS private-credit ratios and their five-year change provide a cross-country leverage view; U.S. household debt-service ratios add a direct measure of servicing pressure.",
+          "path": "visualizations/week-05/credit-cycle-risk.html"
         }
       ],
       "dashboard": {
         "eyebrow": "Macroeconomic Monitoring Terminal",
         "headline": "Automatically Refreshed Macroeconomic Dashboard",
-        "summary": "Nine complementary views combine official statistical and market-data APIs into a compact macro framework: prices and policy, rates, labor, business-cycle momentum, global divergence, currencies and commodity transmission.",
+        "summary": "Fifteen complementary views combine official statistical and market-data APIs into a broad macro framework: prices and policy, rates, labor, business-cycle momentum, global growth and imbalances, trade, currencies, commodities, fiscal space and credit risk.",
         "kpis": [],
         "methodology": [
           {
@@ -330,7 +366,7 @@
           },
           {
             "label": "Sources",
-            "text": "FRED (including Federal Reserve, BLS, BEA, EIA and OECD series) and World Bank World Development Indicators."
+            "text": "FRED (including Federal Reserve, BLS, BEA, EIA, OECD and BIS series) and World Bank World Development Indicators."
           },
           {
             "label": "Comparison design",
@@ -356,19 +392,33 @@
             "layout": "single-column",
             "slugs": [
               "beveridge-curve",
-              "activity-pulse"
+              "labor-supply-wage-pressure",
+              "activity-pulse",
+              "leading-coincident-cycle"
             ]
           },
           {
             "label": "Block 3",
             "title": "Global Divergence & Shock Transmission",
-            "description": "How different are national inflation and growth regimes, and how are currency and commodity shocks moving across markets?",
+            "description": "How different are national inflation, growth and external-balance regimes, and how are trade, currency and commodity shocks moving across markets?",
             "layout": "single-column",
             "slugs": [
               "g7-inflation",
               "global-growth-map",
+              "current-account-imbalances",
+              "trade-momentum",
               "fx-heatmap",
               "commodity-shocks"
+            ]
+          },
+          {
+            "label": "Block 4",
+            "title": "Fiscal & Credit Risk",
+            "description": "How much balance-sheet room do major economies have, and where are leverage and debt-service pressures building?",
+            "layout": "single-column",
+            "slugs": [
+              "fiscal-space",
+              "credit-cycle-risk"
             ]
           }
         ]
