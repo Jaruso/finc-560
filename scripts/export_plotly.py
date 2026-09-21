@@ -18,6 +18,7 @@ ASSIGNMENT_MODULES = [
 
 PLOT_PAGE_HEAD = """\
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 <style>
   html,
   body {
@@ -83,7 +84,7 @@ def export_module(module_name: str) -> ExportedAssignment:
 
         figure.write_html(
             output_path,
-            include_plotlyjs="cdn",
+            include_plotlyjs=False,
             full_html=True,
             config={
                 "responsive": True,

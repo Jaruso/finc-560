@@ -257,106 +257,110 @@
     {
       "id": "week-05",
       "label": "Week 5",
-      "title": "Comprehensive Macroeconomic Trends",
+      "title": "Macroeconomic Monitoring Terminal",
       "figures": [
         {
-          "title": "US Inflation vs Federal Funds Rate",
-          "slug": "us-inflation-vs-fed-funds",
+          "title": "U.S. Inflation & Policy Regime",
+          "slug": "us-inflation-policy-regime",
           "description": "",
-          "path": "visualizations/week-05/us-inflation-vs-fed-funds.html"
+          "path": "visualizations/week-05/us-inflation-policy-regime.html"
         },
         {
-          "title": "G7 Inflation Trajectories",
-          "slug": "g7-inflation-comparison",
+          "title": "Treasury Yield-Curve Regime",
+          "slug": "treasury-yield-curve",
           "description": "",
-          "path": "visualizations/week-05/g7-inflation-comparison.html"
+          "path": "visualizations/week-05/treasury-yield-curve.html"
         },
         {
-          "title": "Yield Curve Inversion (10Y-2Y Spread)",
-          "slug": "yield-curve-inversion",
+          "title": "Beveridge Curve (Labor Market Tightness)",
+          "slug": "beveridge-curve",
           "description": "",
-          "path": "visualizations/week-05/yield-curve-inversion.html"
+          "path": "visualizations/week-05/beveridge-curve.html"
         },
         {
-          "title": "US Unemployment Rate",
-          "slug": "us-unemployment-rate",
+          "title": "U.S. Economic Activity Pulse",
+          "slug": "activity-pulse",
           "description": "",
-          "path": "visualizations/week-05/us-unemployment-rate.html"
+          "path": "visualizations/week-05/activity-pulse.html"
         },
         {
-          "title": "US Labor Force Participation",
-          "slug": "labor-force-participation",
+          "title": "G7 Inflation Divergence",
+          "slug": "g7-inflation",
           "description": "",
-          "path": "visualizations/week-05/labor-force-participation.html"
+          "path": "visualizations/week-05/g7-inflation.html"
         },
         {
-          "title": "Job Openings vs Unemployed",
-          "slug": "job-openings-vs-unemployed",
+          "title": "Global Growth Outlook",
+          "slug": "global-growth-map",
           "description": "",
-          "path": "visualizations/week-05/job-openings-vs-unemployed.html"
+          "path": "visualizations/week-05/global-growth-map.html"
         },
         {
-          "title": "US Real GDP",
-          "slug": "us-real-gdp",
+          "title": "International Monetary Stance",
+          "slug": "international-stance",
           "description": "",
-          "path": "visualizations/week-05/us-real-gdp.html"
+          "path": "visualizations/week-05/international-stance.html"
         },
         {
-          "title": "Global GDP Growth (Major Economies)",
-          "slug": "global-gdp-growth",
+          "title": "Global FX Regime Heatmap",
+          "slug": "fx-heatmap",
           "description": "",
-          "path": "visualizations/week-05/global-gdp-growth.html"
+          "path": "visualizations/week-05/fx-heatmap.html"
         },
         {
-          "title": "Trade Weighted US Dollar Index",
-          "slug": "us-dollar-index",
+          "title": "Dollar & Commodity Shock Transmission",
+          "slug": "commodity-shocks",
           "description": "",
-          "path": "visualizations/week-05/us-dollar-index.html"
+          "path": "visualizations/week-05/commodity-shocks.html"
         }
       ],
       "dashboard": {
-        "eyebrow": "Macroeconomic Trends",
-        "headline": "Comprehensive Macroeconomic Dashboard",
-        "summary": "This dashboard tracks 9 distinct macroeconomic indicators across 3 key categories: Inflation & Monetary Policy, Labor Market Dynamics, and Economic Output & Trade. By observing these interlocking pieces, we can form a holistic view of the global financial system.",
+        "eyebrow": "Macroeconomic Monitoring Terminal",
+        "headline": "Release-Live Macroeconomic Dashboard",
+        "summary": "This dashboard is built around official statistical APIs, with each visualization answering a specific analytical question about the state of the global economy.",
         "kpis": [],
         "methodology": [
           {
-            "label": "Data Sources",
-            "text": "Live data fetched via pandas-datareader from FRED (Federal Reserve Economic Data) and the World Bank API."
+            "label": "Data Architecture",
+            "text": "Separate retrieval, normalization, and visualization layers. Cached via MacroClient."
+          },
+          {
+            "label": "Sources",
+            "text": "FRED, BLS, BEA, World Bank."
           }
         ],
         "groups": [
           {
-            "label": "Part 1",
+            "label": "Block 1",
             "title": "Inflation & Monetary Policy",
-            "description": "Tracking the global inflation shock, the central bank response, and the bond market's reaction (yield curve inversion).",
+            "description": "Are price pressures easing, and how restrictive is policy?",
             "layout": "two-column",
             "slugs": [
-              "us-inflation-vs-fed-funds",
-              "g7-inflation-comparison",
-              "yield-curve-inversion"
+              "us-inflation-policy-regime",
+              "treasury-yield-curve",
+              "international-stance"
             ]
           },
           {
-            "label": "Part 2",
-            "title": "Labor Market Dynamics",
-            "description": "Evaluating the health of the US labor market through unemployment rates, participation, and the balance of job openings to unemployed persons.",
+            "label": "Block 2",
+            "title": "Labor Market & Business Cycle",
+            "description": "How tight is the labor market, and is economic activity accelerating or weakening?",
             "layout": "two-column",
             "slugs": [
-              "us-unemployment-rate",
-              "labor-force-participation",
-              "job-openings-vs-unemployed"
+              "beveridge-curve",
+              "activity-pulse"
             ]
           },
           {
-            "label": "Part 3",
-            "title": "Growth & Trade",
-            "description": "Tracking domestic output (Real GDP), comparative global growth, and the strength of the US Dollar.",
+            "label": "Block 3",
+            "title": "Global Divergence & Trade",
+            "description": "Which economies are experiencing different regimes, and how are shocks transmitting?",
             "layout": "two-column",
             "slugs": [
-              "us-real-gdp",
-              "global-gdp-growth",
-              "us-dollar-index"
+              "g7-inflation",
+              "global-growth-map",
+              "fx-heatmap",
+              "commodity-shocks"
             ]
           }
         ]
