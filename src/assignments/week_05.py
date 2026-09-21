@@ -961,7 +961,7 @@ def fiscal_space_snapshot() -> go.Figure:
                 "Government credit / GDP": float(debt.iloc[-1]),
                 "10Y government yield": float(yld.iloc[-1]),
                 "GDP (USD bn)": float(gdp_map[country]) / 1e9,
-                "Debt date": debt.index[-1].strftime("%Y-Q%q").replace("%q", str(((debt.index[-1].month - 1) // 3) + 1)),
+                "Debt date": f"{debt.index[-1].year} Q{((debt.index[-1].month - 1) // 3) + 1}",
                 "Yield date": yld.index[-1].strftime("%Y-%m"),
                 "GDP year": int(gdp_year_map[country]),
             }
