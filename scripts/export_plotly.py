@@ -13,6 +13,7 @@ ASSIGNMENT_MODULES = [
     "src.assignments.week_02",
     "src.assignments.week_03",
     "src.assignments.week_04",
+    "src.assignments.week_05",
 ]
 
 PLOT_PAGE_HEAD = """\
