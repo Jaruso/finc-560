@@ -24,17 +24,25 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: "pip"
+
+      - name: Restore macro data cache
+        uses: actions/cache@v5
+        with:
+          path: data/raw
+          key: macro-data-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            macro-data-${{ runner.os }}-
 
       - name: Install dependencies
         run: python -m pip install --upgrade pip && pip install -r requirements.txt
@@ -42,6 +50,8 @@ jobs:
       - name: Regenerate Week 5 from current APIs
         env:
           MACRO_FORCE_REFRESH: "1"
+          WORLD_BANK_RETRY_ATTEMPTS: "4"
+          WORLD_BANK_RETRY_DELAY_SECONDS: "2"
         run: python scripts/export_plotly.py --assignment week-05
 
       - name: Commit refreshed dashboard assets
