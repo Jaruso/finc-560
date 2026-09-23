@@ -1117,7 +1117,6 @@ def credit_cycle_risk() -> go.Figure:
 def gender_labor_force_participation() -> go.Figure:
     female_indicator = "SL.TLF.CACT.FE.ZS"
     male_indicator = "SL.TLF.CACT.MA.ZS"
-    population_indicator = "SP.POP.TOTL"
 
     country_codes = ["US", "GB", "DE", "FR", "CA", "JP", "KR", "CN", "IN", "SA"]
     country_order = [
@@ -1145,182 +1144,124 @@ def gender_labor_force_participation() -> go.Figure:
         1990,
         TODAY.year,
     ).dropna(subset=[male_indicator])
-    population = fetch_wb_series(
-        population_indicator,
-        country_codes,
-        1990,
-        TODAY.year,
-    ).dropna(subset=[population_indicator])
 
-    for frame in (female, male, population):
-        frame["year"] = pd.to_numeric(frame["year"], errors="coerce")
+    female["year"] = pd.to_numeric(female["year"], errors="coerce")
+    male["year"] = pd.to_numeric(male["year"], errors="coerce")
 
     female = female[female["country"].isin(country_order)].copy()
     male = male[male["country"].isin(country_order)].copy()
-    population = population[population["country"].isin(country_order)].copy()
-
-    def population_weighted_average(
-        participation: pd.DataFrame,
-        value_column: str,
-    ) -> pd.DataFrame:
-        merged = participation[["country", "year", value_column]].merge(
-            population[["country", "year", population_indicator]],
-            on=["country", "year"],
-            how="inner",
-        ).dropna(subset=[value_column, population_indicator])
-
-        merged["weighted_value"] = merged[value_column] * merged[population_indicator]
-        grouped = (
-            merged.groupby("year", as_index=False)
-            .agg(
-                weighted_sum=("weighted_value", "sum"),
-                population_sum=(population_indicator, "sum"),
-                countries=("country", "nunique"),
-            )
-            .sort_values("year")
-        )
-        grouped["weighted_average"] = grouped["weighted_sum"] / grouped["population_sum"]
-        return grouped
-
-    female_average = population_weighted_average(female, female_indicator)
-    male_average = population_weighted_average(male, male_indicator)
 
     fig = make_subplots(
-        rows=2,
-        cols=1,
-        shared_xaxes=True,
-        vertical_spacing=0.12,
-        subplot_titles=(
-            "Women — labor-force participation",
-            "Men — labor-force participation",
-        ),
+        rows=5,
+        cols=2,
+        subplot_titles=country_order,
+        vertical_spacing=0.08,
+        horizontal_spacing=0.09,
     )
 
-    palette = [
-        "#0d7f6f",
-        "#2f4858",
-        "#d1495b",
-        "#e07a5f",
-        "#3d5a80",
-        "#81b29a",
-        "#f2cc8f",
-        "#6c5ce7",
-        "#8d6e63",
-        "#708090",
-    ]
-    country_colors = dict(zip(country_order, palette))
+    panel_positions = {
+        "United States": (1, 1),
+        "United Kingdom": (1, 2),
+        "Germany": (2, 1),
+        "France": (2, 2),
+        "Canada": (3, 1),
+        "Japan": (3, 2),
+        "Korea, Rep.": (4, 1),
+        "China": (4, 2),
+        "India": (5, 1),
+        "Saudi Arabia": (5, 2),
+    }
 
     for country in country_order:
-        female_country = female[female["country"] == country].sort_values("year")
-        male_country = male[male["country"] == country].sort_values("year")
-        color = country_colors[country]
+        row, col = panel_positions[country]
 
-        if not female_country.empty:
-            fig.add_trace(
-                go.Scatter(
-                    x=female_country["year"],
-                    y=female_country[female_indicator],
-                    name=country,
-                    legendgroup=country,
-                    showlegend=True,
-                    mode="lines",
-                    line={"color": color, "width": 1.8},
-                    opacity=0.82,
-                    hovertemplate=(
-                        f"{country}<br>Women<br>%{{x:.0f}}: %{{y:.1f}}%<extra></extra>"
-                    ),
+        female_country = female[female["country"] == country][
+            ["year", female_indicator]
+        ].sort_values("year")
+        male_country = male[male["country"] == country][
+            ["year", male_indicator]
+        ].sort_values("year")
+
+        merged = female_country.merge(
+            male_country,
+            on="year",
+            how="inner",
+        ).dropna()
+
+        if merged.empty:
+            continue
+
+        show_legend = country == "United States"
+
+        # Draw women first, then men with fill='tonexty' so the shaded band
+        # represents the participation gap between the two series.
+        fig.add_trace(
+            go.Scatter(
+                x=merged["year"],
+                y=merged[female_indicator],
+                name="Women",
+                legendgroup="Women",
+                showlegend=show_legend,
+                mode="lines",
+                line={"color": ACCENT, "width": 2.6},
+                hovertemplate=(
+                    f"{country}<br>Women<br>%{{x:.0f}}: %{{y:.1f}}%<extra></extra>"
                 ),
-                row=1,
-                col=1,
-            )
-
-        if not male_country.empty:
-            fig.add_trace(
-                go.Scatter(
-                    x=male_country["year"],
-                    y=male_country[male_indicator],
-                    name=country,
-                    legendgroup=country,
-                    showlegend=False,
-                    mode="lines",
-                    line={"color": color, "width": 1.8},
-                    opacity=0.82,
-                    hovertemplate=(
-                        f"{country}<br>Men<br>%{{x:.0f}}: %{{y:.1f}}%<extra></extra>"
-                    ),
+            ),
+            row=row,
+            col=col,
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=merged["year"],
+                y=merged[male_indicator],
+                name="Men",
+                legendgroup="Men",
+                showlegend=show_legend,
+                mode="lines",
+                line={"color": NEUTRAL, "width": 2.6},
+                fill="tonexty",
+                fillcolor="rgba(47,72,88,0.12)",
+                hovertemplate=(
+                    f"{country}<br>Men<br>%{{x:.0f}}: %{{y:.1f}}%<extra></extra>"
                 ),
-                row=2,
-                col=1,
-            )
-
-    average_label = "Population-weighted average"
-    fig.add_trace(
-        go.Scatter(
-            x=female_average["year"],
-            y=female_average["weighted_average"],
-            name=average_label,
-            legendgroup="weighted-average",
-            showlegend=True,
-            mode="lines",
-            line={"color": "#111111", "width": 4, "dash": "dash"},
-            customdata=female_average[["countries"]],
-            hovertemplate=(
-                "Population-weighted average<br>Women<br>"
-                "%{x:.0f}: %{y:.1f}%<br>"
-                "Countries with data: %{customdata[0]}<extra></extra>"
             ),
-        ),
-        row=1,
-        col=1,
-    )
-    fig.add_trace(
-        go.Scatter(
-            x=male_average["year"],
-            y=male_average["weighted_average"],
-            name=average_label,
-            legendgroup="weighted-average",
-            showlegend=False,
-            mode="lines",
-            line={"color": "#111111", "width": 4, "dash": "dash"},
-            customdata=male_average[["countries"]],
-            hovertemplate=(
-                "Population-weighted average<br>Men<br>"
-                "%{x:.0f}: %{y:.1f}%<br>"
-                "Countries with data: %{customdata[0]}<extra></extra>"
-            ),
-        ),
-        row=2,
-        col=1,
-    )
+            row=row,
+            col=col,
+        )
 
-    for row in (1, 2):
-        fig.update_yaxes(title="Participation rate (%)", range=[0, 100], row=row, col=1)
-        fig.update_xaxes(tickformat="d", row=row, col=1)
+        fig.update_yaxes(range=[0, 100], row=row, col=col)
+        fig.update_xaxes(tickformat="d", row=row, col=col)
 
-    fig.update_xaxes(title="Year", row=2, col=1)
+    for row in range(1, 6):
+        fig.update_yaxes(title="Participation rate (%)", row=row, col=1)
+
+    fig.update_xaxes(title="Year", row=5, col=1)
+    fig.update_xaxes(title="Year", row=5, col=2)
 
     latest_year = int(
         max(
             female["year"].dropna().max(),
             male["year"].dropna().max(),
-            population["year"].dropna().max(),
         )
     )
     add_metadata_footer(
         fig,
-        "ILO modeled participation estimates and World Bank population weights via World Bank WDI",
+        "ILO modeled participation estimates via World Bank World Development Indicators",
         latest_year,
     )
-    fig = apply_finance_theme(fig, height=760)
+
+    fig = apply_finance_theme(fig, height=1500)
     fig.update_layout(
         hovermode="closest",
         legend={
             "orientation": "h",
-            "y": 1.10,
+            "y": 1.035,
             "x": 0.5,
             "xanchor": "center",
             "title": None,
         },
+        margin={"t": 88, "r": 36, "b": 104, "l": 76},
     )
     return fig
 
@@ -1418,7 +1359,7 @@ FIGURES = [
     {
         "title": "Labor-Force Participation by Gender & Geography",
         "slug": "gender-labor-force-participation",
-        "description": "Women and men are shown in two stacked panels across ten economies. A population-weighted average of the selected countries provides a common benchmark while preserving country-level variation.",
+        "description": "Each country is shown in its own panel with women and men plotted together. The shaded space between the two lines makes the gender participation gap visible while preserving direct within-country comparison over time.",
         "figure": gender_labor_force_participation(),
     },
 ]
@@ -1478,7 +1419,7 @@ DASHBOARD = {
         {
             "label": "Block 5",
             "title": "Labor Participation: Gender & Geography",
-            "description": "How do participation trends differ by gender and geography, and how do individual countries compare with a population-weighted benchmark?",
+            "description": "How do participation trends differ by gender and geography, and where are gender participation gaps narrowing or widening within each country?",
             "layout": "single-column",
             "slugs": ["gender-labor-force-participation"],
         },
