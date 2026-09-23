@@ -348,12 +348,18 @@
           "slug": "credit-cycle-risk",
           "description": "BIS private-credit ratios and their five-year change provide a cross-country leverage view; U.S. household debt-service ratios add a direct measure of servicing pressure.",
           "path": "visualizations/week-05/credit-cycle-risk.html"
+        },
+        {
+          "title": "Labor-Force Participation by Gender & Geography",
+          "slug": "gender-labor-force-participation",
+          "description": "The same ILO-modeled World Bank participation measure is split by sex and country so a global female aggregate can be tested against geographic variation and the corresponding male trend.",
+          "path": "visualizations/week-05/gender-labor-force-participation.html"
         }
       ],
       "dashboard": {
         "eyebrow": "Macroeconomic Monitoring Terminal",
         "headline": "Automatically Refreshed Macroeconomic Dashboard",
-        "summary": "Fifteen complementary views combine official statistical and market-data APIs into a broad macro framework: prices and policy, rates, labor, business-cycle momentum, global growth and imbalances, trade, currencies, commodities, fiscal space and credit risk.",
+        "summary": "Sixteen complementary views combine official statistical and market-data APIs into a broad macro framework: prices and policy, rates, labor, business-cycle momentum, global growth and imbalances, trade, currencies, commodities, fiscal space and credit risk.",
         "kpis": [],
         "methodology": [
           {
@@ -419,6 +425,15 @@
             "slugs": [
               "fiscal-space",
               "credit-cycle-risk"
+            ]
+          },
+          {
+            "label": "Block 5",
+            "title": "Labor Participation: Gender & Geography",
+            "description": "Does a global participation trend hold across countries, and is the movement specific to women or shared by men?",
+            "layout": "single-column",
+            "slugs": [
+              "gender-labor-force-participation"
             ]
           }
         ]
