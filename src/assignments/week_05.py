@@ -1113,6 +1113,118 @@ def credit_cycle_risk() -> go.Figure:
     return fig
 
 
+# --- 16. Labor-Force Participation by Gender & Geography ---
+def gender_labor_force_participation() -> go.Figure:
+    female_indicator = "SL.TLF.CACT.FE.ZS"
+    male_indicator = "SL.TLF.CACT.MA.ZS"
+    country_codes = ["US", "GB", "CN", "IN", "SA"]
+    country_order = [
+        "United States",
+        "United Kingdom",
+        "China",
+        "India",
+        "Saudi Arabia",
+    ]
+
+    female = fetch_wb_series(
+        female_indicator,
+        country_codes,
+        1990,
+        TODAY.year,
+    ).dropna(subset=[female_indicator])
+    male = fetch_wb_series(
+        male_indicator,
+        country_codes,
+        1990,
+        TODAY.year,
+    ).dropna(subset=[male_indicator])
+
+    female["year"] = pd.to_numeric(female["year"], errors="coerce")
+    male["year"] = pd.to_numeric(male["year"], errors="coerce")
+
+    fig = make_subplots(
+        rows=3,
+        cols=2,
+        subplot_titles=country_order,
+        vertical_spacing=0.12,
+        horizontal_spacing=0.09,
+    )
+
+    panel_positions = {
+        "United States": (1, 1),
+        "United Kingdom": (1, 2),
+        "China": (2, 1),
+        "India": (2, 2),
+        "Saudi Arabia": (3, 1),
+    }
+
+    for country in country_order:
+        row, col = panel_positions[country]
+        female_country = female[female["country"] == country].sort_values("year")
+        male_country = male[male["country"] == country].sort_values("year")
+
+        fig.add_trace(
+            go.Scatter(
+                x=female_country["year"],
+                y=female_country[female_indicator],
+                name="Women",
+                legendgroup="Women",
+                showlegend=country == "United States",
+                mode="lines",
+                line={"color": ACCENT, "width": 2.6},
+                hovertemplate=(
+                    f"{country}<br>Women<br>%{{x:.0f}}: %{{y:.1f}}%<extra></extra>"
+                ),
+            ),
+            row=row,
+            col=col,
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=male_country["year"],
+                y=male_country[male_indicator],
+                name="Men",
+                legendgroup="Men",
+                showlegend=country == "United States",
+                mode="lines",
+                line={"color": NEUTRAL, "width": 2.6},
+                hovertemplate=(
+                    f"{country}<br>Men<br>%{{x:.0f}}: %{{y:.1f}}%<extra></extra>"
+                ),
+            ),
+            row=row,
+            col=col,
+        )
+
+        fig.update_yaxes(range=[0, 100], row=row, col=col)
+        fig.update_xaxes(tickformat="d", row=row, col=col)
+
+    # The empty lower-right panel is intentional: keeping identical panel widths
+    # makes country-to-country comparisons easier than stretching one country.
+    fig.update_xaxes(visible=False, row=3, col=2)
+    fig.update_yaxes(visible=False, row=3, col=2)
+
+    fig.update_yaxes(title="Participation rate (%)", row=1, col=1)
+    fig.update_yaxes(title="Participation rate (%)", row=2, col=1)
+    fig.update_yaxes(title="Participation rate (%)", row=3, col=1)
+    fig.update_xaxes(title="Year", row=3, col=1)
+
+    latest_year = int(
+        max(
+            female["year"].dropna().max(),
+            male["year"].dropna().max(),
+        )
+    )
+    add_metadata_footer(
+        fig,
+        "ILO modeled estimates via World Bank World Development Indicators",
+        latest_year,
+    )
+    fig = apply_finance_theme(fig, height=860)
+    fig.update_layout(hovermode="closest")
+    return fig
+
+
 FIGURES = [
     {
         "title": "U.S. Inflation & Policy Regime",
@@ -1204,12 +1316,18 @@ FIGURES = [
         "description": "BIS private-credit ratios and their five-year change provide a cross-country leverage view; U.S. household debt-service ratios add a direct measure of servicing pressure.",
         "figure": credit_cycle_risk(),
     },
+    {
+        "title": "Labor-Force Participation by Gender & Geography",
+        "slug": "gender-labor-force-participation",
+        "description": "The same ILO-modeled World Bank participation measure is split by sex and country so a global female aggregate can be tested against geographic variation and the corresponding male trend.",
+        "figure": gender_labor_force_participation(),
+    },
 ]
 
 DASHBOARD = {
     "eyebrow": "Macroeconomic Monitoring Terminal",
     "headline": "Automatically Refreshed Macroeconomic Dashboard",
-    "summary": "Fifteen complementary views combine official statistical and market-data APIs into a broad macro framework: prices and policy, rates, labor, business-cycle momentum, global growth and imbalances, trade, currencies, commodities, fiscal space and credit risk.",
+    "summary": "Sixteen complementary views combine official statistical and market-data APIs into a broad macro framework: prices and policy, rates, labor, business-cycle momentum, global growth and imbalances, trade, currencies, commodities, fiscal space and credit risk.",
     "kpis": [],
     "methodology": [
         {
@@ -1257,6 +1375,13 @@ DASHBOARD = {
             "description": "How much balance-sheet room do major economies have, and where are leverage and debt-service pressures building?",
             "layout": "single-column",
             "slugs": ["fiscal-space", "credit-cycle-risk"],
+        },
+        {
+            "label": "Block 5",
+            "title": "Labor Participation: Gender & Geography",
+            "description": "Does a global participation trend hold across countries, and is the movement specific to women or shared by men?",
+            "layout": "single-column",
+            "slugs": ["gender-labor-force-participation"],
         },
     ],
 }
