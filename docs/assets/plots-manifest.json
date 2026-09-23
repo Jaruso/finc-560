@@ -352,7 +352,7 @@
         {
           "title": "Labor-Force Participation by Gender & Geography",
           "slug": "gender-labor-force-participation",
-          "description": "The same ILO-modeled World Bank participation measure is split by sex and country so a global female aggregate can be tested against geographic variation and the corresponding male trend.",
+          "description": "Women and men are shown in two stacked panels across ten economies. A population-weighted average of the selected countries provides a common benchmark while preserving country-level variation.",
           "path": "visualizations/week-05/gender-labor-force-participation.html"
         }
       ],
@@ -430,7 +430,7 @@
           {
             "label": "Block 5",
             "title": "Labor Participation: Gender & Geography",
-            "description": "Does a global participation trend hold across countries, and is the movement specific to women or shared by men?",
+            "description": "How do participation trends differ by gender and geography, and how do individual countries compare with a population-weighted benchmark?",
             "layout": "single-column",
             "slugs": [
               "gender-labor-force-participation"
