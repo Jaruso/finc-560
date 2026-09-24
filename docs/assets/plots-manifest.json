@@ -354,12 +354,30 @@
           "slug": "gender-labor-force-participation",
           "description": "Each country is shown in its own panel with women and men plotted together. The shaded space between the two lines makes the gender participation gap visible while preserving direct within-country comparison over time.",
           "path": "visualizations/week-05/gender-labor-force-participation.html"
+        },
+        {
+          "title": "U.S. Beveridge Curve & Fed Policy Regime",
+          "slug": "beveridge-fed-policy",
+          "description": "The U.S. Beveridge Curve is colored by the effective federal funds rate so labor-market tightness can be read directly alongside the monetary-policy environment.",
+          "path": "visualizations/week-05/beveridge-fed-policy.html"
+        },
+        {
+          "title": "International Tightening vs Unemployment Change",
+          "slug": "international-tightening-unemployment",
+          "description": "Changes in a consistent OECD overnight/call-money rate proxy are compared with changes in harmonized unemployment since the start of 2022, revealing how differently labor markets absorbed tighter monetary conditions.",
+          "path": "visualizations/week-05/international-tightening-unemployment.html"
+        },
+        {
+          "title": "International Labor-Market Response to Tightening",
+          "slug": "international-labor-policy-trajectories",
+          "description": "Eight country panels index both the OECD short-rate proxy and harmonized unemployment to their first complete 2022 observation, preserving geography while putting policy and labor responses on the same percentage-point scale.",
+          "path": "visualizations/week-05/international-labor-policy-trajectories.html"
         }
       ],
       "dashboard": {
         "eyebrow": "Macroeconomic Monitoring Terminal",
         "headline": "Automatically Refreshed Macroeconomic Dashboard",
-        "summary": "Sixteen complementary views combine official statistical and market-data APIs into a broad macro framework: prices and policy, rates, labor, business-cycle momentum, global growth and imbalances, trade, currencies, commodities, fiscal space and credit risk.",
+        "summary": "Nineteen complementary views combine official statistical and market-data APIs into a broad macro framework: prices and policy, rates, labor, business-cycle momentum, global growth and imbalances, trade, currencies, commodities, fiscal space and credit risk. New labor-policy views directly compare monetary tightening with unemployment across major economies.",
         "kpis": [],
         "methodology": [
           {
@@ -434,6 +452,17 @@
             "layout": "single-column",
             "slugs": [
               "gender-labor-force-participation"
+            ]
+          },
+          {
+            "label": "Block 6",
+            "title": "Monetary Tightening & Labor-Market Resilience",
+            "description": "How has labor-market tightness evolved alongside Federal Reserve policy, and how differently have major economies absorbed tighter short-term monetary conditions since 2022?",
+            "layout": "single-column",
+            "slugs": [
+              "beveridge-fed-policy",
+              "international-tightening-unemployment",
+              "international-labor-policy-trajectories"
             ]
           }
         ]
