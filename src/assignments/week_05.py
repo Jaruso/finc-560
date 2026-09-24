@@ -1586,54 +1586,54 @@ def vacancy_cushion_policy_transmission() -> go.Figure:
     )
     return fig
 
-def _international_labor_policy_data() -> tuple[dict[str, pd.DataFrame], pd.DataFrame]:
-    unemployment_series = {
-        "United States": "LRHUTTTTUSM156S",
-        "United Kingdom": "LRHUTTTTGBM156S",
-        "Canada": "LRHUTTTTCAM156S",
-        "Germany": "LRHUTTTTDEM156S",
-        "France": "LRHUTTTTFRM156S",
-        "Japan": "LRHUTTTTJPM156S",
-        "South Korea": "LRHUTTTTKRM156S",
-        "Australia": "LRHUTTTTAUM156S",
+def _international_vacancy_policy_data() -> tuple[dict[str, pd.DataFrame], pd.DataFrame]:
+    # OECD unfilled-vacancy series provide a consistent concept for a useful
+    # cross-country comparison, but the raw levels reflect very different labor-
+    # market sizes. Normalize vacancies to each country's first complete 2022
+    # observation so the chart compares direction and magnitude of change rather
+    # than country size.
+    vacancy_series = {
+        "United States": "LMJVTTUVUSM647S",
+        "United Kingdom": "LMJVTTUVGBM647S",
+        "Germany": "LMJVTTUVDEM647S",
+        "Australia": "LMJVTTUVAUM647S",
     }
     short_rate_series = {
         "United States": "IRSTCI01USM156N",
         "United Kingdom": "IRSTCI01GBM156N",
-        "Canada": "IRSTCI01CAM156N",
         "Germany": "IRSTCI01DEM156N",
-        "France": "IRSTCI01FRM156N",
-        "Japan": "IRSTCI01JPM156N",
-        "South Korea": "IRSTCI01KRM156N",
         "Australia": "IRSTCI01AUM156N",
     }
 
-    all_series = list(unemployment_series.values()) + list(short_rate_series.values())
+    all_series = list(vacancy_series.values()) + list(short_rate_series.values())
     raw = fetch_fred_series(all_series, "2021-01-01")
 
     baseline_date = pd.Timestamp("2022-01-01")
     histories: dict[str, pd.DataFrame] = {}
     summary_rows = []
 
-    for country in unemployment_series:
+    for country in vacancy_series:
         frame = raw[
-            [unemployment_series[country], short_rate_series[country]]
+            [vacancy_series[country], short_rate_series[country]]
         ].rename(
             columns={
-                unemployment_series[country]: "unemployment",
+                vacancy_series[country]: "vacancies",
                 short_rate_series[country]: "short_rate",
             }
         ).dropna()
-
-        if frame.empty:
-            continue
 
         frame = frame.loc[frame.index >= baseline_date].copy()
         if frame.empty:
             continue
 
         baseline = frame.iloc[0]
-        frame["unemployment_change"] = frame["unemployment"] - baseline["unemployment"]
+        if baseline["vacancies"] == 0:
+            continue
+
+        frame["vacancy_index"] = (frame["vacancies"] / baseline["vacancies"]) * 100
+        frame["vacancy_change_pct"] = (
+            (frame["vacancies"] / baseline["vacancies"]) - 1
+        ) * 100
         frame["short_rate_change"] = frame["short_rate"] - baseline["short_rate"]
         histories[country] = frame
 
@@ -1642,11 +1642,11 @@ def _international_labor_policy_data() -> tuple[dict[str, pd.DataFrame], pd.Data
             {
                 "Country": country,
                 "Short-rate change": float(latest["short_rate_change"]),
-                "Unemployment change": float(latest["unemployment_change"]),
+                "Vacancy change": float(latest["vacancy_change_pct"]),
                 "Baseline month": frame.index[0].strftime("%Y-%m"),
                 "Latest month": frame.index[-1].strftime("%Y-%m"),
-                "Baseline unemployment": float(baseline["unemployment"]),
-                "Latest unemployment": float(latest["unemployment"]),
+                "Baseline vacancies": float(baseline["vacancies"]),
+                "Latest vacancies": float(latest["vacancies"]),
                 "Baseline short rate": float(baseline["short_rate"]),
                 "Latest short rate": float(latest["short_rate"]),
             }
@@ -1654,19 +1654,18 @@ def _international_labor_policy_data() -> tuple[dict[str, pd.DataFrame], pd.Data
 
     summary = pd.DataFrame(summary_rows)
     if summary.empty:
-        raise ValueError("No overlapping OECD labor-market and short-rate data were returned.")
+        raise ValueError("No overlapping OECD unfilled-vacancy and short-rate data were returned.")
     return histories, summary
 
-
-# --- 19. International Tightening vs Unemployment Change ---
-def international_tightening_vs_unemployment() -> go.Figure:
-    _, summary = _international_labor_policy_data()
+# --- 19. International Tightening vs Vacancy Change ---
+def international_tightening_vs_vacancies() -> go.Figure:
+    _, summary = _international_vacancy_policy_data()
 
     fig = go.Figure()
     fig.add_trace(
         go.Scatter(
             x=summary["Short-rate change"],
-            y=summary["Unemployment change"],
+            y=summary["Vacancy change"],
             mode="markers+text",
             text=summary["Country"],
             textposition="top center",
@@ -1676,23 +1675,23 @@ def international_tightening_vs_unemployment() -> go.Figure:
                     "Latest month",
                     "Baseline short rate",
                     "Latest short rate",
-                    "Baseline unemployment",
-                    "Latest unemployment",
+                    "Baseline vacancies",
+                    "Latest vacancies",
                 ]
             ],
             marker={
-                "size": 16,
+                "size": 17,
                 "color": ACCENT,
                 "line": {"color": "#ffffff", "width": 1.2},
             },
             hovertemplate=(
                 "%{text}<br>"
                 "Short-rate change: %{x:+.2f} pp<br>"
-                "Unemployment change: %{y:+.2f} pp<br>"
+                "Unfilled-vacancy change: %{y:+.1f}%<br>"
                 "Baseline: %{customdata[0]}<br>"
-                "Latest: %{customdata[1]}<br>"
+                "Latest comparable vacancy obs.: %{customdata[1]}<br>"
                 "Short rate: %{customdata[2]:.2f}% → %{customdata[3]:.2f}%<br>"
-                "Unemployment: %{customdata[4]:.2f}% → %{customdata[5]:.2f}%"
+                "Vacancies: %{customdata[4]:,.0f} → %{customdata[5]:,.0f}"
                 "<extra></extra>"
             ),
             name="Country",
@@ -1700,54 +1699,48 @@ def international_tightening_vs_unemployment() -> go.Figure:
     )
     fig.add_vline(x=0, line_dash="dash", line_color=MUTED)
     fig.add_hline(y=0, line_dash="dash", line_color=MUTED)
-    fig.update_xaxes(title="Change in OECD overnight / call-money rate since Jan 2022 (pp)")
-    fig.update_yaxes(title="Change in harmonized unemployment rate since Jan 2022 (pp)")
+    fig.update_xaxes(title="Change in OECD overnight / call-money rate since first 2022 observation (pp)")
+    fig.update_yaxes(title="Change in unfilled vacancies since first 2022 observation (%)")
     fig.update_layout(hovermode="closest")
     add_metadata_footer(
         fig,
-        "OECD harmonized unemployment and immediate-rate series via FRED",
-        f"latest available by country ({summary['Latest month'].min()}–{summary['Latest month'].max()})",
+        "OECD unfilled-vacancy and immediate-rate series via FRED; vacancy levels normalized within country",
+        f"latest overlapping observation by country ({summary['Latest month'].min()}–{summary['Latest month'].max()})",
     )
-    return apply_finance_theme(fig, height=560)
+    return apply_finance_theme(fig, height=580)
 
 
-# --- 20. International Labor-Market Response to Tightening ---
-def international_labor_policy_trajectories() -> go.Figure:
-    histories, summary = _international_labor_policy_data()
+# --- 20. International Vacancy Response to Tightening ---
+def international_vacancy_policy_trajectories() -> go.Figure:
+    histories, summary = _international_vacancy_policy_data()
     country_order = [
         "United States",
         "United Kingdom",
-        "Canada",
         "Germany",
-        "France",
-        "Japan",
-        "South Korea",
         "Australia",
     ]
+
+    subplot_titles = []
+    for country in country_order:
+        subplot_titles.extend(
+            [
+                f"{country}: short-rate change",
+                f"{country}: unfilled vacancies",
+            ]
+        )
 
     fig = make_subplots(
         rows=4,
         cols=2,
-        subplot_titles=country_order,
-        vertical_spacing=0.10,
-        horizontal_spacing=0.08,
+        shared_xaxes=False,
+        subplot_titles=subplot_titles,
+        vertical_spacing=0.11,
+        horizontal_spacing=0.09,
     )
-    panel_positions = {
-        country: ((i // 2) + 1, (i % 2) + 1)
-        for i, country in enumerate(country_order)
-    }
 
-    max_abs = 1.0
-    for frame in histories.values():
-        local_max = frame[["short_rate_change", "unemployment_change"]].abs().max().max()
-        if pd.notna(local_max):
-            max_abs = max(max_abs, float(local_max))
-    axis_bound = float(max_abs + 0.5)
-
-    for country in country_order:
+    for row, country in enumerate(country_order, start=1):
         if country not in histories:
             continue
-        row, col = panel_positions[country]
         frame = histories[country]
 
         fig.add_trace(
@@ -1757,58 +1750,60 @@ def international_labor_policy_trajectories() -> go.Figure:
                 name="Short-rate change",
                 legendgroup="short-rate",
                 showlegend=country == "United States",
-                line={"color": NEUTRAL, "width": 2.4},
+                line={"color": NEUTRAL, "width": 2.5},
                 hovertemplate=(
                     f"{country}<br>%{{x|%Y-%m}}<br>"
                     "Short-rate change: %{y:+.2f} pp<extra></extra>"
                 ),
             ),
             row=row,
-            col=col,
+            col=1,
         )
+        fig.add_hline(y=0, line_dash="dot", line_color=LINE, row=row, col=1)
+
         fig.add_trace(
             go.Scatter(
                 x=frame.index,
-                y=frame["unemployment_change"],
-                name="Unemployment change",
-                legendgroup="unemployment",
+                y=frame["vacancy_index"],
+                name="Unfilled vacancies (2022=100)",
+                legendgroup="vacancies",
                 showlegend=country == "United States",
-                line={"color": NEGATIVE, "width": 2.4},
+                line={"color": ACCENT, "width": 2.7},
+                fill="tozeroy",
+                fillcolor="rgba(13,127,111,0.07)",
                 hovertemplate=(
                     f"{country}<br>%{{x|%Y-%m}}<br>"
-                    "Unemployment change: %{y:+.2f} pp<extra></extra>"
+                    "Vacancy index: %{y:.1f}<extra></extra>"
                 ),
             ),
             row=row,
-            col=col,
+            col=2,
         )
-        fig.add_hline(y=0, line_dash="dot", line_color=LINE, row=row, col=col)
-        fig.update_yaxes(range=[-axis_bound, axis_bound], row=row, col=col)
+        fig.add_hline(y=100, line_dash="dot", line_color=LINE, row=row, col=2)
 
-    for row in range(1, 5):
-        fig.update_yaxes(title="Change (pp)", row=row, col=1)
+        fig.update_yaxes(title="Rate change (pp)", row=row, col=1)
+        fig.update_yaxes(title="Index (2022=100)", row=row, col=2)
 
     fig.update_xaxes(title="Date", row=4, col=1)
     fig.update_xaxes(title="Date", row=4, col=2)
-    fig.update_layout(hovermode="x unified")
     add_metadata_footer(
         fig,
-        "OECD harmonized unemployment and immediate-rate series via FRED; changes indexed to each country's first complete observation in 2022",
-        f"latest available by country ({summary['Latest month'].min()}–{summary['Latest month'].max()})",
+        "OECD unfilled-vacancy and immediate-rate series via FRED; vacancy series indexed to each country's first complete 2022 observation",
+        f"latest overlapping observation by country ({summary['Latest month'].min()}–{summary['Latest month'].max()})",
     )
     fig = apply_finance_theme(fig, height=1180)
     fig.update_layout(
+        hovermode="closest",
         legend={
             "orientation": "h",
-            "y": 1.04,
+            "y": 1.045,
             "x": 0.5,
             "xanchor": "center",
             "title": None,
         },
-        margin={"t": 88, "r": 36, "b": 104, "l": 76},
+        margin={"t": 92, "r": 42, "b": 110, "l": 80},
     )
     return fig
-
 
 FIGURES = [
     {
@@ -1920,16 +1915,16 @@ FIGURES = [
         "figure": vacancy_cushion_policy_transmission(),
     },
     {
-        "title": "International Tightening vs Unemployment Change",
-        "slug": "international-tightening-unemployment",
-        "description": "Changes in a consistent OECD overnight/call-money rate proxy are compared with changes in harmonized unemployment since the start of 2022, revealing how differently labor markets absorbed tighter monetary conditions.",
-        "figure": international_tightening_vs_unemployment(),
+        "title": "International Tightening vs Job-Opening Change",
+        "slug": "international-tightening-vacancies",
+        "description": "Changes in OECD overnight/call-money rate proxies are compared with percentage changes in seasonally adjusted unfilled vacancies from each country's first complete 2022 observation. Normalizing within country makes the labor-demand response comparable despite very different market sizes.",
+        "figure": international_tightening_vs_vacancies(),
     },
     {
-        "title": "International Labor-Market Response to Tightening",
-        "slug": "international-labor-policy-trajectories",
-        "description": "Eight country panels index both the OECD short-rate proxy and harmonized unemployment to their first complete 2022 observation, preserving geography while putting policy and labor responses on the same percentage-point scale.",
-        "figure": international_labor_policy_trajectories(),
+        "title": "International Job-Opening Response to Tightening",
+        "slug": "international-vacancy-policy-trajectories",
+        "description": "Country-by-country panels align the change in short-term rates with an indexed unfilled-vacancy series (first complete 2022 observation = 100), making it possible to compare how posted labor demand changed as monetary conditions tightened.",
+        "figure": international_vacancy_policy_trajectories(),
     },
 ]
 
@@ -1995,9 +1990,9 @@ DASHBOARD = {
         {
             "label": "Block 6",
             "title": "Monetary Tightening & Labor-Market Resilience",
-            "description": "How has labor-market tightness evolved alongside Federal Reserve policy, and how differently have major economies absorbed tighter short-term monetary conditions since 2022?",
+            "description": "How has labor demand, measured through posted vacancies, evolved alongside tighter monetary policy in the United States and across major advanced economies since 2022?",
             "layout": "single-column",
-            "slugs": ["beveridge-fed-policy", "vacancy-cushion-policy-transmission", "international-tightening-unemployment", "international-labor-policy-trajectories"],
+            "slugs": ["beveridge-fed-policy", "vacancy-cushion-policy-transmission", "international-tightening-vacancies", "international-vacancy-policy-trajectories"],
         },
     ],
 }
