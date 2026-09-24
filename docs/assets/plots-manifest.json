@@ -368,16 +368,16 @@
           "path": "visualizations/week-05/vacancy-cushion-policy-transmission.html"
         },
         {
-          "title": "International Tightening vs Unemployment Change",
-          "slug": "international-tightening-unemployment",
-          "description": "Changes in a consistent OECD overnight/call-money rate proxy are compared with changes in harmonized unemployment since the start of 2022, revealing how differently labor markets absorbed tighter monetary conditions.",
-          "path": "visualizations/week-05/international-tightening-unemployment.html"
+          "title": "International Tightening vs Job-Opening Change",
+          "slug": "international-tightening-vacancies",
+          "description": "Changes in OECD overnight/call-money rate proxies are compared with percentage changes in seasonally adjusted unfilled vacancies from each country's first complete 2022 observation. Normalizing within country makes the labor-demand response comparable despite very different market sizes.",
+          "path": "visualizations/week-05/international-tightening-vacancies.html"
         },
         {
-          "title": "International Labor-Market Response to Tightening",
-          "slug": "international-labor-policy-trajectories",
-          "description": "Eight country panels index both the OECD short-rate proxy and harmonized unemployment to their first complete 2022 observation, preserving geography while putting policy and labor responses on the same percentage-point scale.",
-          "path": "visualizations/week-05/international-labor-policy-trajectories.html"
+          "title": "International Job-Opening Response to Tightening",
+          "slug": "international-vacancy-policy-trajectories",
+          "description": "Country-by-country panels align the change in short-term rates with an indexed unfilled-vacancy series (first complete 2022 observation = 100), making it possible to compare how posted labor demand changed as monetary conditions tightened.",
+          "path": "visualizations/week-05/international-vacancy-policy-trajectories.html"
         }
       ],
       "dashboard": {
@@ -463,13 +463,13 @@
           {
             "label": "Block 6",
             "title": "Monetary Tightening & Labor-Market Resilience",
-            "description": "How has labor-market tightness evolved alongside Federal Reserve policy, and how differently have major economies absorbed tighter short-term monetary conditions since 2022?",
+            "description": "How has labor demand, measured through posted vacancies, evolved alongside tighter monetary policy in the United States and across major advanced economies since 2022?",
             "layout": "single-column",
             "slugs": [
               "beveridge-fed-policy",
               "vacancy-cushion-policy-transmission",
-              "international-tightening-unemployment",
-              "international-labor-policy-trajectories"
+              "international-tightening-vacancies",
+              "international-vacancy-policy-trajectories"
             ]
           }
         ]
