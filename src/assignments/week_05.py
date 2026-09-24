@@ -1265,6 +1265,320 @@ def gender_labor_force_participation() -> go.Figure:
     )
     return fig
 
+# --- 17. U.S. Beveridge Curve Colored by Fed Funds Rate ---
+def beveridge_fed_policy() -> go.Figure:
+    labor = fetch_fred_indicators(
+        ["unemployment", "job_openings_rate"],
+        "2005-01-01",
+    )
+    fed_funds = fetch_fred_series(["FEDFUNDS"], "2005-01-01").rename(
+        columns={"FEDFUNDS": "fed_funds"}
+    )
+    df = labor.join(fed_funds, how="inner").dropna(
+        subset=["unemployment", "job_openings_rate", "fed_funds"]
+    )
+    if df.empty:
+        raise ValueError("No overlapping Beveridge Curve and federal-funds observations were returned.")
+
+    fig = go.Figure()
+
+    # A faint chronological path preserves the familiar Beveridge-curve trajectory.
+    fig.add_trace(
+        go.Scatter(
+            x=df["unemployment"],
+            y=df["job_openings_rate"],
+            mode="lines",
+            line={"color": "rgba(21,21,21,0.15)", "width": 1.2},
+            hoverinfo="skip",
+            showlegend=False,
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=df["unemployment"],
+            y=df["job_openings_rate"],
+            mode="markers",
+            marker={
+                "size": 7,
+                "color": df["fed_funds"],
+                "colorscale": "Viridis",
+                "showscale": True,
+                "colorbar": {"title": "Fed funds<br>rate (%)"},
+                "line": {"color": "rgba(255,255,255,0.65)", "width": 0.4},
+            },
+            customdata=pd.DataFrame(
+                {
+                    "date": df.index.strftime("%Y-%m"),
+                    "fed_funds": df["fed_funds"],
+                },
+                index=df.index,
+            ),
+            hovertemplate=(
+                "Date: %{customdata[0]}<br>"
+                "Unemployment: %{x:.1f}%<br>"
+                "Job openings rate: %{y:.1f}%<br>"
+                "Fed funds rate: %{customdata[1]:.2f}%<extra></extra>"
+            ),
+            name="Monthly observations",
+        )
+    )
+
+    latest = df.iloc[-1]
+    fig.add_trace(
+        go.Scatter(
+            x=[latest["unemployment"]],
+            y=[latest["job_openings_rate"]],
+            mode="markers",
+            marker={
+                "size": 15,
+                "symbol": "diamond",
+                "color": NEGATIVE,
+                "line": {"color": "#ffffff", "width": 1.5},
+            },
+            name=f"Latest ({df.index[-1]:%Y-%m})",
+            hovertemplate=(
+                f"Latest: {df.index[-1]:%Y-%m}<br>"
+                "Unemployment: %{x:.1f}%<br>"
+                "Job openings rate: %{y:.1f}%<extra></extra>"
+            ),
+        )
+    )
+
+    fig.update_xaxes(title="Unemployment rate (%)")
+    fig.update_yaxes(title="Job openings rate (%)")
+    fig.update_layout(hovermode="closest")
+    add_metadata_footer(
+        fig,
+        "BLS labor-market data and Federal Reserve federal funds rate via FRED",
+        _latest_date(df),
+    )
+    return apply_finance_theme(fig, height=560)
+
+
+def _international_labor_policy_data() -> tuple[dict[str, pd.DataFrame], pd.DataFrame]:
+    unemployment_series = {
+        "United States": "LRHUTTTTUSM156S",
+        "United Kingdom": "LRHUTTTTGBM156S",
+        "Canada": "LRHUTTTTCAM156S",
+        "Germany": "LRHUTTTTDEM156S",
+        "France": "LRHUTTTTFRM156S",
+        "Japan": "LRHUTTTTJPM156S",
+        "South Korea": "LRHUTTTTKRM156S",
+        "Australia": "LRHUTTTTAUM156S",
+    }
+    short_rate_series = {
+        "United States": "IRSTCI01USM156N",
+        "United Kingdom": "IRSTCI01GBM156N",
+        "Canada": "IRSTCI01CAM156N",
+        "Germany": "IRSTCI01DEM156N",
+        "France": "IRSTCI01FRM156N",
+        "Japan": "IRSTCI01JPM156N",
+        "South Korea": "IRSTCI01KRM156N",
+        "Australia": "IRSTCI01AUM156N",
+    }
+
+    all_series = list(unemployment_series.values()) + list(short_rate_series.values())
+    raw = fetch_fred_series(all_series, "2021-01-01")
+
+    baseline_date = pd.Timestamp("2022-01-01")
+    histories: dict[str, pd.DataFrame] = {}
+    summary_rows = []
+
+    for country in unemployment_series:
+        frame = raw[
+            [unemployment_series[country], short_rate_series[country]]
+        ].rename(
+            columns={
+                unemployment_series[country]: "unemployment",
+                short_rate_series[country]: "short_rate",
+            }
+        ).dropna()
+
+        if frame.empty:
+            continue
+
+        frame = frame.loc[frame.index >= baseline_date].copy()
+        if frame.empty:
+            continue
+
+        baseline = frame.iloc[0]
+        frame["unemployment_change"] = frame["unemployment"] - baseline["unemployment"]
+        frame["short_rate_change"] = frame["short_rate"] - baseline["short_rate"]
+        histories[country] = frame
+
+        latest = frame.iloc[-1]
+        summary_rows.append(
+            {
+                "Country": country,
+                "Short-rate change": float(latest["short_rate_change"]),
+                "Unemployment change": float(latest["unemployment_change"]),
+                "Baseline month": frame.index[0].strftime("%Y-%m"),
+                "Latest month": frame.index[-1].strftime("%Y-%m"),
+                "Baseline unemployment": float(baseline["unemployment"]),
+                "Latest unemployment": float(latest["unemployment"]),
+                "Baseline short rate": float(baseline["short_rate"]),
+                "Latest short rate": float(latest["short_rate"]),
+            }
+        )
+
+    summary = pd.DataFrame(summary_rows)
+    if summary.empty:
+        raise ValueError("No overlapping OECD labor-market and short-rate data were returned.")
+    return histories, summary
+
+
+# --- 18. International Tightening vs Unemployment Change ---
+def international_tightening_vs_unemployment() -> go.Figure:
+    _, summary = _international_labor_policy_data()
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=summary["Short-rate change"],
+            y=summary["Unemployment change"],
+            mode="markers+text",
+            text=summary["Country"],
+            textposition="top center",
+            customdata=summary[
+                [
+                    "Baseline month",
+                    "Latest month",
+                    "Baseline short rate",
+                    "Latest short rate",
+                    "Baseline unemployment",
+                    "Latest unemployment",
+                ]
+            ],
+            marker={
+                "size": 16,
+                "color": ACCENT,
+                "line": {"color": "#ffffff", "width": 1.2},
+            },
+            hovertemplate=(
+                "%{text}<br>"
+                "Short-rate change: %{x:+.2f} pp<br>"
+                "Unemployment change: %{y:+.2f} pp<br>"
+                "Baseline: %{customdata[0]}<br>"
+                "Latest: %{customdata[1]}<br>"
+                "Short rate: %{customdata[2]:.2f}% → %{customdata[3]:.2f}%<br>"
+                "Unemployment: %{customdata[4]:.2f}% → %{customdata[5]:.2f}%"
+                "<extra></extra>"
+            ),
+            name="Country",
+        )
+    )
+    fig.add_vline(x=0, line_dash="dash", line_color=MUTED)
+    fig.add_hline(y=0, line_dash="dash", line_color=MUTED)
+    fig.update_xaxes(title="Change in OECD overnight / call-money rate since Jan 2022 (pp)")
+    fig.update_yaxes(title="Change in harmonized unemployment rate since Jan 2022 (pp)")
+    fig.update_layout(hovermode="closest")
+    add_metadata_footer(
+        fig,
+        "OECD harmonized unemployment and immediate-rate series via FRED",
+        f"latest available by country ({summary['Latest month'].min()}–{summary['Latest month'].max()})",
+    )
+    return apply_finance_theme(fig, height=560)
+
+
+# --- 19. International Labor-Market Response to Tightening ---
+def international_labor_policy_trajectories() -> go.Figure:
+    histories, summary = _international_labor_policy_data()
+    country_order = [
+        "United States",
+        "United Kingdom",
+        "Canada",
+        "Germany",
+        "France",
+        "Japan",
+        "South Korea",
+        "Australia",
+    ]
+
+    fig = make_subplots(
+        rows=4,
+        cols=2,
+        subplot_titles=country_order,
+        vertical_spacing=0.10,
+        horizontal_spacing=0.08,
+    )
+    panel_positions = {
+        country: ((i // 2) + 1, (i % 2) + 1)
+        for i, country in enumerate(country_order)
+    }
+
+    max_abs = 1.0
+    for frame in histories.values():
+        local_max = frame[["short_rate_change", "unemployment_change"]].abs().max().max()
+        if pd.notna(local_max):
+            max_abs = max(max_abs, float(local_max))
+    axis_bound = float(max_abs + 0.5)
+
+    for country in country_order:
+        if country not in histories:
+            continue
+        row, col = panel_positions[country]
+        frame = histories[country]
+
+        fig.add_trace(
+            go.Scatter(
+                x=frame.index,
+                y=frame["short_rate_change"],
+                name="Short-rate change",
+                legendgroup="short-rate",
+                showlegend=country == "United States",
+                line={"color": NEUTRAL, "width": 2.4},
+                hovertemplate=(
+                    f"{country}<br>%{{x|%Y-%m}}<br>"
+                    "Short-rate change: %{y:+.2f} pp<extra></extra>"
+                ),
+            ),
+            row=row,
+            col=col,
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=frame.index,
+                y=frame["unemployment_change"],
+                name="Unemployment change",
+                legendgroup="unemployment",
+                showlegend=country == "United States",
+                line={"color": NEGATIVE, "width": 2.4},
+                hovertemplate=(
+                    f"{country}<br>%{{x|%Y-%m}}<br>"
+                    "Unemployment change: %{y:+.2f} pp<extra></extra>"
+                ),
+            ),
+            row=row,
+            col=col,
+        )
+        fig.add_hline(y=0, line_dash="dot", line_color=LINE, row=row, col=col)
+        fig.update_yaxes(range=[-axis_bound, axis_bound], row=row, col=col)
+
+    for row in range(1, 5):
+        fig.update_yaxes(title="Change (pp)", row=row, col=1)
+
+    fig.update_xaxes(title="Date", row=4, col=1)
+    fig.update_xaxes(title="Date", row=4, col=2)
+    fig.update_layout(hovermode="x unified")
+    add_metadata_footer(
+        fig,
+        "OECD harmonized unemployment and immediate-rate series via FRED; changes indexed to each country's first complete observation in 2022",
+        f"latest available by country ({summary['Latest month'].min()}–{summary['Latest month'].max()})",
+    )
+    fig = apply_finance_theme(fig, height=1180)
+    fig.update_layout(
+        legend={
+            "orientation": "h",
+            "y": 1.04,
+            "x": 0.5,
+            "xanchor": "center",
+            "title": None,
+        },
+        margin={"t": 88, "r": 36, "b": 104, "l": 76},
+    )
+    return fig
+
+
 FIGURES = [
     {
         "title": "U.S. Inflation & Policy Regime",
@@ -1362,12 +1676,30 @@ FIGURES = [
         "description": "Each country is shown in its own panel with women and men plotted together. The shaded space between the two lines makes the gender participation gap visible while preserving direct within-country comparison over time.",
         "figure": gender_labor_force_participation(),
     },
+    {
+        "title": "U.S. Beveridge Curve & Fed Policy Regime",
+        "slug": "beveridge-fed-policy",
+        "description": "The U.S. Beveridge Curve is colored by the effective federal funds rate so labor-market tightness can be read directly alongside the monetary-policy environment.",
+        "figure": beveridge_fed_policy(),
+    },
+    {
+        "title": "International Tightening vs Unemployment Change",
+        "slug": "international-tightening-unemployment",
+        "description": "Changes in a consistent OECD overnight/call-money rate proxy are compared with changes in harmonized unemployment since the start of 2022, revealing how differently labor markets absorbed tighter monetary conditions.",
+        "figure": international_tightening_vs_unemployment(),
+    },
+    {
+        "title": "International Labor-Market Response to Tightening",
+        "slug": "international-labor-policy-trajectories",
+        "description": "Eight country panels index both the OECD short-rate proxy and harmonized unemployment to their first complete 2022 observation, preserving geography while putting policy and labor responses on the same percentage-point scale.",
+        "figure": international_labor_policy_trajectories(),
+    },
 ]
 
 DASHBOARD = {
     "eyebrow": "Macroeconomic Monitoring Terminal",
     "headline": "Automatically Refreshed Macroeconomic Dashboard",
-    "summary": "Sixteen complementary views combine official statistical and market-data APIs into a broad macro framework: prices and policy, rates, labor, business-cycle momentum, global growth and imbalances, trade, currencies, commodities, fiscal space and credit risk.",
+    "summary": "Nineteen complementary views combine official statistical and market-data APIs into a broad macro framework: prices and policy, rates, labor, business-cycle momentum, global growth and imbalances, trade, currencies, commodities, fiscal space and credit risk. New labor-policy views directly compare monetary tightening with unemployment across major economies.",
     "kpis": [],
     "methodology": [
         {
@@ -1422,6 +1754,13 @@ DASHBOARD = {
             "description": "How do participation trends differ by gender and geography, and where are gender participation gaps narrowing or widening within each country?",
             "layout": "single-column",
             "slugs": ["gender-labor-force-participation"],
+        },
+        {
+            "label": "Block 6",
+            "title": "Monetary Tightening & Labor-Market Resilience",
+            "description": "How has labor-market tightness evolved alongside Federal Reserve policy, and how differently have major economies absorbed tighter short-term monetary conditions since 2022?",
+            "layout": "single-column",
+            "slugs": ["beveridge-fed-policy", "international-tightening-unemployment", "international-labor-policy-trajectories"],
         },
     ],
 }
