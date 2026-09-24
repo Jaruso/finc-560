@@ -1548,14 +1548,16 @@ def vacancy_cushion_policy_transmission() -> go.Figure:
         )
     fig.add_annotation(
         x=liftoff,
-        y=1.0,
+        y=0.97,
         xref="x",
-        yref="paper",
+        yref="y domain",
         text="Fed liftoff<br>Mar. 2022",
         showarrow=False,
         xanchor="left",
-        yanchor="bottom",
+        yanchor="top",
         font={"size": 10, "color": MUTED},
+        bgcolor="rgba(255,255,255,0.82)",
+        borderpad=2,
     )
 
     fig.update_yaxes(title="Percent (%)", row=1, col=1)
@@ -1574,12 +1576,13 @@ def vacancy_cushion_policy_transmission() -> go.Figure:
         hovermode="x unified",
         legend={
             "orientation": "h",
-            "y": 1.035,
+            "y": 1.115,
             "x": 0.5,
             "xanchor": "center",
+            "yanchor": "bottom",
             "title": None,
         },
-        margin={"t": 96, "r": 42, "b": 110, "l": 78},
+        margin={"t": 132, "r": 42, "b": 110, "l": 78},
     )
     return fig
 
