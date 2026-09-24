@@ -1280,6 +1280,20 @@ def beveridge_fed_policy() -> go.Figure:
     if df.empty:
         raise ValueError("No overlapping Beveridge Curve and federal-funds observations were returned.")
 
+    hover_data = pd.DataFrame(
+        {
+            "date": df.index.strftime("%Y-%m"),
+            "fed_funds": df["fed_funds"],
+        },
+        index=df.index,
+    )
+    hover_template = (
+        "<b>%{customdata[0]}</b><br>"
+        "Unemployment: %{x:.1f}%<br>"
+        "Job openings rate: %{y:.1f}%<br>"
+        "Fed funds rate: %{customdata[1]:.2f}%<extra></extra>"
+    )
+
     fig = go.Figure()
 
     # A faint chronological path preserves the familiar Beveridge-curve trajectory.
@@ -1293,35 +1307,71 @@ def beveridge_fed_policy() -> go.Figure:
             showlegend=False,
         )
     )
+
+    # Visible observations. Slightly larger markers make individual months easier
+    # to distinguish without overwhelming the phase-space view.
     fig.add_trace(
         go.Scatter(
             x=df["unemployment"],
             y=df["job_openings_rate"],
             mode="markers",
             marker={
-                "size": 7,
+                "size": 9,
                 "color": df["fed_funds"],
                 "colorscale": "Viridis",
                 "showscale": True,
                 "colorbar": {"title": "Fed funds<br>rate (%)"},
-                "line": {"color": "rgba(255,255,255,0.65)", "width": 0.4},
+                "line": {"color": "rgba(255,255,255,0.75)", "width": 0.6},
             },
-            customdata=pd.DataFrame(
-                {
-                    "date": df.index.strftime("%Y-%m"),
-                    "fed_funds": df["fed_funds"],
-                },
-                index=df.index,
-            ),
-            hovertemplate=(
-                "Date: %{customdata[0]}<br>"
-                "Unemployment: %{x:.1f}%<br>"
-                "Job openings rate: %{y:.1f}%<br>"
-                "Fed funds rate: %{customdata[1]:.2f}%<extra></extra>"
-            ),
+            customdata=hover_data,
+            hovertemplate=hover_template,
             name="Monthly observations",
         )
     )
+
+    # Plotly normally gives a marker only a small hover hit-box. Overlay a nearly
+    # invisible larger target for every month so users can reliably inspect dense
+    # portions of the curve without having to land exactly on a 9px bubble.
+    fig.add_trace(
+        go.Scatter(
+            x=df["unemployment"],
+            y=df["job_openings_rate"],
+            mode="markers",
+            marker={
+                "size": 22,
+                "color": "rgba(0,0,0,0.001)",
+                "line": {"width": 0},
+            },
+            customdata=hover_data,
+            hovertemplate=hover_template,
+            showlegend=False,
+            name="Hover targets",
+        )
+    )
+
+    # Add sparse year labels as wayfinding anchors. Exact month remains available
+    # through hover, while the labels make the chronological path readable at a glance.
+    anchor_years = set(range(2006, int(df.index.max().year) + 1, 2))
+    anchor_years.update({2020, 2021, 2022, 2023, 2024, 2025, int(df.index.max().year)})
+    anchors = (
+        df.assign(year=df.index.year)
+        .loc[lambda x: x["year"].isin(anchor_years)]
+        .groupby("year", as_index=False)
+        .first()
+    )
+    if not anchors.empty:
+        fig.add_trace(
+            go.Scatter(
+                x=anchors["unemployment"],
+                y=anchors["job_openings_rate"],
+                mode="text",
+                text=anchors["year"].astype(str),
+                textposition="top center",
+                textfont={"size": 9, "color": MUTED},
+                hoverinfo="skip",
+                showlegend=False,
+            )
+        )
 
     latest = df.iloc[-1]
     fig.add_trace(
@@ -1337,7 +1387,7 @@ def beveridge_fed_policy() -> go.Figure:
             },
             name=f"Latest ({df.index[-1]:%Y-%m})",
             hovertemplate=(
-                f"Latest: {df.index[-1]:%Y-%m}<br>"
+                f"<b>Latest: {df.index[-1]:%Y-%m}</b><br>"
                 "Unemployment: %{x:.1f}%<br>"
                 "Job openings rate: %{y:.1f}%<extra></extra>"
             ),
@@ -1346,14 +1396,17 @@ def beveridge_fed_policy() -> go.Figure:
 
     fig.update_xaxes(title="Unemployment rate (%)")
     fig.update_yaxes(title="Job openings rate (%)")
-    fig.update_layout(hovermode="closest")
     add_metadata_footer(
         fig,
         "BLS labor-market data and Federal Reserve federal funds rate via FRED",
         _latest_date(df),
     )
-    return apply_finance_theme(fig, height=560)
-
+    fig = apply_finance_theme(fig, height=590)
+    fig.update_layout(
+        hovermode="closest",
+        hoverdistance=45,
+    )
+    return fig
 
 def _international_labor_policy_data() -> tuple[dict[str, pd.DataFrame], pd.DataFrame]:
     unemployment_series = {
