@@ -1408,6 +1408,181 @@ def beveridge_fed_policy() -> go.Figure:
     )
     return fig
 
+
+# --- 18. Vacancy Cushion & Fed Policy Transmission ---
+def vacancy_cushion_policy_transmission() -> go.Figure:
+    raw = fetch_fred_series(
+        ["FEDFUNDS", "JTSJOR", "UNRATE", "JTSJOL", "UNEMPLOY"],
+        "2019-01-01",
+    ).rename(
+        columns={
+            "FEDFUNDS": "fed_funds",
+            "JTSJOR": "job_openings_rate",
+            "UNRATE": "unemployment_rate",
+            "JTSJOL": "job_openings_level",
+            "UNEMPLOY": "unemployed_level",
+        }
+    )
+
+    ratio_data = raw[["job_openings_level", "unemployed_level"]].dropna()
+    if ratio_data.empty:
+        raise ValueError("No overlapping job-openings and unemployment levels were returned.")
+
+    raw["openings_per_unemployed"] = (
+        raw["job_openings_level"] / raw["unemployed_level"]
+    )
+
+    pre_pandemic_ratio = raw.loc[
+        "2019-01-01":"2019-12-31", "openings_per_unemployed"
+    ].dropna()
+    ratio_2019_avg = (
+        float(pre_pandemic_ratio.mean()) if not pre_pandemic_ratio.empty else None
+    )
+
+    fig = make_subplots(
+        rows=4,
+        cols=1,
+        shared_xaxes=True,
+        vertical_spacing=0.075,
+        subplot_titles=(
+            "Policy stance",
+            "Labor demand: posted vacancies",
+            "Employment outcome",
+            "Vacancy cushion: openings per unemployed worker",
+        ),
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=raw.index,
+            y=raw["fed_funds"],
+            name="Effective fed funds rate",
+            line={"color": NEUTRAL, "width": 2.6},
+            hovertemplate="%{x|%Y-%m}<br>Fed funds rate: %{y:.2f}%<extra></extra>",
+        ),
+        row=1,
+        col=1,
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=raw.index,
+            y=raw["job_openings_rate"],
+            name="Job openings rate",
+            line={"color": ACCENT, "width": 2.8},
+            hovertemplate="%{x|%Y-%m}<br>Job openings rate: %{y:.1f}%<extra></extra>",
+        ),
+        row=2,
+        col=1,
+    )
+    # Waller's 2022 Beveridge-curve exercise modeled a decline in the vacancy
+    # rate from roughly 7.5% to about 4.5% with only a modest unemployment rise.
+    fig.add_hline(
+        y=4.5,
+        line_dash="dot",
+        line_color=MUTED,
+        annotation_text="Waller 2022 model endpoint: ~4.5% vacancy rate",
+        annotation_position="bottom right",
+        row=2,
+        col=1,
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=raw.index,
+            y=raw["unemployment_rate"],
+            name="Unemployment rate",
+            line={"color": NEGATIVE, "width": 2.6},
+            hovertemplate="%{x|%Y-%m}<br>Unemployment rate: %{y:.1f}%<extra></extra>",
+        ),
+        row=3,
+        col=1,
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=raw.index,
+            y=raw["openings_per_unemployed"],
+            name="Openings per unemployed",
+            line={"color": "#8c6bb1", "width": 2.7},
+            fill="tozeroy",
+            fillcolor="rgba(140,107,177,0.08)",
+            hovertemplate=(
+                "%{x|%Y-%m}<br>Openings per unemployed worker: %{y:.2f}<extra></extra>"
+            ),
+        ),
+        row=4,
+        col=1,
+    )
+    fig.add_hline(
+        y=1.0,
+        line_dash="dash",
+        line_color=LINE,
+        annotation_text="1 opening per unemployed worker",
+        annotation_position="bottom left",
+        row=4,
+        col=1,
+    )
+    if ratio_2019_avg is not None:
+        fig.add_hline(
+            y=ratio_2019_avg,
+            line_dash="dot",
+            line_color=MUTED,
+            annotation_text=f"2019 average: {ratio_2019_avg:.2f}",
+            annotation_position="top right",
+            row=4,
+            col=1,
+        )
+
+    # March 2022 marks the first increase in the federal-funds target range of
+    # the post-pandemic tightening cycle. Show the same event marker in every panel.
+    liftoff = pd.Timestamp("2022-03-16")
+    for row in range(1, 5):
+        fig.add_vline(
+            x=liftoff,
+            line_dash="dash",
+            line_color="rgba(102,107,114,0.55)",
+            line_width=1.2,
+            row=row,
+            col=1,
+        )
+    fig.add_annotation(
+        x=liftoff,
+        y=1.0,
+        xref="x",
+        yref="paper",
+        text="Fed liftoff<br>Mar. 2022",
+        showarrow=False,
+        xanchor="left",
+        yanchor="bottom",
+        font={"size": 10, "color": MUTED},
+    )
+
+    fig.update_yaxes(title="Percent (%)", row=1, col=1)
+    fig.update_yaxes(title="Percent (%)", row=2, col=1)
+    fig.update_yaxes(title="Percent (%)", row=3, col=1)
+    fig.update_yaxes(title="Ratio", row=4, col=1)
+    fig.update_xaxes(title="Date", row=4, col=1)
+
+    add_metadata_footer(
+        fig,
+        "Federal Reserve and U.S. Bureau of Labor Statistics JOLTS/CPS via FRED",
+        _latest_date(raw),
+    )
+    fig = apply_finance_theme(fig, height=920)
+    fig.update_layout(
+        hovermode="x unified",
+        legend={
+            "orientation": "h",
+            "y": 1.035,
+            "x": 0.5,
+            "xanchor": "center",
+            "title": None,
+        },
+        margin={"t": 96, "r": 42, "b": 110, "l": 78},
+    )
+    return fig
+
 def _international_labor_policy_data() -> tuple[dict[str, pd.DataFrame], pd.DataFrame]:
     unemployment_series = {
         "United States": "LRHUTTTTUSM156S",
@@ -1480,7 +1655,7 @@ def _international_labor_policy_data() -> tuple[dict[str, pd.DataFrame], pd.Data
     return histories, summary
 
 
-# --- 18. International Tightening vs Unemployment Change ---
+# --- 19. International Tightening vs Unemployment Change ---
 def international_tightening_vs_unemployment() -> go.Figure:
     _, summary = _international_labor_policy_data()
 
@@ -1533,7 +1708,7 @@ def international_tightening_vs_unemployment() -> go.Figure:
     return apply_finance_theme(fig, height=560)
 
 
-# --- 19. International Labor-Market Response to Tightening ---
+# --- 20. International Labor-Market Response to Tightening ---
 def international_labor_policy_trajectories() -> go.Figure:
     histories, summary = _international_labor_policy_data()
     country_order = [
@@ -1736,6 +1911,12 @@ FIGURES = [
         "figure": beveridge_fed_policy(),
     },
     {
+        "title": "Vacancy Cushion & Fed Policy Transmission",
+        "slug": "vacancy-cushion-policy-transmission",
+        "description": "Four synchronized panels trace the effective federal funds rate, job-openings rate, unemployment rate, and openings per unemployed worker since 2019. The March 2022 liftoff and Waller's modeled ~4.5% vacancy-rate endpoint make it possible to see whether tightening was absorbed first through vacancies rather than job losses—and how much of that vacancy cushion remains.",
+        "figure": vacancy_cushion_policy_transmission(),
+    },
+    {
         "title": "International Tightening vs Unemployment Change",
         "slug": "international-tightening-unemployment",
         "description": "Changes in a consistent OECD overnight/call-money rate proxy are compared with changes in harmonized unemployment since the start of 2022, revealing how differently labor markets absorbed tighter monetary conditions.",
@@ -1752,7 +1933,7 @@ FIGURES = [
 DASHBOARD = {
     "eyebrow": "Macroeconomic Monitoring Terminal",
     "headline": "Automatically Refreshed Macroeconomic Dashboard",
-    "summary": "Nineteen complementary views combine official statistical and market-data APIs into a broad macro framework: prices and policy, rates, labor, business-cycle momentum, global growth and imbalances, trade, currencies, commodities, fiscal space and credit risk. New labor-policy views directly compare monetary tightening with unemployment across major economies.",
+    "summary": "Twenty complementary views combine official statistical and market-data APIs into a broad macro framework: prices and policy, rates, labor, business-cycle momentum, global growth and imbalances, trade, currencies, commodities, fiscal space and credit risk. New labor-policy views trace the U.S. vacancy cushion and compare monetary tightening with unemployment across major economies.",
     "kpis": [],
     "methodology": [
         {
@@ -1813,7 +1994,7 @@ DASHBOARD = {
             "title": "Monetary Tightening & Labor-Market Resilience",
             "description": "How has labor-market tightness evolved alongside Federal Reserve policy, and how differently have major economies absorbed tighter short-term monetary conditions since 2022?",
             "layout": "single-column",
-            "slugs": ["beveridge-fed-policy", "international-tightening-unemployment", "international-labor-policy-trajectories"],
+            "slugs": ["beveridge-fed-policy", "vacancy-cushion-policy-transmission", "international-tightening-unemployment", "international-labor-policy-trajectories"],
         },
     ],
 }
