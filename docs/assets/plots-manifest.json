@@ -362,6 +362,12 @@
           "path": "visualizations/week-05/beveridge-fed-policy.html"
         },
         {
+          "title": "Vacancy Cushion & Fed Policy Transmission",
+          "slug": "vacancy-cushion-policy-transmission",
+          "description": "Four synchronized panels trace the effective federal funds rate, job-openings rate, unemployment rate, and openings per unemployed worker since 2019. The March 2022 liftoff and Waller's modeled ~4.5% vacancy-rate endpoint make it possible to see whether tightening was absorbed first through vacancies rather than job losses\u2014and how much of that vacancy cushion remains.",
+          "path": "visualizations/week-05/vacancy-cushion-policy-transmission.html"
+        },
+        {
           "title": "International Tightening vs Unemployment Change",
           "slug": "international-tightening-unemployment",
           "description": "Changes in a consistent OECD overnight/call-money rate proxy are compared with changes in harmonized unemployment since the start of 2022, revealing how differently labor markets absorbed tighter monetary conditions.",
@@ -377,7 +383,7 @@
       "dashboard": {
         "eyebrow": "Macroeconomic Monitoring Terminal",
         "headline": "Automatically Refreshed Macroeconomic Dashboard",
-        "summary": "Nineteen complementary views combine official statistical and market-data APIs into a broad macro framework: prices and policy, rates, labor, business-cycle momentum, global growth and imbalances, trade, currencies, commodities, fiscal space and credit risk. New labor-policy views directly compare monetary tightening with unemployment across major economies.",
+        "summary": "Twenty complementary views combine official statistical and market-data APIs into a broad macro framework: prices and policy, rates, labor, business-cycle momentum, global growth and imbalances, trade, currencies, commodities, fiscal space and credit risk. New labor-policy views trace the U.S. vacancy cushion and compare monetary tightening with unemployment across major economies.",
         "kpis": [],
         "methodology": [
           {
@@ -461,6 +467,7 @@
             "layout": "single-column",
             "slugs": [
               "beveridge-fed-policy",
+              "vacancy-cushion-policy-transmission",
               "international-tightening-unemployment",
               "international-labor-policy-trajectories"
             ]
