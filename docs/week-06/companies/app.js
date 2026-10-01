@@ -6,6 +6,11 @@
   const colors={revenue:"#0b7f73",operating:"#365977",net:"#aa7840",baseline:"#8c9ba4"};
   const labels={revenue:"Revenue",operating:"Operating income",net:"Net income"};
   const cache=new Map();
+  const CHART_IDS=["company-chart","equity-revenue","equity-operating","equity-margins",
+    "equity-cashflows","equity-fcf","equity-coverage","equity-balance"];
+  const CHART_DEFAULTS=CHART_IDS.slice(0,4);
+  const otherPlots=new Map(),otherPainting=new Set();
+  let canvas=null;
   let manifest=null,company=null,sequence=0,scheduled=null;
   let activeTicker=null;
   const research=window.EquityResearchUI;
@@ -97,7 +102,7 @@
     const header=card.querySelector(".chart-heading");
     const style=window.getComputedStyle(card);
     const pad=(parseFloat(style.paddingTop)||0)+(parseFloat(style.paddingBottom)||0);
-    cachedPlotHeight=Math.max(235,Math.floor(card.clientHeight-header.offsetHeight-pad-2));
+    cachedPlotHeight=Math.max(190,Math.floor(card.clientHeight-header.offsetHeight-pad-2));
     return cachedPlotHeight;
   };
   // Plotly.react is async; rapidly changing sliders must not let an older
@@ -110,7 +115,9 @@
       while(queuedPlot){
         const {traces,layout}=queuedPlot;
         queuedPlot=null;
-        await window.Plotly.react("company-chart",traces,layout,{
+        if(!canvas?.visible("company-chart"))continue;
+        await window.Plotly.react("company-chart",traces,
+          {...layout,height:fullChartHeight()},{
           responsive:true,displayModeBar:false,displaylogo:false,scrollZoom:false,
         });
       }
@@ -215,6 +222,9 @@
         defaultYRange:defaultYRange.slice(),projectionClipped:overflow}
     };
     el("chart-heading").textContent=labels[metric];
+    el("company-chart-context").textContent="Latest reported "+USD(history.at(-1)[key])+
+      " · "+settings().horizon+"-year modeled "+USD(result.projected.at(-1)[key])+
+      (overflow?" · Focused scenario beyond locked axis":"");
     el("chart-footnote").textContent=overflow
       ? labels[metric]+" · Projection extends outside the locked scale. Use Fit projection to view it."
       : labels[metric]+" · "+unit+
@@ -255,8 +265,12 @@
       el("backtest").textContent="Model $"+(back.model_rmse_musd/1000).toFixed(1)+
         "B / no-change $"+(back.naive_rmse_musd/1000).toFixed(1)+
         "B ("+back.n+" historical one-year origins).";
-      // Builds traces synchronously; Plotly failures are handled in plotLatest().
-      financialCharts(history,result);
+      // The selected chart set changes with actual statement coverage. Do not
+      // imply debt or interest data exists for curated earnings-only snapshots.
+      canvas.setAvailable(availableEquityCharts(history));
+      if(canvas.visible("company-chart"))financialCharts(history,result);
+      else el("fit-company-projection").disabled=true;
+      renderExtraEquity(history,result,assumptions);
     }catch(error){showError(error);}
   }
   function queueRender(){
@@ -290,6 +304,7 @@
   }
   function clearAnnual(ticker){
     company=null;
+    canvas.setAvailable([]);
     el("company-name").textContent=ticker+" · Checking financial statements";
     el("company-empty").hidden=false;
     el("company-chart").hidden=true;
@@ -390,7 +405,14 @@
   }
   async function initialize(){
     try{
-      if(!window.Plotly||!M||!research)throw Error("Browser research or forecasting engine unavailable.");
+      if(!window.Plotly||!M||!research||!window.ChartCanvas)
+        throw Error("Financial chart renderer or research model unavailable.");
+      canvas=ChartCanvas.create({
+        ids:CHART_IDS,defaults:CHART_DEFAULTS,onChange:()=>{
+          cachedPlotHeight=null;queueRender();
+        }
+      });
+      canvas.setAvailable([]);
       research.init();
       document.querySelectorAll("[data-research-example]").forEach(button=>{
         button.addEventListener("click",()=>{
@@ -440,7 +462,7 @@
         el("method").value="cagr";el("horizon").value="3";
         el("growth").value="0";el("margin").value="0";
         el("metric").value="net";el("history").value="5";
-        queueRender();
+        canvas.reset();queueRender();
       });
       let timer;
       window.addEventListener("resize",()=>{
