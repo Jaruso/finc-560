@@ -78,13 +78,17 @@
       available=new Set(next.filter(id=>allowed.has(id)));
       const previous=selected.slice();
       selected=selected.filter(id=>available.has(id));
-      // Always show the user's existing choices first; fill with accessible
-      // default charts if a new asset/ticker lacks an optional financial series.
-      for(const id of defaults){
-        if(selected.length>=Math.min(4,available.size))break;
-        if(available.has(id)&&!selected.includes(id))selected.push(id);
+      // Replenish default studies ONLY when coverage removed a selected study,
+      // or when source data first becomes available. Routine render calls
+      // must preserve an intentional one-, two- or three-chart selection.
+      const lost=selected.length<previous.length;
+      if((lost||selected.length===0)&&available.size){
+        for(const id of defaults){
+          if(selected.length>=Math.min(4,available.size))break;
+          if(available.has(id)&&!selected.includes(id))selected.push(id);
+        }
       }
-      if(!selected.length&&available.size)selected=[...available][0]?[...available].slice(0,1):[];
+      if(!selected.length&&available.size)selected=[...available].slice(0,1);
       const status=picker.querySelector("#chart-selection-status");
       if(status)status.textContent=available.size
         ?selected.length+" of 4 selected · "+
