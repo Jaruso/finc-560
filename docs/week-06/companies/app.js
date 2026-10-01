@@ -685,6 +685,14 @@
       el("backtest").textContent="Model $"+(back.model_rmse_musd/1000).toFixed(1)+
         "B / no-change $"+(back.naive_rmse_musd/1000).toFixed(1)+
         "B ("+back.n+" historical one-year origins).";
+      const compared=appliedTickers.map(ticker=>comparisonData.get(ticker))
+        .filter(Boolean);
+      if(compared.length>=2&&compared[0].ticker===company.ticker){
+        const frames=C.prepare(compared,assumptions,el("history").value);
+        renderComparisons(frames,assumptions);
+        return;
+      }
+      setScaleControls(false);
       // The selected chart set changes with actual statement coverage. Do not
       // imply debt or interest data exists for curated earnings-only snapshots.
       canvas.setAvailable(availableEquityCharts(history));
@@ -710,6 +718,7 @@
   function showAnnual(payload){
     if(!payload)return;
     company=payload;
+    if(appliedTickers.includes(payload.ticker))comparisonData.set(payload.ticker,payload);
     el("company-empty").hidden=true;
     el("company-chart").hidden=false;
     el("company-name").textContent=payload.company;
@@ -778,16 +787,6 @@
     el("data-error").hidden=true;
     scaleContext=null;manualYRange=null;lastRenderedValues=null;
     const item=manifest.companies.find(row=>row.ticker===ticker);
-    const oldCustom=[...el("ticker").options].find(o=>o.dataset.custom==="true");
-    if(oldCustom)oldCustom.remove();
-    if(!item){
-      const option=document.createElement("option");
-      option.dataset.custom="true";
-      option.value=ticker;
-      option.textContent=ticker+" · Custom";
-      el("ticker").append(option);
-    }
-    el("ticker").value=ticker;
     let curated=null;
     try{
       if(item){
@@ -828,7 +827,7 @@
   }
   async function initialize(){
     try{
-      if(!window.Plotly||!M||!research||!window.ChartCanvas)
+      if(!window.Plotly||!M||!R||!C||!research||!window.ChartCanvas)
         throw Error("Financial chart renderer or research model unavailable.");
       canvas=ChartCanvas.create({
         ids:CHART_IDS,defaults:CHART_DEFAULTS,onChange:()=>{
@@ -836,15 +835,27 @@
         }
       });
       canvas.setAvailable([]);
-      research.init();
+      createScaleControls();
+      el("custom-ticker").addEventListener("keydown",event=>{
+        if(event.key==="Enter"){
+          event.preventDefault();
+          stageTicker(el("custom-ticker").value);
+        }else if(event.key==="Backspace"&&!el("custom-ticker").value){
+          stagedTickers.pop();
+          renderPills();
+        }
+      });
+      el("ticker-add").addEventListener("click",()=>{
+        stageTicker(el("custom-ticker").value);
+      });
+      el("symbol-form").addEventListener("submit",event=>{
+        event.preventDefault();
+        void applyTickers();
+      });
       document.querySelectorAll("[data-research-example]").forEach(button=>{
         button.addEventListener("click",()=>{
-          el("custom-ticker").value=button.dataset.researchExample;
-          void loadCompany(button.dataset.researchExample);
+          stageTicker(button.dataset.researchExample);
         });
-      });
-      el("symbol-form").addEventListener("research-ticker",event=>{
-        void loadCompany(event.detail.ticker);
       });
       for(const id of ["method","horizon","metric","history"]){
         el(id).addEventListener("change",queueRender);
@@ -853,7 +864,6 @@
         el(id).addEventListener("input",queueRender);
         el(id).addEventListener("change",queueRender);
       }
-      el("ticker").addEventListener("change",()=>void loadCompany(el("ticker").value));
       el("view-profit-impact").addEventListener("click",()=>{
         // A deliberate, user-initiated measure change. Dials themselves
         // never change the chart measure or move reported observations.
@@ -899,14 +909,9 @@
         throw Error("Verified featured SEC data is not available yet.");
       }
       manifest=m;
-      el("ticker").replaceChildren();
-      for(const row of m.companies){
-        const option=document.createElement("option");
-        option.value=row.ticker;
-        option.textContent=row.ticker;
-        el("ticker").append(option);
-      }
-      el("ticker").disabled=false;
+      stagedTickers=[m.companies[0].ticker];
+      appliedTickers=[m.companies[0].ticker];
+      renderPills();
       await loadCompany(m.companies[0].ticker);
     }catch(error){
       el("source-period").textContent="Unavailable";
