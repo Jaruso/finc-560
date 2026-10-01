@@ -26,7 +26,7 @@ test.afterEach(() => { globalThis.fetch = originalFetch; globalThis.caches = ori
 test('health and quotes are public; Finnhub secret and rate limiting remain mandatory', async () => {
   const healthy = await worker.fetch(req('/health'), env, ctx());
   assert.equal(healthy.status, 200);
-  assert.deepEqual(await healthy.json(), { ok: true, checks: {
+  assert.deepEqual(await healthy.json(), { ok: true, release: 'company-news-20261001', checks: {
     finnhubSecretBound: true, rateLimiterBound: true,
   } });
   assert.equal((await worker.fetch(req('/quote?symbol=AAPL'), { ...env, FINNHUB_TOKEN: undefined }, ctx())).status, 503);
@@ -39,12 +39,12 @@ test('health and quotes are public; Finnhub secret and rate limiting remain mand
 test('health identifies only missing binding names and never exposes token values', async () => {
   const noSecret = await worker.fetch(req('/health'), { ...env, FINNHUB_TOKEN: undefined }, ctx());
   assert.equal(noSecret.status, 503);
-  assert.deepEqual(await noSecret.json(), { ok: false, checks: {
+  assert.deepEqual(await noSecret.json(), { ok: false, release: 'company-news-20261001', checks: {
     finnhubSecretBound: false, rateLimiterBound: true,
   } });
   const noLimiter = await worker.fetch(req('/health'), { ...env, FINNHUB_RATE_LIMITER: undefined }, ctx());
   assert.equal(noLimiter.status, 503);
-  assert.deepEqual(await noLimiter.json(), { ok: false, checks: {
+  assert.deepEqual(await noLimiter.json(), { ok: false, release: 'company-news-20261001', checks: {
     finnhubSecretBound: true, rateLimiterBound: false,
   } });
   const empty = await worker.fetch(req('/health'), {}, ctx());
