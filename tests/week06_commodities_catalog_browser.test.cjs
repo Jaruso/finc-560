@@ -189,7 +189,19 @@ async function switchMode(page,id,mode){
      "USD/metric ton"]);
    assert.equal(new Set(initial.colors).size,4);
    assert.ok(Math.max(...initial.originals)>2000);
+   assert.equal(await page.locator(".comparison-preview-heading").textContent(),
+     "Projected outcomes");
+   assert.equal(await page.locator(".comparison-preview-row").count(),4);
+   assert.equal(await page.locator(".commodity-preview>div").first().isHidden(),true,
+     "The redundant primary-only KPI row stays hidden during comparisons");
+   assert.equal(await page.locator(".comparison-sources-label").textContent(),"Sources");
    assert.equal(await page.locator("#comparison-sources a").count(),4);
+   assert.equal(await page.locator("#comparison-sources").evaluate(node=>
+     node.scrollWidth<=node.clientWidth),true,"Source links must wrap without overflow");
+   assert.equal(await page.locator("#reset").evaluate((reset)=>{
+     const heading=document.querySelector("#controls-heading").getBoundingClientRect();
+     return Math.abs(reset.getBoundingClientRect().top-heading.top)<3;
+   }),true,"Reset stays on the Forecast controls title row");
    assert.match(await page.locator("#chart-subtitle").textContent(),/Index 100/);
 
    // Chart-specific nominal toggle: actual underlying unit values are

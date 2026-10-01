@@ -571,25 +571,36 @@ function drawComparison(){
     el("preview-baseline").textContent=formatNative(initial,primary.commodity);
     el("preview-scenario").textContent=formatNative(adjusted,primary.commodity);
     el("preview-difference").textContent=safeNumber((adjusted/initial-1)*100)+"%";
-    el("preview-baseline").closest(".commodity-preview").classList.add("is-comparing");
+    const comparing=frames.length>1;
+    el("preview-baseline").closest(".commodity-preview")
+      .classList.toggle("is-comparing",comparing);
     el("scenario-status").textContent=frames.length+
       " verified benchmark"+(frames.length===1?"":"s")+
       " · Shared "+opt.horizon+"-month model and "+
       (opt.shock?"conditional "+(opt.shock>0?"+":"")+opt.shock+"% shock":"zero shock")+".";
-    const preview=el("comparison-preview");preview.hidden=false;preview.replaceChildren();
-    for(const frame of frames){
+    const preview=el("comparison-preview");preview.hidden=!comparing;preview.replaceChildren();
+    if(comparing){
+      const previewHeading=document.createElement("p");
+      previewHeading.className="comparison-preview-heading";
+      previewHeading.textContent="Projected outcomes";
+      preview.append(previewHeading);
+    }
+    for(const frame of comparing?frames:[]){
       const row=document.createElement("div");row.className="comparison-preview-row";
       const name=document.createElement("span");name.className="comparison-preview-name";
       const dot=document.createElement("span");dot.className="comparison-dot";
       dot.style.setProperty("--series-color",frame.color);
       const title=document.createElement("span");title.textContent=frame.commodity.label;
       name.append(dot,title);
+      const valueLabel=document.createElement("span");
+      valueLabel.className="comparison-preview-label";valueLabel.textContent="Scenario";
       const value=document.createElement("strong");value.className="comparison-preview-value";
       value.textContent=formatNative(frame.forecast.scenario.at(-1).price,frame.commodity);
       const delta=document.createElement("small");
-      delta.textContent="Latest "+frame.last.slice(0,7)+" · Model baseline "+
-        formatNative(frame.forecast.baseline.at(-1).price,frame.commodity);
-      row.append(name,value,delta);preview.append(row);
+      delta.textContent="Baseline "+
+        formatNative(frame.forecast.baseline.at(-1).price,frame.commodity)+
+        " · Data through "+frame.last.slice(0,7);
+      row.append(name,valueLabel,value,delta);preview.append(row);
     }
     el("source-period").textContent=frames.length>1?
       "Multiple monthly series":"Through "+primary.last.slice(0,7);
@@ -610,12 +621,17 @@ function drawComparison(){
     el("commodity-source").textContent=primary.commodity.source+" · "+primary.commodity.source_id;
     const sources=el("comparison-sources");sources.hidden=frames.length===1;
     sources.replaceChildren();
-    if(frames.length>1)for(const frame of frames){
-      const anchor=document.createElement("a");
-      anchor.href=frame.commodity.source_url;
-      anchor.target="_blank";anchor.rel="noopener noreferrer";
-      anchor.textContent=frame.commodity.label+" source";
-      sources.append(anchor);
+    if(frames.length>1){
+      const sourceLabel=document.createElement("span");
+      sourceLabel.className="comparison-sources-label";sourceLabel.textContent="Sources";
+      sources.append(sourceLabel);
+      for(const frame of frames){
+        const anchor=document.createElement("a");
+        anchor.href=frame.commodity.source_url;
+        anchor.target="_blank";anchor.rel="noopener noreferrer";
+        anchor.textContent=frame.commodity.label;
+        sources.append(anchor);
+      }
     }
     const layout={
       autosize:true,height:height(),

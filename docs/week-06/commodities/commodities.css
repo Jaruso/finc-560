@@ -86,27 +86,38 @@
 .chart-heading .chart-heading-top+p{margin-top:3px}
 @media(max-width:1100px){.chart-heading-top{flex-wrap:wrap}}
 
-/* Keep projected comparison outcomes readable instead of allowing their
-   generated spans to collapse into one run-on line on narrow screens. */
-.comparison-preview{grid-column:1/-1;display:grid;gap:0;margin-top:2px;
-  padding:4px 4px 0;border-top:1px solid #c6e3de;min-width:0}
+/* A comparison is a list, not a second copy of the primary three-value KPI.
+   Each benchmark gets a predictable label/value/baseline scan pattern. */
+.commodity-preview.is-comparing{grid-template-columns:minmax(0,1fr)}
+.commodity-preview.is-comparing>div:not(.comparison-preview){display:none}
+.scenario-impact>.comparison-preview{grid-column:1/-1;display:grid;gap:0;
+  margin-top:2px;padding:7px 4px 0;border-top:1px solid #c6e3de;min-width:0}
+.comparison-preview-heading{margin:0 0 3px;color:#38565d;font-size:.62rem;
+  font-weight:850;letter-spacing:.035em;text-transform:uppercase}
 .comparison-preview-row{display:grid;grid-template-columns:minmax(0,1fr) auto;
-  align-items:center;gap:2px 8px;padding:5px 0;min-width:0}
+  align-items:baseline;gap:3px 10px;padding:7px 0;min-width:0}
 .comparison-preview-row+.comparison-preview-row{border-top:1px solid #d6e9e5}
 .comparison-preview-name{display:flex;align-items:center;gap:5px;min-width:0;
-  color:#38565d;font-size:.65rem;font-weight:800}
+  grid-column:1/-1;color:#38565d;font-size:.68rem;font-weight:850}
 .comparison-preview-name>span:last-child{overflow:hidden;text-overflow:ellipsis;
   white-space:nowrap}
 .comparison-dot{width:7px;height:7px;flex:0 0 7px;border-radius:50%;
   background:var(--series-color)}
-.comparison-preview-value{font-size:.73rem;line-height:1.2;white-space:nowrap;
+.comparison-preview-label{color:var(--muted);font-size:.61rem;font-weight:750}
+.comparison-preview-value{font-size:.76rem;line-height:1.2;text-align:right;
+  white-space:normal;overflow-wrap:anywhere;
   font-variant-numeric:tabular-nums;color:var(--ink)}
 .comparison-preview-row small{grid-column:1/-1;color:var(--muted);font-size:.59rem;
   line-height:1.3}
+.comparison-sources{display:flex;flex-wrap:wrap;align-items:center;gap:5px 12px;
+  margin-top:5px;padding:8px 4px 2px;border-top:1px solid var(--line);
+  font-size:.64rem;line-height:1.35}
+.comparison-sources[hidden]{display:none}
+.comparison-sources-label{color:var(--muted);font-size:.59rem;font-weight:850;
+  letter-spacing:.045em;text-transform:uppercase}
+.comparison-sources a{white-space:nowrap}
 
 @media(max-width:520px){
-  .commodity-preview.is-comparing strong{font-size:.76rem;line-height:1.15;
-    white-space:normal;overflow-wrap:anywhere}
   #chart-stage .commodity-chart-card{min-height:390px}
   .commodity-chart-card .chart-heading p{font-size:.63rem;line-height:1.25}
 }
