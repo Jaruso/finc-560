@@ -106,3 +106,25 @@ body:has(.research-board){overflow:auto!important}
 .revenue-margin-guidance .secondary{
   padding:4px 8px;font-size:.67rem;font-weight:750;
 }
+
+
+/* Contextual revenue-model explainer: native details works with mouse, touch and keyboard. */
+.model-method-control{position:relative}
+.model-method-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.model-method-heading>label{font:inherit;cursor:pointer}
+.model-help{position:static;flex:0 0 auto}
+.model-help>summary{display:grid;place-items:center;list-style:none;cursor:pointer;
+  width:21px;height:21px;border:1px solid #9bbdb8;border-radius:50%;background:#f2faf8;
+  color:#126b62;font-size:.7rem;line-height:1;font-weight:850}
+.model-help>summary::-webkit-details-marker{display:none}
+.model-help>summary:hover,.model-help>summary:focus-visible,
+.model-help[open]>summary{border-color:#237e73;background:#dff2ed;outline-offset:2px}
+.model-help-panel{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:30;
+  max-height:min(370px,58vh);overflow:auto;overscroll-behavior:contain;
+  padding:12px 13px;border:1px solid #9cbdb8;border-radius:9px;background:#fff;
+  box-shadow:0 8px 22px #123a3833;font-size:.71rem;font-weight:450;line-height:1.5;color:#344e56}
+.model-help-title{display:block;color:#173d45;font-size:.82rem;margin-bottom:7px}
+.model-help-panel p{margin:0 0 10px}
+.model-help-panel p:last-child{margin-bottom:0}
+.model-help-panel p strong{font-weight:800;color:#1a474e}
+.model-help-caution{border-top:1px solid #d9e8e5;padding-top:8px;font-style:italic}

@@ -162,6 +162,23 @@ async function slide(page,id,value){
     assert.equal(await page.locator("#history-chart, #projection-chart").count(),0);
     assert.equal(await page.locator(".workspaces [aria-current=page]").textContent(),"Equities");
     assert.equal(await page.locator("#controls-heading").textContent(),"Forecast controls");
+    const help=page.locator(".model-help");
+    assert.equal(await help.locator("summary").getAttribute("aria-label"),
+      "Explain revenue forecast models");
+    assert.equal(await help.locator(".model-help-panel").isVisible(),false,
+      "Expanded model methodology must stay hidden until explicitly requested");
+    await help.locator("summary").click();
+    assert.equal(await help.locator(".model-help-panel").isVisible(),true,
+      "Info button opens the revenue model explainer");
+    const methodology=await help.locator(".model-help-panel").textContent();
+    for(const phrase of ["Historical CAGR","compound annual growth rate",
+      "Linear trend","ordinary least squares","fixed dollar change",
+      "percentage-point adjustment","recency-weighted","Neither is an analyst consensus"]){
+      assert.ok(methodology.includes(phrase),phrase);
+    }
+    await help.locator("summary").click();
+    assert.equal(await help.locator(".model-help-panel").isVisible(),false);
+    assert.equal(await page.locator("#method").inputValue(),"cagr");
     assert.equal(await page.locator("#reset").textContent(),"Reset");
     const equityHeading=await page.locator(".forecast-heading").evaluate(n=>{
       const title=n.querySelector("h2").getBoundingClientRect();
@@ -230,6 +247,11 @@ async function slide(page,id,value){
       "Projection shading stays, but remove REPORTED/FORECAST labels above the graph");
     assert.equal(first.actual.name,"Reported (solid)");
     assert.equal(first.forecast.name,"Model forecast (dashed)");
+    const cleanHover=await page.locator("#company-chart").evaluate(g=>
+      g.data.map(trace=>trace.hovertemplate));
+    assert.ok(cleanHover.every(template=>template.includes("<extra></extra>") &&
+      !template.includes("Browser model") && !template.includes("Unadjusted model")),
+      "Line hover shows only fiscal year and value without any separate model-label box");
     const standardLegend=await page.locator("#company-chart").evaluate(g=>
       g.data.filter(t=>t.showlegend!==false).map(t=>({name:t.name,dash:t.line?.dash||"solid"})));
     assert.deepEqual(standardLegend,[
