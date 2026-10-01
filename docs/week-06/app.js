@@ -10,6 +10,71 @@
   // Keep Plotly redraws sequential per chart when a slider is dragged quickly.
   // Otherwise overlapping Plotly.react promises can render stale assumptions.
   const pendingPlots = new Map();
+  // Retain the data for four charts, but render only currently visible graphs.
+  const latestPlots = new Map();
+  const CHART_IDS = [
+    "chart-historical-yields", "chart-historical-spread",
+    "chart-projected-yields", "chart-projected-spread"
+  ];
+  function isChartVisible(id) {
+    const card = byId(id)?.closest(".chart-card");
+    return Boolean(card && !card.classList.contains("is-view-hidden"));
+  }
+  function showChartView() {
+    const primary = byId("chart-primary").value;
+    const compare = byId("mode-compare").getAttribute("aria-pressed") === "true";
+    let secondary = byId("chart-secondary").value;
+    if (compare && secondary === primary) {
+      secondary = CHART_IDS.find(id => id !== primary);
+      byId("chart-secondary").value = secondary;
+    }
+    byId("compare-choice").hidden = !compare;
+    byId("primary-chart-label").textContent = compare ? "Left" : "Chart";
+    const selected = compare ? [primary, secondary] : [primary];
+    const stage = byId("chart-stage");
+    stage.classList.toggle("is-compare", compare);
+    CHART_IDS.forEach(id => {
+      const card = byId(id).closest(".chart-card");
+      const visible = selected.includes(id);
+      card.classList.toggle("is-view-hidden", !visible);
+      card.setAttribute("aria-hidden", String(!visible));
+    });
+    selected.slice().reverse().forEach(id => stage.prepend(byId(id).closest(".chart-card")));
+    window.requestAnimationFrame(() => {
+      selected.forEach(id => {
+        const cached = latestPlots.get(id);
+        if (cached) plot(id, cached.traces, cached.yLabel, cached.options);
+      });
+    });
+  }
+  function initChartSwitcher() {
+    byId("mode-single").addEventListener("click", () => {
+      byId("mode-single").setAttribute("aria-pressed", "true");
+      byId("mode-compare").setAttribute("aria-pressed", "false");
+      byId("mode-single").classList.add("is-active");
+      byId("mode-compare").classList.remove("is-active");
+      showChartView();
+    });
+    byId("mode-compare").addEventListener("click", () => {
+      byId("mode-compare").setAttribute("aria-pressed", "true");
+      byId("mode-single").setAttribute("aria-pressed", "false");
+      byId("mode-compare").classList.add("is-active");
+      byId("mode-single").classList.remove("is-active");
+      showChartView();
+    });
+    byId("chart-primary").addEventListener("change", showChartView);
+    byId("chart-secondary").addEventListener("change", showChartView);
+    window.addEventListener("resize", () => {
+      clearTimeout(initChartSwitcher.resizeTimer);
+      initChartSwitcher.resizeTimer = setTimeout(() => {
+        CHART_IDS.filter(isChartVisible).forEach(id => {
+          const cached = latestPlots.get(id);
+          if (cached) plot(id, cached.traces, cached.yLabel, cached.options);
+        });
+      }, 140);
+    });
+    showChartView();
+  }
   const drawing = new Set();
   let scenarioFrame = null;
   async function flushPlot(id) {
@@ -51,6 +116,8 @@
   }
 
   function plot(id, traces, yLabel, options = {}) {
+    latestPlots.set(id, { traces, yLabel, options });
+    if (!isChartVisible(id)) return;
     const layout = {
       autosize: true, height: byId(id).clientHeight || 340,
       margin: { l: 57, r: 15, t: 20, b: 53 },
@@ -114,7 +181,7 @@
     byId("scenario-status").textContent = "Modeled outcome: " + policyText +
       " over " + state.horizon + " months changes the 10Y–5Y spread by " +
       (spreadChange >= 0 ? "+" : "−") + nice(Math.abs(spreadChange * 100), 0) +
-      " bps. The historical charts above remain observed data.";
+      " bps. Historical observations remain unchanged.";
     const responseGap = state.beta10 - state.beta5;
     const flatShockBp = Math.abs(responseGap) < 1e-9 ? null :
       -(base.dgs10 - base.dgs5) * 100 / responseGap;
@@ -127,11 +194,12 @@
       : result.crossing.kind === "already" ? "Curve is already inverted at the baseline."
       : "Illustrative zero crossing: month " + nice(result.crossing.month, 1) + " of " + state.horizon + ".";
     byId("kpi-crossing").textContent = msg;
+    byId("kpi-crossing").title = msg;
     plot("chart-projected-yields", [
-      { x: dates, y: p.map(r => r.y5), type: "scatter", mode: "lines+markers", name: "5Y scenario",
+      { x: dates, y: p.map(r => r.y5), type: "scatter", mode: "lines", name: "5Y scenario",
         line: { color: BRAND.five, width: 2.4 }, marker: { size: 4 },
         hovertemplate: "%{y:.2f}%<extra>5Y (hypothetical)</extra>" },
-      { x: dates, y: p.map(r => r.y10), type: "scatter", mode: "lines+markers", name: "10Y scenario",
+      { x: dates, y: p.map(r => r.y10), type: "scatter", mode: "lines", name: "10Y scenario",
         line: { color: BRAND.ten, width: 2.4 }, marker: { size: 4 },
         hovertemplate: "%{y:.2f}%<extra>10Y (hypothetical)</extra>" }
     ], "Illustrative yield (%)", { xaxis: { tickformat: "%b %Y", type: "date", showgrid: false } });
@@ -141,7 +209,7 @@
       { x: dates, y: p.map(r => r.upper), type: "scatter", mode: "lines",
         name: "Illustrative ± corridor", fill: "tonexty", fillcolor: "rgba(54,89,119,0.12)",
         line: { width: 0 }, hoverinfo: "skip" },
-      { x: dates, y: p.map(r => r.spread), type: "scatter", mode: "lines+markers",
+      { x: dates, y: p.map(r => r.spread), type: "scatter", mode: "lines",
         name: "Central assumed path", line: { width: 2.5, color: BRAND.ten },
         marker: { size: 4 }, hovertemplate: "%{y:.2f} pp<extra>Hypothetical spread</extra>" }
     ], "10Y − 5Y (pp)", {
@@ -224,6 +292,7 @@
 
   async function init() {
     initControls();
+    initChartSwitcher();
     try {
       if (!window.Plotly || !M) throw new Error("Chart library unavailable. Reload with an internet connection.");
       const response = await fetch("./data.json", { cache: "no-store" });
