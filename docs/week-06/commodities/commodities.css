@@ -3,6 +3,27 @@
 .commodity-description{font-size:.67rem;color:var(--muted);margin:-5px 0 3px}
 .commodity-preview{gap:3px}
 .commodity-preview strong{font-size:clamp(.83rem,1.1vw,1.05rem)}
+/* Same compact quote card as Equities, explicitly showing a monthly benchmark. */
+.commodity-spot-card{min-width:0;border:1px solid #c4ddda;border-radius:8px;
+  background:#f5faf8;padding:9px 10px;margin:1px 0 4px}
+.commodity-spot-heading{display:flex;align-items:center;
+  justify-content:space-between;gap:7px;color:#345e62}
+.commodity-spot-heading strong{font-size:.78rem;font-weight:800;line-height:1.3;
+  min-width:0;overflow-wrap:anywhere}
+.commodity-spot-heading span{font-size:.57rem;font-weight:800;text-transform:uppercase;
+  letter-spacing:.025em;white-space:nowrap;color:#52777a}
+.commodity-spot-value{display:flex;align-items:baseline;flex-wrap:wrap;
+  gap:3px 7px;margin-top:5px}
+.commodity-spot-value strong{font-size:1.23rem;letter-spacing:-.035em;
+  font-variant-numeric:tabular-nums}
+.commodity-spot-change{font-size:.66rem;color:var(--muted);
+  font-weight:750;font-variant-numeric:tabular-nums}
+.commodity-spot-change.is-up{color:#19785d}
+.commodity-spot-change.is-down{color:#b84253}
+.commodity-spot-status{font-size:.61rem;line-height:1.35;
+  color:var(--muted);margin:3px 0 0}
+.commodity-spot-source{display:inline-block;font-size:.61rem;
+  line-height:1.3;margin-top:4px;color:var(--teal)}
 .commodity-chart-card{flex:1 1 auto}
 .commodity-empty{display:flex;align-items:center;justify-content:center;
   flex-direction:column;gap:5px;min-height:260px;background:#f6faf9;

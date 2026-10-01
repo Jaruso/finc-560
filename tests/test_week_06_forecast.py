@@ -77,6 +77,13 @@ class ForecastModelTests(unittest.TestCase):
         self.assertEqual(result["latest_synchronized_daily_observation"],daily.index[-1].strftime("%Y-%m-%d"))
         self.assertFalse(result["latest_month_is_partial"])
         self.assertEqual(set(result["source_urls"]),set(ALL_SERIES))
+        # Sidebar quotes must be OBSERVED synchronized yields, not model paths.
+        latest=result["latest_treasury_yields"]
+        self.assertEqual(set(latest),set(TENORS))
+        for name in TENORS:
+            self.assertAlmostEqual(latest[name],float(daily.iloc[-1][name]),places=4)
+        self.assertEqual(latest["DGS5"],result["observations"][-1]["dgs5"])
+        self.assertEqual(latest["DGS10"],result["observations"][-1]["dgs10"])
         self.assertTrue(all(x["sample_count"]>=25 for x in result["empirical_error_bands"]["spread"]))
 
     def test_latest_partial_month_not_used_to_fit(self):

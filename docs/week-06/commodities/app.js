@@ -59,6 +59,7 @@ function updateEmptyVisibility(){
     el("comparison-sources").hidden=true;
     el("commodity-source").hidden=true;
     state.canvas.setAvailable([]);
+    el("commodity-quote").hidden=true;
   }
 }
 
@@ -125,6 +126,7 @@ function draw(){
     fit.disabled=fit.hidden||(!clipped&&!state.range);
     el("chart-footnote").hidden=fit.hidden;
     const actual=last.value,base=f.baseline.at(-1).price,forecast=f.scenario.at(-1).price;
+    showSpot(c,last);
     const oneYearBack=c.observations.find(p=>p.date===M.shiftMonth(last.date,-12));
     el("shock-value").textContent=(opt.shock>0?"+":"")+opt.shock+"%";
     el("kpi-latest").textContent=dollars(actual);
@@ -144,8 +146,6 @@ function draw(){
       (opt.vol?opt.vol+"× historical volatility":"bounds off");
     el("source-period").textContent="Through "+last.date.slice(0,7);
     el("data-refresh").textContent="Verified snapshot · "+state.snapshot.retrieved_utc.slice(0,10);
-    el("market-description").textContent=c.unit+" · "+c.source+
-      " · Last verified month "+c.last_observation.slice(0,7);
     el("chart-heading").textContent=c.label;
     el("chart-subtitle").textContent="Observed "+dollars(actual)+" · "+
       (oneYearBack?"12-month "+safeNumber((actual/oneYearBack.value-1)*100)+"% · ":"")+
@@ -416,6 +416,37 @@ function formatNative(value,commodity){
   return commodity.unit==="cents/sheet"?number+"¢":
     "$"+number+" "+commodity.unit.replace(/^USD\//,"/");
 }
+/* The primary price card uses published monthly observations, never model
+   scenarios or intraday prices. A comparison does not change its identity. */
+function showSpot(commodity,last){
+  if(!commodity||!last){el("commodity-quote").hidden=true;return;}
+  el("commodity-quote").hidden=false;
+  el("commodity-quote-name").textContent=commodity.label;
+  const num=Number(last.value);
+  const displayed=num.toLocaleString("en-US",{
+    minimumFractionDigits:2,maximumFractionDigits:commodity.unit==="USD/kg"?3:2
+  });
+  el("commodity-quote-price").textContent=
+    commodity.unit==="cents/sheet"?displayed+"¢":
+      (commodity.unit.startsWith("USD")?"$":"")+displayed;
+  const previous=commodity.observations.find(row=>
+    row.date===M.shiftMonth(last.date,-12));
+  const change=el("commodity-quote-change");
+  change.classList.remove("is-up","is-down");
+  if(previous&&previous.value>0){
+    const percent=(last.value/previous.value-1)*100;
+    change.textContent=(percent>0?"+":"")+percent.toFixed(1)+"% / 12 mo";
+    if(percent>0)change.classList.add("is-up");
+    else if(percent<0)change.classList.add("is-down");
+  }else{
+    change.textContent="12-mo change unavailable";
+  }
+  el("market-description").textContent=commodity.unit+" · "+
+    commodity.source+" · "+last.date.slice(0,7)+" monthly average";
+  const source=el("commodity-quote-source");
+  source.href=commodity.source_url;
+  source.textContent="View "+commodity.source+" source";
+}
 function updateSelection(next){
   state.selectedIds=next.slice(0,4);
   state.commodity=state.snapshot.commodities.find(c=>c.id===state.selectedIds[0])||null;
@@ -524,6 +555,7 @@ function drawComparison(){
       state.snapshot.commodities.find(c=>c.id===id));
     const opt=input(),frames=C.prepare(commodities,el("history").value,opt);
     const primary=frames[0],observed=primary.history.at(-1);
+    showSpot(primary.commodity,observed);
     const priceMode=modeFor("commodity-chart");
     state.canvas.setAvailable(OPTIONS.filter(id=>
       id!=="commodity-shock"||opt.shock!==0));
@@ -605,10 +637,6 @@ function drawComparison(){
     el("source-period").textContent=frames.length>1?
       "Multiple monthly series":"Through "+primary.last.slice(0,7);
     el("data-refresh").textContent="Verified snapshot · "+state.snapshot.retrieved_utc.slice(0,10);
-    el("market-description").textContent=frames.length>1?
-      frames.length+" selected benchmarks · "+primary.commodity.label+
-      " is primary. Dates and original units may differ.":
-      primary.commodity.label+" · "+primary.unit+" · "+primary.commodity.source;
     el("chart-heading").textContent=frames.length>1?
       frames.length+"-commodity price comparison":primary.commodity.label;
     el("chart-subtitle").textContent=frames.length>1?
