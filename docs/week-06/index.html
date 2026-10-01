@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="./dashboard.css?v=20261001-true-time">
   <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
   <script defer src="./model.js?v=splitpath"></script>
-  <script defer src="./app.js?v=true-time"></script>
+  <script defer src="./app.js?v=two-views"></script>
 </head>
 <body>
   <header class="site-header week-06-header">
@@ -126,8 +126,7 @@
       <div class="chart-toolbar card" aria-label="Chart controls">
         <label class="chart-choice"><span>Chart</span>
           <select id="chart-primary" aria-label="Selected metric">
-            <option value="chart-five" selected>5-year yield</option>
-            <option value="chart-ten">10-year yield</option>
+            <option value="chart-yields" selected>5Y &amp; 10Y yields</option>
             <option value="chart-spread">10Y–5Y spread</option>
           </select>
         </label>
@@ -149,21 +148,17 @@
       <div class="chart-grid" id="chart-stage" aria-label="Continuous historical and projected time-series charts">
         <article class="chart-card card">
           <header class="chart-heading">
-            <h2>5-year Treasury yield</h2><p>Observed values flow into a central hypothetical path and upper/lower sensitivity bounds.</p>
+            <h2>5Y and 10Y Treasury yields</h2>
+            <p>Two maturity lines: solid observed yields continue as dashed hypothetical paths with understated sensitivity shading.</p>
           </header>
-          <div id="chart-five" class="plot" role="img" aria-label="5-year Treasury observed history and continuing hypothetical future with central, upper and lower bounds on the same date axis"></div>
+          <div id="chart-yields" class="plot" role="img" aria-label="Five-year and ten-year Treasury yields on one continuous calendar axis with hypothetical future paths"></div>
         </article>
         <article class="chart-card card is-view-hidden" aria-hidden="true">
           <header class="chart-heading">
-            <h2>10-year Treasury yield</h2><p>Observe long-term rates and hypothetical responses on one calendar timeline.</p>
+            <h2>10Y − 5Y spread</h2>
+            <p>Observed yield-curve spread continuing into hypothetical central, upper and lower scenarios.</p>
           </header>
-          <div id="chart-ten" class="plot" role="img" aria-label="10-year Treasury observed history and continuing hypothetical future with central, upper and lower bounds on the same date axis"></div>
-        </article>
-        <article class="chart-card card is-view-hidden" aria-hidden="true">
-          <header class="chart-heading">
-            <h2>10Y − 5Y spread</h2><p>Track observed inversion history into hypothetical future scenarios.</p>
-          </header>
-          <div id="chart-spread" class="plot" role="img" aria-label="Observed 10Y minus 5Y spread continuing hypothetical central, upper and lower scenarios on a continuous date axis"></div>
+          <div id="chart-spread" class="plot" role="img" aria-label="Observed 10-year minus 5-year spread and hypothetical scenarios on one continuous calendar axis"></div>
         </article>
       </div>
       </section>

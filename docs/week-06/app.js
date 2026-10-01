@@ -7,7 +7,7 @@
   const DEFAULT = { delta: -50, beta5: 0.65, beta10: 0.30, corridor: 25,
     horizon: 12, history: "10", chartMonths: "120" };
   const CONTROL = { delta: "delta", beta5: "beta5", beta10: "beta10", corridor: "corridor", horizon: "horizon" };
-  const CHART_IDS = ["chart-five", "chart-ten", "chart-spread"];
+  const CHART_IDS = ["chart-yields", "chart-spread"];
   const latestPlots = new Map(), pendingPlots = new Map(), drawing = new Set();
   let snapshot = null, fitted = null, scenarioFrame = null, focused = false;
 
@@ -59,9 +59,11 @@
   }
 
   function plotContinuous(id, historical, path, label, spread) {
-    const metric = spread ? "spread" : id === "chart-five" ? "dgs5" : "dgs10";
-    const observedY = historical.map(r => spread ? r.dgs10 - r.dgs5 :
-      metric === "dgs5" ? r.dgs5 : r.dgs10);
+    const combined = id === "chart-yields";
+    const metric = spread ? "spread" : "dgs5";
+    const observedY = historical.map(r => spread ? r.dgs10 - r.dgs5 : r.dgs5);
+    const observedTenY = combined ? historical.map(r => r.dgs10) : [];
+    const tenBands = combined ? M.scenarioBands(path, "dgs10") : null;
     const observedX = historical.map(r => r.date);
     const bands = M.scenarioBands(path, metric);
     const forecastX = bands.map(r => r.date);
@@ -74,28 +76,61 @@
     // boundary position follows elapsed months; no 50/50 date distortion.
     const boundaryFraction = (Date.parse(baseDate) - Date.parse(rangeStart)) /
       (Date.parse(endDate) - Date.parse(rangeStart));
-    const plotHistorical = focused
-      ? observedY.slice(Math.max(0, historical.length - 1 - focusHistory)) : observedY;
+    const startAt = Math.max(0, historical.length - 1 - focusHistory);
+    const plotHistorical = focused ? observedY.slice(startAt) : observedY;
+    const plotTen = combined ? (focused ? observedTenY.slice(startAt) : observedTenY) : [];
     const unit = spread ? "pp" : "%";
-    const inView = spread
-      ? [...plotHistorical, ...bands.flatMap(r => [r.low, r.high]), 0]
-      : [...plotHistorical, ...bands.flatMap(r => [r.low, r.high])];
+    const inView = [...plotHistorical, ...plotTen,
+      ...bands.flatMap(r => [r.low, r.high]),
+      ...(tenBands ? tenBands.flatMap(r => [r.low, r.high]) : []),
+      ...(spread ? [0] : [])];
     const ymin = Math.min(...inView), ymax = Math.max(...inView);
     const padding = Math.max((ymax - ymin) * 0.11, spread ? 0.065 : 0.14);
-    const traces = [
+    const traces = combined ? [
+      // Two visible maturity lines, each continued into the scenario as a
+      // dashed central path. Upper/lower sensitivity is shading, not extra lines.
+      { x: observedX, y: observedY, type: "scatter", mode: "lines",
+        name: "5Y Treasury", legendgroup: "five",
+        line: { color: "#365977", width: 2.35 },
+        hovertemplate: "%{x|%b %Y}: %{y:.2f}%<extra>5Y · observed</extra>" },
+      { x: observedX, y: observedTenY, type: "scatter", mode: "lines",
+        name: "10Y Treasury", legendgroup: "ten",
+        line: { color: "#0b7f73", width: 2.35 },
+        hovertemplate: "%{x|%b %Y}: %{y:.2f}%<extra>10Y · observed</extra>" },
+      { x: forecastX, y: bands.map(r => r.low), type: "scatter", mode: "lines",
+        name: "5Y lower bound", showlegend: false, hoverinfo: "skip",
+        line: { width: 0 } },
+      { x: forecastX, y: bands.map(r => r.high), type: "scatter", mode: "lines",
+        name: "5Y sensitivity shading", showlegend: false, hoverinfo: "skip",
+        fill: "tonexty", fillcolor: "rgba(54,89,119,0.14)", line: { width: 0 } },
+      { x: forecastX, y: tenBands.map(r => r.low), type: "scatter", mode: "lines",
+        name: "10Y lower bound", showlegend: false, hoverinfo: "skip",
+        line: { width: 0 } },
+      { x: forecastX, y: tenBands.map(r => r.high), type: "scatter", mode: "lines",
+        name: "10Y sensitivity shading", showlegend: false, hoverinfo: "skip",
+        fill: "tonexty", fillcolor: "rgba(11,127,115,0.13)", line: { width: 0 } },
+      { x: forecastX, y: bands.map(r => r.center), type: "scatter", mode: "lines",
+        name: "5Y central scenario", legendgroup: "five", showlegend: false,
+        line: { color: "#365977", width: 2.5, dash: "dash" },
+        hovertemplate: "%{x|%b %Y}: %{y:.2f}%<extra>5Y · hypothetical</extra>" },
+      { x: forecastX, y: tenBands.map(r => r.center), type: "scatter", mode: "lines",
+        name: "10Y central scenario", legendgroup: "ten", showlegend: false,
+        line: { color: "#0b7f73", width: 2.5, dash: "dash" },
+        hovertemplate: "%{x|%b %Y}: %{y:.2f}%<extra>10Y · hypothetical</extra>" }
+    ] : [
       { x: observedX, y: observedY, type: "scatter", mode: "lines",
         name: "Observed", line: { color: COLOR.historical, width: 2.25 },
-        hovertemplate: "%{x|%b %Y}: %{y:.2f} " + unit + "<extra>FRED observed</extra>" },
+        hovertemplate: "%{x|%b %Y}: %{y:.2f} pp<extra>FRED observed</extra>" },
       { x: forecastX, y: bands.map(r => r.low), type: "scatter", mode: "lines",
         name: "Lower scenario", line: { color: COLOR.bound, width: 1.4, dash: "dot" },
-        hovertemplate: "%{x|%b %Y}: %{y:.2f} " + unit + "<extra>Lower (illustrative)</extra>" },
+        hovertemplate: "%{x|%b %Y}: %{y:.2f} pp<extra>Lower (illustrative)</extra>" },
       { x: forecastX, y: bands.map(r => r.high), type: "scatter", mode: "lines",
         name: "Upper scenario", fill: "tonexty", fillcolor: "rgba(11,127,115,0.09)",
         line: { color: COLOR.bound, width: 1.4, dash: "dot" },
-        hovertemplate: "%{x|%b %Y}: %{y:.2f} " + unit + "<extra>Upper (illustrative)</extra>" },
+        hovertemplate: "%{x|%b %Y}: %{y:.2f} pp<extra>Upper (illustrative)</extra>" },
       { x: forecastX, y: bands.map(r => r.center), type: "scatter", mode: "lines",
         name: "Central assumption", line: { color: COLOR.central, width: 2.7 },
-        hovertemplate: "%{x|%b %Y}: %{y:.2f} " + unit + "<extra>Central (hypothetical)</extra>" }
+        hovertemplate: "%{x|%b %Y}: %{y:.2f} pp<extra>Central (hypothetical)</extra>" }
     ];
     const layout = {
       autosize: true, height: byId(id).clientHeight || 350,
@@ -153,8 +188,7 @@
     const state = assumptions();
     const result = M.project(current(), state.delta, state.beta5, state.beta10,
       state.horizon, state.corridor);
-    plotContinuous("chart-five", rows, result.path, "Yield (%)", false);
-    plotContinuous("chart-ten", rows, result.path, "Yield (%)", false);
+    plotContinuous("chart-yields", rows, result.path, "Yield (%)", false);
     plotContinuous("chart-spread", rows, result.path, "Spread (pp)", true);
 
     const historyText = byId("chart-context").selectedOptions[0].textContent.trim();
