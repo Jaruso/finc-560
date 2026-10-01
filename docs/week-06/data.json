@@ -15,14 +15,14 @@
       360
     ],
     "factor_ar_phi": [
-      0.97674,
-      0.97436,
-      0.93728
+      0.977,
+      0.97426,
+      0.93738
     ],
     "policy_factor_association_per_1pp": [
-      0.00038,
-      0.42046,
-      -0.05529
+      0.00117,
+      0.41782,
+      -0.0536
     ],
     "cross_section_rmse_bp": 8.01,
     "complete_training_months": 249
@@ -39,8 +39,8 @@
     "DGS30": "https://fred.stlouisfed.org/series/DGS30",
     "DFF": "https://fred.stlouisfed.org/series/DFF"
   },
-  "retrieved_utc": "2026-10-01T20:13:03+00:00",
-  "latest_synchronized_daily_observation": "2026-09-29",
+  "retrieved_utc": "2026-10-01T20:30:05+00:00",
+  "latest_synchronized_daily_observation": "2026-09-30",
   "latest_month_is_partial": false,
   "frequency": "Last complete COMMON trading-date Treasury cross-section each month; latest month may be partial",
   "unit": "Percent per annum; forecast errors use basis points where marked",
@@ -1535,8 +1535,8 @@
     },
     {
       "date": "2026-09-01",
-      "dgs5": 5.06,
-      "dgs10": 5.26,
+      "dgs5": 5.09,
+      "dgs10": 5.29,
       "policy": 3.88
     }
   ],
@@ -1544,8 +1544,8 @@
     {
       "date": "2026-09-01",
       "month": 0,
-      "y5": 5.06,
-      "y10": 5.26,
+      "y5": 5.09,
+      "y10": 5.29,
       "spread": 0.2,
       "effect5_per_1pp": 0,
       "effect10_per_1pp": 0
@@ -1553,218 +1553,218 @@
     {
       "date": "2026-10-01",
       "month": 1,
-      "y5": 5.03244,
-      "y10": 5.30312,
-      "spread": 0.27069,
-      "effect5_per_1pp": 0.099164,
-      "effect10_per_1pp": 0.050355
+      "y5": 5.05978,
+      "y10": 5.3401,
+      "spread": 0.28032,
+      "effect5_per_1pp": 0.099655,
+      "effect10_per_1pp": 0.051011
     },
     {
       "date": "2026-11-01",
       "month": 2,
-      "y5": 4.94848,
-      "y10": 5.23827,
-      "spread": 0.28979,
-      "effect5_per_1pp": 0.097116,
-      "effect10_per_1pp": 0.049343
+      "y5": 4.9751,
+      "y10": 5.27463,
+      "spread": 0.29954,
+      "effect5_per_1pp": 0.097569,
+      "effect10_per_1pp": 0.04997
     },
     {
       "date": "2026-12-01",
       "month": 3,
-      "y5": 4.8681,
-      "y10": 5.17584,
-      "spread": 0.30774,
-      "effect5_per_1pp": 0.095089,
-      "effect10_per_1pp": 0.048341
+      "y5": 4.89403,
+      "y10": 5.21162,
+      "spread": 0.31759,
+      "effect5_per_1pp": 0.095506,
+      "effect10_per_1pp": 0.048939
     },
     {
       "date": "2027-01-01",
       "month": 4,
-      "y5": 4.79111,
-      "y10": 5.11572,
-      "spread": 0.32461,
-      "effect5_per_1pp": 0.093085,
-      "effect10_per_1pp": 0.047347
+      "y5": 4.8164,
+      "y10": 5.15094,
+      "spread": 0.33453,
+      "effect5_per_1pp": 0.093469,
+      "effect10_per_1pp": 0.047919
     },
     {
       "date": "2027-02-01",
       "month": 5,
-      "y5": 4.71733,
-      "y10": 5.0578,
-      "spread": 0.34047,
-      "effect5_per_1pp": 0.091105,
-      "effect10_per_1pp": 0.046363
+      "y5": 4.74203,
+      "y10": 5.09248,
+      "spread": 0.35045,
+      "effect5_per_1pp": 0.091458,
+      "effect10_per_1pp": 0.04691
     },
     {
       "date": "2027-03-01",
       "month": 6,
-      "y5": 4.64661,
-      "y10": 5.00199,
-      "spread": 0.35538,
-      "effect5_per_1pp": 0.089151,
-      "effect10_per_1pp": 0.045391
+      "y5": 4.67075,
+      "y10": 5.03616,
+      "spread": 0.3654,
+      "effect5_per_1pp": 0.089474,
+      "effect10_per_1pp": 0.045913
     },
     {
       "date": "2027-04-01",
       "month": 7,
-      "y5": 4.57879,
-      "y10": 4.94818,
-      "spread": 0.3694,
-      "effect5_per_1pp": 0.087223,
-      "effect10_per_1pp": 0.044429
+      "y5": 4.60241,
+      "y10": 4.98186,
+      "spread": 0.37945,
+      "effect5_per_1pp": 0.087518,
+      "effect10_per_1pp": 0.044929
     },
     {
       "date": "2027-05-01",
       "month": 8,
-      "y5": 4.51372,
-      "y10": 4.89629,
-      "spread": 0.38258,
-      "effect5_per_1pp": 0.085322,
-      "effect10_per_1pp": 0.04348
+      "y5": 4.53685,
+      "y10": 4.92949,
+      "spread": 0.39264,
+      "effect5_per_1pp": 0.085591,
+      "effect10_per_1pp": 0.043957
     },
     {
       "date": "2027-06-01",
       "month": 9,
-      "y5": 4.45126,
-      "y10": 4.84623,
-      "spread": 0.39497,
-      "effect5_per_1pp": 0.083448,
-      "effect10_per_1pp": 0.042543
+      "y5": 4.47394,
+      "y10": 4.87898,
+      "spread": 0.40504,
+      "effect5_per_1pp": 0.083693,
+      "effect10_per_1pp": 0.043
     },
     {
       "date": "2027-07-01",
       "month": 10,
-      "y5": 4.39129,
-      "y10": 4.79792,
-      "spread": 0.40663,
-      "effect5_per_1pp": 0.081603,
-      "effect10_per_1pp": 0.041619
+      "y5": 4.41354,
+      "y10": 4.83022,
+      "spread": 0.41668,
+      "effect5_per_1pp": 0.081825,
+      "effect10_per_1pp": 0.042056
     },
     {
       "date": "2027-08-01",
       "month": 11,
-      "y5": 4.33368,
-      "y10": 4.75127,
-      "spread": 0.41759,
-      "effect5_per_1pp": 0.079787,
-      "effect10_per_1pp": 0.040709
+      "y5": 4.35553,
+      "y10": 4.78316,
+      "spread": 0.42763,
+      "effect5_per_1pp": 0.079987,
+      "effect10_per_1pp": 0.041126
     },
     {
       "date": "2027-09-01",
       "month": 12,
-      "y5": 4.27832,
-      "y10": 4.70623,
-      "spread": 0.42791,
-      "effect5_per_1pp": 0.078,
-      "effect10_per_1pp": 0.039811
+      "y5": 4.29979,
+      "y10": 4.7377,
+      "spread": 0.43791,
+      "effect5_per_1pp": 0.07818,
+      "effect10_per_1pp": 0.040211
     },
     {
       "date": "2027-10-01",
       "month": 13,
-      "y5": 4.22509,
-      "y10": 4.66271,
-      "spread": 0.43761,
-      "effect5_per_1pp": 0.076242,
-      "effect10_per_1pp": 0.038928
+      "y5": 4.24621,
+      "y10": 4.69379,
+      "spread": 0.44758,
+      "effect5_per_1pp": 0.076403,
+      "effect10_per_1pp": 0.03931
     },
     {
       "date": "2027-11-01",
       "month": 14,
-      "y5": 4.17391,
-      "y10": 4.62065,
-      "spread": 0.44675,
-      "effect5_per_1pp": 0.074515,
-      "effect10_per_1pp": 0.038059
+      "y5": 4.19469,
+      "y10": 4.65136,
+      "spread": 0.45666,
+      "effect5_per_1pp": 0.074658,
+      "effect10_per_1pp": 0.038425
     },
     {
       "date": "2027-12-01",
       "month": 15,
-      "y5": 4.12466,
-      "y10": 4.58,
-      "spread": 0.45534,
-      "effect5_per_1pp": 0.072817,
-      "effect10_per_1pp": 0.037204
+      "y5": 4.14513,
+      "y10": 4.61033,
+      "spread": 0.4652,
+      "effect5_per_1pp": 0.072944,
+      "effect10_per_1pp": 0.037554
     },
     {
       "date": "2028-01-01",
       "month": 16,
-      "y5": 4.07725,
-      "y10": 4.54068,
-      "spread": 0.46343,
-      "effect5_per_1pp": 0.07115,
-      "effect10_per_1pp": 0.036363
+      "y5": 4.09743,
+      "y10": 4.57066,
+      "spread": 0.47323,
+      "effect5_per_1pp": 0.071261,
+      "effect10_per_1pp": 0.036698
     },
     {
       "date": "2028-02-01",
       "month": 17,
-      "y5": 4.03161,
-      "y10": 4.50266,
-      "spread": 0.47105,
-      "effect5_per_1pp": 0.069513,
-      "effect10_per_1pp": 0.035537
+      "y5": 4.05151,
+      "y10": 4.53229,
+      "spread": 0.48078,
+      "effect5_per_1pp": 0.069609,
+      "effect10_per_1pp": 0.035858
     },
     {
       "date": "2028-03-01",
       "month": 18,
-      "y5": 3.98764,
-      "y10": 4.46586,
-      "spread": 0.47822,
-      "effect5_per_1pp": 0.067906,
-      "effect10_per_1pp": 0.034725
+      "y5": 4.00728,
+      "y10": 4.49516,
+      "spread": 0.48787,
+      "effect5_per_1pp": 0.067989,
+      "effect10_per_1pp": 0.035033
     },
     {
       "date": "2028-04-01",
       "month": 19,
-      "y5": 3.94527,
-      "y10": 4.43025,
-      "spread": 0.48498,
-      "effect5_per_1pp": 0.06633,
-      "effect10_per_1pp": 0.033928
+      "y5": 3.96467,
+      "y10": 4.45922,
+      "spread": 0.49455,
+      "effect5_per_1pp": 0.066399,
+      "effect10_per_1pp": 0.034223
     },
     {
       "date": "2028-05-01",
       "month": 20,
-      "y5": 3.90443,
-      "y10": 4.39577,
-      "spread": 0.49134,
-      "effect5_per_1pp": 0.064783,
-      "effect10_per_1pp": 0.033146
+      "y5": 3.92359,
+      "y10": 4.42442,
+      "spread": 0.50083,
+      "effect5_per_1pp": 0.064841,
+      "effect10_per_1pp": 0.033428
     },
     {
       "date": "2028-06-01",
       "month": 21,
-      "y5": 3.86505,
-      "y10": 4.36238,
-      "spread": 0.49733,
-      "effect5_per_1pp": 0.063267,
-      "effect10_per_1pp": 0.032378
+      "y5": 3.88399,
+      "y10": 4.39072,
+      "spread": 0.50673,
+      "effect5_per_1pp": 0.063313,
+      "effect10_per_1pp": 0.032648
     },
     {
       "date": "2028-07-01",
       "month": 22,
-      "y5": 3.82706,
-      "y10": 4.33003,
-      "spread": 0.50297,
-      "effect5_per_1pp": 0.06178,
-      "effect10_per_1pp": 0.031625
+      "y5": 3.84579,
+      "y10": 4.35807,
+      "spread": 0.51229,
+      "effect5_per_1pp": 0.061816,
+      "effect10_per_1pp": 0.031884
     },
     {
       "date": "2028-08-01",
       "month": 23,
-      "y5": 3.7904,
-      "y10": 4.29869,
-      "spread": 0.50829,
-      "effect5_per_1pp": 0.060323,
-      "effect10_per_1pp": 0.030886
+      "y5": 3.80892,
+      "y10": 4.32644,
+      "spread": 0.51751,
+      "effect5_per_1pp": 0.060349,
+      "effect10_per_1pp": 0.031134
     },
     {
       "date": "2028-09-01",
       "month": 24,
-      "y5": 3.75501,
-      "y10": 4.26832,
-      "spread": 0.51331,
-      "effect5_per_1pp": 0.058896,
-      "effect10_per_1pp": 0.030161
+      "y5": 3.77334,
+      "y10": 4.29577,
+      "spread": 0.52243,
+      "effect5_per_1pp": 0.058912,
+      "effect10_per_1pp": 0.030399
     }
   ],
   "empirical_error_bands": {
@@ -2259,15 +2259,15 @@
         "horizon_months": 24,
         "metric": "5y",
         "origins": 60,
-        "rmse_model_bp": 205.42,
-        "rmse_no_change_bp": 204.71
+        "rmse_model_bp": 205.47,
+        "rmse_no_change_bp": 204.75
       },
       {
         "horizon_months": 24,
         "metric": "10y",
         "origins": 60,
-        "rmse_model_bp": 159.87,
-        "rmse_no_change_bp": 171.95
+        "rmse_model_bp": 159.93,
+        "rmse_no_change_bp": 172.0
       },
       {
         "horizon_months": 24,
