@@ -103,6 +103,14 @@
       control.hidden=!enabled;
     }
     el("method").disabled=!enabled;
+    // A reported-only chart should not claim to be displaying a forecast.
+    for(const [id,modeled,reported] of [
+      ["equity-revenue","Revenue forecasting","Revenue history"],
+      ["equity-operating","Operating-income forecasting","Operating-income history"]
+    ]){
+      el(id).closest(".chart-card").querySelector(".chart-heading h2").textContent=
+        enabled?modeled:reported;
+    }
   }
   // Pill edits remain staged. No chart, news or API request runs before Analyze.
   const tickerPattern=/^[A-Z][A-Z.]{0,9}$/;
