@@ -2,6 +2,11 @@
 .commodity-header .source-stamp{max-width:230px}
 .commodity-description{font-size:.67rem;color:var(--muted);margin:-5px 0 3px}
 .commodity-preview{gap:3px}
+/* Do not imply a half-life changes an unshocked forecast; display the
+   selected decay's actual impact beside the control. */
+.half-life-impact{display:block;margin-top:2px;font-size:.62rem;
+  line-height:1.3;color:var(--muted)}
+#half-life:disabled{cursor:not-allowed;opacity:.55}
 .commodity-preview strong{font-size:clamp(.83rem,1.1vw,1.05rem)}
 .commodity-chart-card{flex:1 1 auto}
 .commodity-empty{display:flex;align-items:center;justify-content:center;
