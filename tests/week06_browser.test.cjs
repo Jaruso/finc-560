@@ -61,7 +61,7 @@ async function slide(page,id,v){
     assert.equal(await page.locator("#chart-stage > .chart-card:not(.is-view-hidden)").count(),4);
     assert.equal(await page.locator("#model-status").textContent(),
       "Fitted Diebold–Li style · 189 training months · 8 Treasury maturities");
-    assert.equal(await page.locator("#controls-heading").textContent(),"Forecast controls");
+    assert.equal(await page.locator("#controls-heading").textContent(),"Controls");
     assert.equal(await page.locator("#reset").textContent(),"Reset");
     assert.equal(await page.locator(".controls .eyebrow").count(),0,
       "Redundant heading copy must not take sidebar space");
