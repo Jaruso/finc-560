@@ -23,7 +23,7 @@ All input parameters and paths are allowlisted. Finnhub authentication happens o
 
 Browser CORS allows `https://jaruso.github.io`; **CORS is not authentication**. Non-browser clients can call these public endpoints and spoof the Origin header, so people can use some of your Finnhub allowance. Keep the rate-limit binding configured and monitor Finnhub usage. The Worker protects the key from normal dashboard visitors, not from anyone with administrative access to your Cloudflare account.
 
-The Equities frontend now uses the /quote route to display a clearly separated latest market quote, refreshing approximately once a minute while visible; published annual statements and browser-side forecasts remain untouched. The other endpoints are available to future integrations but are not used by this dashboard yet. Check your Finnhub subscription terms for public display/redistribution rights even for an academic project.
+The Equities frontend uses /quote for the latest trading quote (refreshing approximately once per minute while visible), /profile and /financials to normalize source-linked company filings, and /news for the most recent publisher coverage. Annual financial charts and in-browser forecast calculations remain independent of news availability. /metrics remains available to future analysis, but is not requested solely to populate the news feed. Check your Finnhub subscription terms for public display/redistribution rights even for an academic project.
 
 ## Local tests
 
@@ -32,9 +32,11 @@ Inside `worker/`: `npm install` then `npm test`. For local `npx wrangler dev`, c
 Cloudflare Workers Builds: https://developers.cloudflare.com/workers/ci-cd/builds/
 Finnhub API: https://finnhub.io/docs/api/
 
-## Three-panel research integration
+## Equity forecasting and recent company news
 
-The Equities dashboard now starts parallel /profile, /metrics and /financials requests for each selected valid ticker; /quote remains independently refreshed. New USD US tickers are entered through the Analyze form. Responses never contain FINNHUB_TOKEN. It normalizes only explicitly supported as-reported USD US-GAAP annual 10-K concepts, deduplicating amendments, and requires five complete annual filings before enabling legacy CAGR/OLS forecasts. Curated verified snapshots remain if Finnhub fails or returns an older/incomplete statement history. The separate corporate financial resilience, Treasury-linked interest stress and simplified FCFF sensitivity panels are for analytical decision support, not price targets. Credit spread and exposed debt are **assumptions**. The existing Macro dashboard provides dated modeled baseline Treasury yields, not observed refinancing costs. Missing fields disable unsupported ratios/charts.
+The Equities chart canvas is configurable with eight options, up to four displayed simultaneously. A selected ticker triggers source-backed /profile and /financials requests through the same protected Worker; missing fundamentals only disable charts requiring specific unavailable values. Verified annual statements take priority over older Finnhub filings when necessary. The retired lower research-card section is replaced by company news: /news accepts exactly one symbol and two ISO dates covering no more than 31 days. The browser requests the past 30 calendar days, displays up to 15 attributed articles in descending publication order, updates on ticker changes, supports manual Refresh and checks again after 15 minutes while the page is visible. Headlines and summaries are rendered as plain text, original article links require HTTPS, and publisher reporting is never portrayed as a credit-risk judgment.
+
+News may be empty for particular tickers, or Finnhub may return HTTP 403/429 depending on subscription/usage. Errors are explicit and leave quote and historical financial forecasts unaffected. No new API key, authentication token, premium provider or published personal data are required.
 
 ## Runtime diagnostics
 
