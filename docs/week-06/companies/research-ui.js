@@ -12,21 +12,41 @@
   const tiny=(n)=>Number.isFinite(n)?"$"+Math.max(0,n).toFixed(2):"Unavailable";
   function text(id,value){el(id).textContent=value;}
   function status(message){text("research-status",message);}
-  function markUnavailable(target,reason){
-    text(target+"-note",reason);
-    const chart=el(target+"-chart");
-    if(chart&&window.Plotly)window.Plotly.purge(chart);
-    chart.hidden=true;
+  const PANEL_IDS=["health","stress","valuation"];
+  function setPanel(target,available){
+    const panel=el(target+"-panel");
+    if(panel.hidden===!available)return;
+    panel.hidden=!available;
+    const shown=PANEL_IDS.filter(id=>!el(id+"-panel").hidden);
+    const grid=el("research-columns");
+    grid.hidden=shown.length===0;
+    grid.dataset.visible=String(shown.length);
+    // Visible-only numbering avoids misleading gaps when panels are excluded.
+    shown.forEach((id,index)=>{
+      el(id+"-panel").querySelector(".research-number").textContent=
+        String(index+1).padStart(2,"0");
+    });
+    // Plotly's responsive mode listens for window resize; hiding another
+    // card changes grid geometry without actually resizing the window.
+    window.requestAnimationFrame(()=>window.dispatchEvent(new Event("resize")));
+  }
+  function markUnavailable(target){
+    const node=el(target+"-chart");
+    if(node&&window.Plotly)window.Plotly.purge(node);
+    node.hidden=true;
+    setPanel(target,false);
   }
   function chart(target,traces,layout){
-    const node=el(target+"-chart");node.hidden=false;
+    const node=el(target+"-chart");
+    node.hidden=false;
+    setPanel(target,true);
     const base={paper_bgcolor:"#fff",plot_bgcolor:"#fff",
       font:{family:"Inter,system-ui,sans-serif",size:11,color:"#465865"},
       margin:{l:57,r:15,t:24,b:55},showlegend:true,
       legend:{orientation:"h",x:.5,xanchor:"center",y:1.18},autosize:true};
     void window.Plotly.react(node,traces,{...base,...layout},
       {displayModeBar:false,responsive:true,displaylogo:false}).catch(()=>{
-      markUnavailable(target,"Chart rendering unavailable; figures remain available above.");
+      markUnavailable(target);
     });
   }
   function dataFor(){
@@ -43,12 +63,20 @@
     // Finnhub does not guarantee the reporting currency also denominates market cap.
     const capCurrency=typeof p?.marketCapCurrency==="string" &&
       /^[A-Z]{3}$/.test(p.marketCapCurrency)?p.marketCapCurrency:null;
-    text("research-market-cap",Number.isFinite(p?.marketCapitalization)?
-      "Market cap "+p.marketCapitalization.toLocaleString("en-US",{maximumFractionDigits:1})+
-      "M "+(capCurrency||"(currency unverified)"):"Market cap unavailable");
+    const marketCap=el("research-market-cap");
+    marketCap.hidden=!Number.isFinite(p?.marketCapitalization);
+    marketCap.textContent=marketCap.hidden?"":"Market cap "+
+      p.marketCapitalization.toLocaleString("en-US",{maximumFractionDigits:1})+
+      "M "+(capCurrency||"(currency unverified)");
     const m=R.metricsSummary(current.metrics);
-    text("research-metrics","Finnhub metrics · Beta "+fmt(m.beta,2)+
-      " · P/E "+fmt(m.pe,1)+" · Current ratio "+fmt(m.currentRatio,2));
+    const availableMetrics=[
+      Number.isFinite(m.beta)?"Beta "+fmt(m.beta,2):null,
+      Number.isFinite(m.pe)?"P/E "+fmt(m.pe,1):null,
+      Number.isFinite(m.currentRatio)?"Current ratio "+fmt(m.currentRatio,2):null
+    ].filter(Boolean);
+    const metricsNode=el("research-metrics");
+    metricsNode.hidden=availableMetrics.length===0;
+    metricsNode.textContent=availableMetrics.length?"Finnhub metrics · "+availableMetrics.join(" · "):"";
     const asReported=current.normalized?.annual?.length>=5;
     const source=asReported?current.normalized:current.curated;
     const filingHint=!source?.annual?.length&&p?.currency&&p.currency!=="USD"
@@ -75,20 +103,20 @@
   function showHealth(){
     if(!current)return;
     const rows=dataFor();
-    if(!rows.length){
-      text("health-kpis","No verified annual statements");
-      return markUnavailable("health","The financial-data feed did not return usable annual statements. No ratios have been fabricated.");
-    }
+    if(!rows.length)return markUnavailable("health");
     const h=R.health(rows),last=h.latest;
-    text("health-kpis","Revenue "+USD(last.revenue)+
-      " · Operating margin "+(last.operatingMargin===null?"Unavailable":fmt(last.operatingMargin)+"%")+
-      " · FCF "+USD(last.fcf)+
-      " · Interest coverage "+(last.coverage===null?"Unavailable":fmt(last.coverage,2)+"×")+
-      " · Net debt / EBITDA "+(last.leverage===null?"Unavailable":fmt(last.leverage,2)+"×"));
     const observed=h.rows.filter(r=>r.fcf!==null&&r.interest!==null);
-    if(observed.length<2){
-      return markUnavailable("health","Cash flow and interest disclosures are incomplete. Revenue, operating margins and available ratios above still use reported values.");
-    }
+    if(observed.length<2)return markUnavailable("health");
+    // A visible card must show real observations, not a chain of
+    // "Unavailable" KPI placeholders.
+    const metrics=[
+      Number.isFinite(last.revenue)?"Revenue "+USD(last.revenue):null,
+      Number.isFinite(last.operatingMargin)?"Operating margin "+fmt(last.operatingMargin)+"%":null,
+      Number.isFinite(last.fcf)?"FCF "+USD(last.fcf):null,
+      Number.isFinite(last.coverage)?"Interest coverage "+fmt(last.coverage,2)+"×":null,
+      Number.isFinite(last.leverage)?"Net debt / EBITDA "+fmt(last.leverage,2)+"×":null
+    ].filter(Boolean);
+    text("health-kpis",metrics.join(" · "));
     text("health-note","Reported annual free cash flow (operating cash less capex) versus interest expense. Compare resources available to service debt; negative FCF is not clipped.");
     chart("health",[
       {type:"bar",name:"Free cash flow",x:observed.map(r=>r.year),
@@ -110,10 +138,7 @@
       " bp · Hypothetical spread "+s.spreadBps+" bp · Repricing debt "+s.exposedPercent+"%");
     const rows=dataFor(),macro=current.macro;
     const result=R.stress(rows,macro,s);
-    if(!result){
-      text("stress-kpis","Unavailable");
-      return markUnavailable("stress","Requires the published Treasury baseline plus disclosed debt, operating income and positive interest expense. No undisclosed debt maturities are inferred.");
-    }
+    if(!result)return markUnavailable("stress");
     text("stress-kpis","Treasury 10Y "+fmt(macro.observed10y,2)+"% → modeled "+
       fmt(result.rate,2)+"% · Incremental annual interest "+USD(result.extraInterest)+
       " · Stressed coverage "+(result.coverage===null?"N/M":fmt(result.coverage,2)+"×"));
@@ -143,10 +168,7 @@
       (Number.isFinite(current.profile?.shareOutstanding)?
         current.profile.shareOutstanding:null);
     const result=R.valuation(rows,shares,a);
-    if(!result){
-      text("valuation-kpis","Unavailable");
-      return markUnavailable("valuation","Requires positive cash-flow proxy, disclosed interest, cash and total debt, and shares outstanding. This model deliberately does not substitute invented values.");
-    }
+    if(!result)return markUnavailable("valuation");
     const quote=current.quote;
     text("valuation-kpis","Illustrative enterprise value "+USD(result.enterpriseValue)+
       " · Implied equity value/share "+tiny(result.perShare)+
