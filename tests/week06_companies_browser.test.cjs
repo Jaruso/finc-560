@@ -259,6 +259,12 @@ async function selectPrimary(page,ticker){
       "Old single-select company dropdown must be removed");
     assert.equal(await page.locator("#ticker-pills .ticker-pill").count(),1);
     assert.match(await page.locator("#ticker-pills").textContent(),/MSFT.*Primary/);
+    assert.equal(await page.locator(".market-quote-heading #company-name").textContent(),
+      "Test Corporation","Quote card heading shows the primary company name");
+    assert.equal(await page.locator(".controls > #company-name").count(),0,
+      "Redundant standalone company label above quote card was removed");
+    assert.ok(!(await page.locator(".market-quote-heading").textContent())
+      .includes("Market quote"),"Generic quote heading is not repeated");
     assert.equal(await page.locator("#custom-ticker").inputValue(),"");
     await page.waitForFunction(()=>
       document.querySelectorAll("#news-list .news-item").length===15 &&
@@ -554,6 +560,8 @@ async function selectPrimary(page,ticker){
     assert.equal(marketCalls.length,oldQuoteCalls);
     await selectPrimary(page,"AAPL");
     await page.waitForFunction(()=>document.querySelector("#company-name")?.textContent==="Another Test Corporation");
+    assert.equal(await page.locator(".market-quote-heading #company-name").textContent(),
+      "Another Test Corporation");
     await page.waitForFunction(()=>document.querySelector("#quote-price")?.textContent==="$245.67");
     assert.equal(await page.locator("#quote-change").textContent(),"−$1.23 (−0.50%)");
     assert.deepEqual(marketCalls,["MSFT","AAPL"],"Company switch fetches its own quote");
@@ -758,6 +766,8 @@ async function selectPrimary(page,ticker){
     }));
     assert.deepEqual(comparative.tickers,["MSFT","AAPL"]);
     assert.equal(comparative.primary,"MSFT");
+    assert.equal(await page.locator(".market-quote-heading #company-name").textContent(),
+      "Test Corporation","Comparisons must not crowd primary quote-card heading");
     assert.equal(comparative.indexed,true);
     assert.equal(comparative.anchor1,100);
     assert.equal(comparative.anchor2,100);
