@@ -79,3 +79,37 @@ test("unindexable negative baselines are refused instead of presenting a mislead
     /positive starting values/);
   assert.ok(C.study(selected,"company-chart","net","nominal",options).traces.length>=4);
 });
+
+test("all comparative forecast charts shade only the all-projected region",()=>{
+  const series=frames();
+  const cutoff=series.map(f=>f.history.at(-1).fiscal_end).sort().at(-1);
+  const end=series.map(f=>f.forecast.projected.at(-1).fiscal_end).sort().at(-1);
+  for(const id of ["company-chart","equity-revenue","equity-operating","equity-margins"]){
+    for(const mode of ["indexed","nominal"]){
+      const chart=C.study(series,id,"net",mode,options);
+      const [shade,divider]=chart.layout.shapes;
+      assert.equal(chart.layout.shapes.length,2,id+" "+mode);
+      assert.equal(shade.type,"rect");
+      assert.equal(shade.x0,cutoff);
+      assert.equal(shade.x1,end);
+      assert.equal(shade.y0,0);
+      assert.equal(shade.y1,1);
+      assert.equal(divider.type,"line");
+      assert.equal(divider.x0,cutoff);
+      assert.equal(divider.x1,cutoff);
+      assert.equal(chart.layout.meta.sharedProjectionStart,cutoff);
+      assert.match(chart.context,/Shading begins after the latest reported date/);
+    }
+  }
+});
+
+test("historical-only comparison charts never shade reported data",()=>{
+  const a=structuredClone(microsoft),b=structuredClone(apple);
+  for(const company of [a,b]){
+    for(const row of company.annual)row.interest_musd=1000;
+  }
+  const series=C.prepare([a,b],options,5);
+  const historical=C.study(series,"equity-coverage","net","nominal",options);
+  assert.deepEqual(historical.layout.shapes,[]);
+  assert.equal(historical.layout.meta.sharedProjectionStart,null);
+});
