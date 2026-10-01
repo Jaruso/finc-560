@@ -47,12 +47,18 @@
       " · P/E "+fmt(m.pe,1)+" · Current ratio "+fmt(m.currentRatio,2));
     const asReported=current.normalized?.annual?.length>=5;
     const source=asReported?current.normalized:current.curated;
-    text("research-source",asReported
-      ?"As-reported 10-K filings · Latest FY "+source.annual.at(-1).fiscal_end
-      :source?.annual?.length
-        ?"Verified dated financial snapshots · FY "+source.annual.at(-1).fiscal_end+
-          " (Finnhub filing history insufficient or unavailable)"
-        :"No verified complete five-year history; financial modeling unavailable.");
+    const liveEnd=asReported?current.normalized.annual.at(-1).fiscal_end:null;
+    const curatedEnd=current.curated?.annual?.at(-1)?.fiscal_end;
+    const olderThanCurated=asReported&&curatedEnd&&liveEnd<curatedEnd;
+    text("research-source",olderThanCurated
+      ?"Detailed Finnhub ratios: reported FY "+liveEnd+
+        " (older than main chart's verified FY "+curatedEnd+"); historical periods differ"
+      :asReported
+        ?"As-reported 10-K filings · Latest FY "+liveEnd
+        :source?.annual?.length
+          ?"Verified dated financial snapshots · FY "+source.annual.at(-1).fiscal_end+
+            " (Finnhub filing history insufficient or unavailable)"
+          :"No verified complete five-year history; financial modeling unavailable.");
     const sourceUrl=asReported?source.data_source:source?.data_source;
     const link=el("research-filing-link");
     if(typeof sourceUrl==="string"&&/^https:\/\/www\.sec\.gov\/Archives\/edgar\/data\/\d+\//.test(sourceUrl)){
