@@ -293,6 +293,13 @@ async function switchMode(page,id,mode){
      await picker.locator('input[value="'+id+'"]').uncheck();
    }
    await page.waitForFunction(()=>document.querySelector("#commodity-chart")
+     ?.layout?.meta?.commodities?.length===1&&
+       !document.querySelector("#commodity-chart")?.layout?.meta?.comparison);
+   assert.equal(await page.locator("#commodity-chart").evaluate(g=>
+     g.layout.meta.mode),"indexed",
+     "Removing comparisons must preserve the explicitly selected chart mode");
+   await switchMode(page,"commodity-chart","nominal");
+   await page.waitForFunction(()=>document.querySelector("#commodity-chart")
      ?.layout?.meta?.unit==="USD/barrel"&&
        !document.querySelector("#commodity-chart")?.layout?.meta?.comparison);
    assert.equal(await page.locator("#commodity-selection-count").textContent(),"1 of 4");
