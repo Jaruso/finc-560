@@ -62,6 +62,25 @@ async function slide(page,id,v){
     assert.equal(await page.locator("#model-status").textContent(),
       "Fitted Diebold–Li style · 189 training months · 8 Treasury maturities");
     assert.equal(await page.locator("#controls-heading").textContent(),"Controls");
+    assert.equal(await page.locator(".treasury-quote").count(),4);
+    const observedCurve=makeFixture().latest_treasury_yields;
+    for(const [series,id] of [
+      ["DGS1","yield-one"],["DGS2","yield-two"],
+      ["DGS5","yield-five"],["DGS10","yield-ten"]
+    ]){
+      assert.equal(await page.locator("#"+id).textContent(),
+        observedCurve[series].toFixed(2)+"%",
+        "Sidebar values must come from synchronized OBSERVED yield series");
+    }
+    assert.match(await page.locator("#yield-quote-status").textContent(),
+      /Federal Reserve \/ FRED.*2023-10-20/);
+    assert.equal(await page.locator("#treasury-model option").count(),1);
+    assert.equal(await page.locator("#treasury-model").isDisabled(),true);
+    assert.equal(await page.locator("#treasury-model").inputValue(),"Diebold–Li");
+    await page.locator(".sidebar-model-control .model-help summary").click();
+    assert.match(await page.locator(".sidebar-model-control .model-help-panel").textContent(),
+      /separate historical AR\(1\)/i);
+    await page.locator(".sidebar-model-control .model-help summary").click();
     assert.equal(await page.locator("#reset").textContent(),"Reset");
     assert.equal(await page.locator(".controls .eyebrow").count(),0,
       "Redundant heading copy must not take sidebar space");
