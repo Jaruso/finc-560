@@ -73,3 +73,8 @@ body:has(.research-board){overflow:auto!important}
 @media(max-width:1100px){.research-columns{grid-template-columns:1fr}}
 @media(max-width:650px){.research-header{align-items:flex-start;flex-direction:column}
   .research-meta{text-align:left;max-width:100%}}
+
+.research-jump{font-size:.69rem;font-weight:850;color:#126c64;text-decoration:none;white-space:nowrap;
+  background:#eaf5f2;border:1px solid #b9d8d1;border-radius:6px;padding:7px 9px}
+.research-jump:hover,.research-jump:focus-visible{text-decoration:underline;background:#d7eee8}
+#research-lab{scroll-margin-top:70px}

@@ -157,7 +157,7 @@
   }
   function stress(annual,macro,{shockBps=0,spreadBps=200,exposedPercent=40}={}){
     const last=health(annual).latest;
-    if(!macro||!last||last.netDebt===null||
+    if(!macro||!last||
       numeric(annual.at(-1)?.total_debt_musd)===null||
       last.operating===null||!(last.interest>0))return null;
     if(!Number.isFinite(shockBps)||Math.abs(shockBps)>300||

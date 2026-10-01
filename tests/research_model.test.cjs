@@ -90,6 +90,13 @@ test("rate shocks and exposed debt drive disclosed-interest coverage without cla
   assert.equal(none.coverage,none.baseCoverage);
 });
 
+test("stress requires disclosed debt and interest, but not a separate cash balance",()=>{
+  const d=normalized(),latest={...d.annual.at(-1),cash_musd:null};
+  const r=R.stress([latest],{observed10y:4,projected10y:5});
+  assert.ok(r&&r.extraInterest>0);
+  assert.equal(R.health([latest]).latest.netDebt,null);
+});
+
 test("value sensitivity uses normalized cash flows, interest, debt and millions of shares",()=>{
   const d=normalized();
   const base=R.valuation(d.annual,d.shares_million,{growth:5,discount:10,terminal:2,tax:21});
