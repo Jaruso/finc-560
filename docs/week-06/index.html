@@ -8,10 +8,10 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="../assets/styles.css?v=20260906-week3-redesign">
   <link rel="stylesheet" href="../assets/site-transitions.css?v=20261001">
-  <link rel="stylesheet" href="./dashboard.css?v=20261001-splitpath">
+  <link rel="stylesheet" href="./dashboard.css?v=20261001-true-time">
   <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
   <script defer src="./model.js?v=splitpath"></script>
-  <script defer src="./app.js?v=splitpath"></script>
+  <script defer src="./app.js?v=true-time"></script>
 </head>
 <body>
   <header class="site-header week-06-header">
@@ -123,53 +123,47 @@
       <div class="kpi card"><span>Observed spread</span><strong id="kpi-base-spread">—</strong><small>Below 0 = inverted</small></div>
       <div class="kpi card prominent"><span>Scenario spread</span><strong id="kpi-terminal">—</strong><small id="kpi-crossing">Requires historical data</small></div>
     </section>
-      <div class="chart-toolbar card" aria-label="Chart display controls">
-        <div class="view-toggle" role="group" aria-label="Chart layout">
-          <button id="mode-single" class="mode-btn is-active" type="button" aria-pressed="true">Single</button>
-          <button id="mode-compare" class="mode-btn" type="button" aria-pressed="false">Compare two</button>
-        </div>
-        <label class="chart-choice"><span id="primary-chart-label">Chart</span>
-          <select id="chart-primary">
+      <div class="chart-toolbar card" aria-label="Chart controls">
+        <label class="chart-choice"><span>Chart</span>
+          <select id="chart-primary" aria-label="Selected metric">
             <option value="chart-five" selected>5-year yield</option>
             <option value="chart-ten">10-year yield</option>
             <option value="chart-spread">10Y–5Y spread</option>
           </select>
         </label>
-        <label class="chart-choice chart-secondary" id="compare-choice" hidden><span>Compare with</span>
-          <select id="chart-secondary">
-            <option value="chart-five">5-year yield</option>
-            <option value="chart-ten">10-year yield</option>
-            <option value="chart-spread" selected>10Y–5Y spread</option>
-          </select>
-        </label>
         <label class="chart-choice chart-context"><span>History shown</span>
-          <select id="chart-context" aria-label="Historical months shown on the chart">
-            <option value="12">12 months</option>
-            <option value="24" selected>24 months</option>
-            <option value="36">36 months</option>
-            <option value="60">60 months</option>
+          <select id="chart-context" aria-label="Years of historical observations shown">
+            <option value="12">1 year</option>
+            <option value="24">2 years</option>
+            <option value="60">5 years</option>
+            <option value="120" selected>10 years</option>
+            <option value="180">15 years</option>
+            <option value="240">20 years</option>
+            <option value="all">All available</option>
           </select>
         </label>
+        <button id="focus-projection" type="button" class="secondary focus-button" aria-pressed="false">Focus projection</button>
+        <span class="chart-badge">Continuous calendar scale • One chart</span>
       </div>
-      <p class="axis-explanation">Left: observed historical period · Right: hypothetical forward scenario · Equal visual width; independent time scales · Shaded bounds are manually set, not forecast probabilities.</p>
-      <div class="chart-grid" id="chart-stage" aria-label="Historical and hypothetical side-by-side plots">
+      <p id="axis-explanation" class="axis-explanation" aria-live="polite">Continuous calendar dates: 10 years observed → 12 months hypothetical. Projection width reflects its actual duration. Use Focus projection to inspect a short scenario without distorting time.</p>
+      <div class="chart-grid" id="chart-stage" aria-label="Continuous historical and projected time-series charts">
         <article class="chart-card card">
           <header class="chart-heading">
-            <h2>5-year Treasury yield</h2><p>Historical yield alongside a central hypothetical path and upper/lower sensitivity bounds.</p>
+            <h2>5-year Treasury yield</h2><p>Observed values flow into a central hypothetical path and upper/lower sensitivity bounds.</p>
           </header>
-          <div id="chart-five" class="plot" role="img" aria-label="5-year Treasury observed history on left and hypothetical future with central, upper and lower bounds on right"></div>
+          <div id="chart-five" class="plot" role="img" aria-label="5-year Treasury observed history and continuing hypothetical future with central, upper and lower bounds on the same date axis"></div>
         </article>
         <article class="chart-card card is-view-hidden" aria-hidden="true">
           <header class="chart-heading">
-            <h2>10-year Treasury yield</h2><p>Compare long-maturity history with alternative responses to the same rate assumption.</p>
+            <h2>10-year Treasury yield</h2><p>Observe long-term rates and hypothetical responses on one calendar timeline.</p>
           </header>
-          <div id="chart-ten" class="plot" role="img" aria-label="10-year Treasury observed history on left and hypothetical future with central, upper and lower bounds on right"></div>
+          <div id="chart-ten" class="plot" role="img" aria-label="10-year Treasury observed history and continuing hypothetical future with central, upper and lower bounds on the same date axis"></div>
         </article>
         <article class="chart-card card is-view-hidden" aria-hidden="true">
           <header class="chart-heading">
-            <h2>10Y − 5Y spread</h2><p>Watch the projected curve approach or cross the zero-inversion threshold.</p>
+            <h2>10Y − 5Y spread</h2><p>Track observed inversion history into hypothetical future scenarios.</p>
           </header>
-          <div id="chart-spread" class="plot" role="img" aria-label="Observed 10Y minus 5Y spread on left and hypothetical central, upper, and lower scenarios on right"></div>
+          <div id="chart-spread" class="plot" role="img" aria-label="Observed 10Y minus 5Y spread continuing hypothetical central, upper and lower scenarios on a continuous date axis"></div>
         </article>
       </div>
       </section>
