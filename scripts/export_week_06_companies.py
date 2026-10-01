@@ -16,6 +16,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / "docs" / "week-06" / "companies" / "data"
 FEATURED = ("MSFT", "AAPL", "HD", "CAT")
+# SEC's ticker directory blocks some hosted runners. Verify direct issuer IDs.
+FEATURED_CIK = {"MSFT": 789019, "AAPL": 320193, "HD": 354950, "CAT": 18230}
+EXPECTED_ENTITY = {"MSFT": "MICROSOFT", "AAPL": "APPLE",
+                   "HD": "HOME DEPOT", "CAT": "CATERPILLAR"}
 TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
 FACTS_URL = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik:010d}.json"
 AGENT = os.environ.get(
@@ -141,12 +145,14 @@ def normalize(company: dict, ticker: str, cik: int, *, retrieved: str) -> dict:
 
 def main() -> None:
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    mapping = ticker_ciks(get_json(TICKERS_URL))
+    mapping = {symbol: {"cik": FEATURED_CIK[symbol]} for symbol in FEATURED}
     payloads = []
     for ticker in FEATURED:
         time.sleep(0.35)  # SEC fair access: <10 requests per second.
         cik = mapping[ticker]["cik"]
         company = get_json(FACTS_URL.format(cik=cik))
+        if EXPECTED_ENTITY[ticker] not in str(company.get("entityName", "")).upper():
+            raise ValueError(f"SEC CIK mismatch for {ticker}: {company.get('entityName')!r}")
         d = normalize(company, ticker, cik, retrieved=now)
         payloads.append(d)
         print(f"{ticker}: {len(d['annual'])} years, latest {d['annual'][-1]['fiscal_end']}")
