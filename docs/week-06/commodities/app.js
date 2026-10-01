@@ -85,13 +85,12 @@ async function paint(){
   }catch(ex){error(ex);}
   finally{state.painting=false;}
 }
-/* Half-life only affects a nonzero shock. Keep the selector honest and make
-   its endpoint effect visible even when curves share a locked y-axis. */
+/* Keep half-life selectable even with no shock, so users can choose their
+   preferred decay before applying a scenario. Explain when it has an effect. */
 function syncHalfLife(){
-  const opt=input(),picker=el("half-life"),hint=el("half-life-impact");
-  picker.disabled=opt.shock===0;
+  const opt=input(),hint=el("half-life-impact");
   if(!opt.shock){
-    hint.textContent="Set a nonzero price shock to enable decay.";
+    hint.textContent="Applies when the price shock is nonzero.";
     return;
   }
   const remaining=opt.shock*Math.pow(.5,(opt.horizon-1)/opt.halfLife);
