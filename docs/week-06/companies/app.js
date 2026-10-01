@@ -235,6 +235,235 @@
     queuedPlot={traces,layout};
     void plotLatest();
   }
+
+  function availableEquityCharts(rows){
+    const complete=(fn)=>rows.filter(fn).length>=2;
+    const ids=CHART_DEFAULTS.slice();
+    if(complete(r=>Number.isFinite(r.cfo_musd)&&Number.isFinite(r.capex_musd))){
+      ids.push("equity-cashflows","equity-fcf");
+    }
+    if(complete(r=>Number.isFinite(r.interest_musd)&&r.interest_musd>0&&
+        Number.isFinite(r.operating_income_musd)))ids.push("equity-coverage");
+    if(complete(r=>Number.isFinite(r.cash_musd)&&
+        Number.isFinite(r.total_debt_musd)))ids.push("equity-balance");
+    return ids;
+  }
+  function extraHeight(id){
+    const card=el(id).closest(".chart-card"),heading=card.querySelector(".chart-heading");
+    const style=getComputedStyle(card);
+    return Math.max(185,Math.floor(card.clientHeight-heading.offsetHeight-
+      (parseFloat(style.paddingTop)||0)-(parseFloat(style.paddingBottom)||0)-3));
+  }
+  function extraPlot(id,traces,layout){
+    if(!canvas.visible(id))return;
+    otherPlots.set(id,{traces,layout});
+    if(otherPainting.has(id))return;
+    otherPainting.add(id);
+    void (async()=>{
+      try{
+        while(otherPlots.has(id)){
+          const next=otherPlots.get(id);otherPlots.delete(id);
+          if(!canvas.visible(id))continue;
+          await window.Plotly.react(id,next.traces,
+            {...next.layout,height:extraHeight(id)},{
+              responsive:true,displayModeBar:false,displaylogo:false,scrollZoom:false
+            });
+        }
+      }catch(error){showError(error);}
+      finally{otherPainting.delete(id);}
+    })();
+  }
+  function renderExtraEquity(history,result,assumptions){
+    const selected=new Set(canvas.selected());
+    const xs=history.map(r=>r.fiscal_end);
+    const xp=result.projected.map(r=>r.fiscal_end);
+    const boundary=xs.at(-1),end=xp.at(-1);
+    const latest=history.at(-1);
+    const bcolor=colors.baseline;
+    const value=n=>Number(n/1000);
+    const complete=(fn)=>history.filter(fn);
+    function note(id,text){el(id+"-context").textContent=text;}
+    function base(id,{unit="USD billions",percent=false,zero=false,bar=false}={}){
+      const cfg={
+        autosize:true,height:extraHeight(id),
+        margin:{l:61,r:12,t:45,b:43,autoexpand:false},
+        paper_bgcolor:"#fff",plot_bgcolor:"#fff",
+        font:{family:"Inter,system-ui,sans-serif",size:10,color:"#465865"},
+        showlegend:true,hovermode:"closest",
+        legend:{orientation:"h",x:.5,xanchor:"center",y:1.16,
+          font:{size:10},itemwidth:30},
+        xaxis:{type:"date",tickformat:"%Y",
+          showgrid:false,linecolor:"#dfe3e6",automargin:true},
+        yaxis:{title:percent?"Margin (%)":unit,
+          ticksuffix:percent?"%":"B",tickprefix:percent?"":"$",
+          gridcolor:"#edf1f2",automargin:true},
+        shapes:[],annotations:[],meta:{
+          source:"Verified reported SEC/Finnhub annual financial statements",
+          ticker:company.ticker,metric:id,reportingCurrency:company.currency||"USD"
+        }
+      };
+      if(zero)cfg.shapes=[{type:"line",xref:"paper",yref:"y",x0:0,x1:1,y0:0,y1:0,
+        line:{color:"#95a9b0",width:1,dash:"dot"}}];
+      if(bar)cfg.barmode="group";
+      return cfg;
+    }
+    const line=(name,x,y,color,{dash="solid",percent=false,markers=false}={})=>({
+      type:"scatter",mode:markers?"lines+markers":"lines",x,y,name,
+      marker:{size:4,color},line:{width:2.25,color,dash},
+      hovertemplate:"FY ending %{x|%b %Y}<br>"+
+        (percent?"%{y:.2f}%":"$%{y:,.2f}B")+
+        "<extra>"+name+"</extra>"
+    });
+    const addBoundary=(layout)=>{
+      layout.xaxis.range=[xs[0],end];
+      layout.shapes.push(
+        {type:"rect",xref:"x",yref:"paper",x0:boundary,x1:end,
+          y0:0,y1:1,fillcolor:"rgba(11,127,115,.045)",line:{width:0},layer:"below"},
+        {type:"line",xref:"x",yref:"paper",x0:boundary,x1:boundary,
+          y0:0,y1:1,line:{color:"#93a9a8",width:1.2,dash:"dash"}}
+      );
+    };
+    for(const spec of [
+      {id:"equity-revenue",key:"revenue_musd",label:"Revenue",color:colors.revenue},
+      {id:"equity-operating",key:"operating_income_musd",label:"Operating income",
+        color:colors.operating}
+    ]){
+      if(!selected.has(spec.id))continue;
+      const actual=history.map(r=>value(r[spec.key]));
+      const forecast=result.projected.map(r=>value(r[spec.key]));
+      const showBase=assumptions.growth!==0||assumptions.margin!==0;
+      const traces=[line("Reported "+spec.label,xs,actual,spec.color,{markers:true})];
+      if(showBase){
+        traces.push(line("Unadjusted baseline",xp,
+          result.baseline.map(r=>value(r[spec.key])),bcolor,{dash:"dot"}));
+      }
+      traces.push(line(showBase?"Adjusted scenario":"Modeled forecast",
+        xp,forecast,spec.color,{dash:"dash",markers:true}));
+      const cfg=base(spec.id);
+      addBoundary(cfg);
+      // Reference range includes the current scenario, so optional charts
+      // never clip a meaningful forecast without warning.
+      const values=actual.concat(forecast,showBase?
+        result.baseline.map(r=>value(r[spec.key])):[]);
+      const lo=Math.min(...values),hi=Math.max(...values);
+      const pad=Math.max(.5,(hi-lo)*.13);
+      cfg.yaxis.range=[lo-pad,hi+pad];
+      cfg.meta={...cfg.meta,projectionStart:boundary,projectionEnd:end,
+        method:result.method,conditioned:true};
+      note(spec.id,"Latest reported "+USD(latest[spec.key])+
+        " · "+assumptions.horizon+"-year modeled "+
+        USD(result.projected.at(-1)[spec.key])+
+        " · "+(result.method==="cagr"?"Historical CAGR":"OLS trend"));
+      extraPlot(spec.id,traces,cfg);
+    }
+    if(selected.has("equity-margins")){
+      const margin=(row,key)=>row.revenue_musd>0?
+        100*row[key]/row.revenue_musd:null;
+      const opActual=history.map(r=>margin(r,"operating_income_musd"));
+      const netActual=history.map(r=>margin(r,"net_income_musd"));
+      const opFuture=result.projected.map(r=>margin(r,"operating_income_musd"));
+      const netFuture=result.projected.map(r=>margin(r,"net_income_musd"));
+      const cfg=base("equity-margins",{percent:true});
+      addBoundary(cfg);
+      cfg.yaxis.range=undefined;
+      cfg.meta={...cfg.meta,scenarioGrowthPp:assumptions.growth,
+        scenarioMarginPp:assumptions.margin};
+      const traces=[
+        line("Operating margin · reported",xs,opActual,colors.operating,{percent:true}),
+        line("Net margin · reported",xs,netActual,colors.net,{percent:true}),
+        line("Operating margin · scenario",xp,opFuture,colors.operating,
+          {percent:true,dash:"dash"}),
+        line("Net margin · scenario",xp,netFuture,colors.net,
+          {percent:true,dash:"dash"})
+      ];
+      note("equity-margins","Latest operating margin "+
+        (opActual.at(-1)).toFixed(1)+"% · Net margin "+
+        (netActual.at(-1)).toFixed(1)+"% · Future margins are assumptions.");
+      extraPlot("equity-margins",traces,cfg);
+    }
+    if(selected.has("equity-cashflows")){
+      const rows=complete(r=>Number.isFinite(r.cfo_musd)&&Number.isFinite(r.capex_musd));
+      if(rows.length>=2){
+        const cfg=base("equity-cashflows",{bar:true});
+        cfg.yaxis.title="Cash flow and capex (USD billions)";
+        const xx=rows.map(r=>r.fiscal_end),cfo=rows.map(r=>value(r.cfo_musd)),
+          capex=rows.map(r=>Math.abs(value(r.capex_musd)));
+        const latestValid=rows.at(-1);
+        note("equity-cashflows","Latest disclosed FY "+latestValid.fiscal_end+
+          " · Operating cash "+USD(latestValid.cfo_musd)+
+          " · Capex "+USD(Math.abs(latestValid.capex_musd))+
+          " · Reported years only.");
+        extraPlot("equity-cashflows",[
+          {type:"bar",name:"Operating cash flow",x:xx,y:cfo,
+            marker:{color:colors.revenue},
+            hovertemplate:"FY ending %{x|%b %Y}<br>$%{y:,.2f}B"+
+              "<extra>Operating cash flow</extra>"},
+          {type:"bar",name:"Capital expenditure",x:xx,y:capex,
+            marker:{color:colors.net},
+            hovertemplate:"FY ending %{x|%b %Y}<br>$%{y:,.2f}B"+
+              "<extra>Capital outlay (absolute)</extra>"}
+        ],cfg);
+      }
+    }
+    if(selected.has("equity-fcf")){
+      const rows=complete(r=>Number.isFinite(r.cfo_musd)&&Number.isFinite(r.capex_musd));
+      if(rows.length>=2){
+        const cfg=base("equity-fcf",{zero:true});
+        cfg.yaxis.title="Reported FCF (USD billions)";
+        const y=rows.map(r=>value(r.cfo_musd-Math.abs(r.capex_musd)));
+        const latestValid=rows.at(-1);
+        note("equity-fcf","Latest reported FCF "+
+          USD(latestValid.cfo_musd-Math.abs(latestValid.capex_musd))+
+          " · Operating cash less capex; negative values preserved.");
+        extraPlot("equity-fcf",[
+          line("Free cash flow",rows.map(r=>r.fiscal_end),y,colors.revenue,
+            {markers:true})
+        ],cfg);
+      }
+    }
+    if(selected.has("equity-coverage")){
+      const rows=complete(r=>Number.isFinite(r.operating_income_musd)&&
+        Number.isFinite(r.interest_musd)&&r.interest_musd>0);
+      if(rows.length>=2){
+        const values=rows.map(r=>r.operating_income_musd/r.interest_musd);
+        const cfg=base("equity-coverage",{zero:true});
+        cfg.yaxis={title:"Operating income / interest (×)",
+          ticksuffix:"×",gridcolor:"#edf1f2",automargin:true};
+        note("equity-coverage","Latest disclosed interest coverage "+
+          values.at(-1).toFixed(2)+"× · "+
+          rows.at(-1).fiscal_end+" · No missing expenses inferred.");
+        extraPlot("equity-coverage",[
+          {type:"scatter",mode:"lines+markers",x:rows.map(r=>r.fiscal_end),
+            y:values,name:"Reported interest coverage",
+            marker:{color:colors.operating,size:4},
+            line:{color:colors.operating,width:2.3},
+            hovertemplate:"FY ending %{x|%b %Y}<br>%{y:.2f}×"+
+              "<extra>Interest coverage</extra>"}
+        ],cfg);
+      }
+    }
+    if(selected.has("equity-balance")){
+      const rows=complete(r=>Number.isFinite(r.cash_musd)&&
+        Number.isFinite(r.total_debt_musd));
+      if(rows.length>=2){
+        const cfg=base("equity-balance",{bar:true});
+        cfg.yaxis.title="Reported USD billions";
+        const last=rows.at(-1),xx=rows.map(r=>r.fiscal_end);
+        note("equity-balance","Latest FY "+last.fiscal_end+
+          " · Cash "+USD(last.cash_musd)+" · Total debt "+USD(last.total_debt_musd)+
+          " · No missing debt maturities inferred.");
+        extraPlot("equity-balance",[
+          {type:"bar",x:xx,y:rows.map(r=>value(r.cash_musd)),
+            name:"Reported cash",marker:{color:colors.revenue},
+            hovertemplate:"FY ending %{x|%b %Y}<br>$%{y:,.2f}B<extra>Cash</extra>"},
+          {type:"bar",x:xx,y:rows.map(r=>value(r.total_debt_musd)),
+            name:"Disclosed total debt",marker:{color:colors.operating},
+            hovertemplate:"FY ending %{x|%b %Y}<br>$%{y:,.2f}B<extra>Total debt</extra>"}
+        ],cfg);
+      }
+    }
+  }
+
   function render(){
     if(!company)return;
     try{
