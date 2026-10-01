@@ -82,6 +82,18 @@ async function slide(page,id,value){
     assert.equal(await page.locator(".company-timeline").count(),1);
     assert.equal(await page.locator("#history-chart, #projection-chart").count(),0);
     assert.equal(await page.locator(".workspaces [aria-current=page]").textContent(),"Equities");
+    assert.equal(await page.locator("#controls-heading").textContent(),"Forecast controls");
+    assert.equal(await page.locator("#reset").textContent(),"Reset");
+    const equityHeading=await page.locator(".forecast-heading").evaluate(n=>{
+      const title=n.querySelector("h2").getBoundingClientRect();
+      const reset=n.querySelector("#reset").getBoundingClientRect();
+      const wrapper=n.getBoundingClientRect();
+      return {titleWidth:title.width,containerWidth:wrapper.width,
+        titleBottom:title.bottom,resetTop:reset.top};
+    });
+    assert.ok(equityHeading.titleWidth>equityHeading.containerWidth-2);
+    assert.ok(equityHeading.resetTop>=equityHeading.titleBottom);
+    assert.equal(await page.locator(".controls .eyebrow").count(),0);
     assert.equal(await page.locator(".hero").count(),0,
       "Company forecasts title must stay removed");
     const equitiesCenter=await page.locator(".workspaces").evaluate(n=>{
