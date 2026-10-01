@@ -39,7 +39,7 @@
     "DGS30": "https://fred.stlouisfed.org/series/DGS30",
     "DFF": "https://fred.stlouisfed.org/series/DFF"
   },
-  "retrieved_utc": "2026-10-01T19:04:05+00:00",
+  "retrieved_utc": "2026-10-01T19:08:42+00:00",
   "latest_synchronized_daily_observation": "2026-09-29",
   "latest_month_is_partial": false,
   "frequency": "Last complete COMMON trading-date Treasury cross-section each month; latest month may be partial",
