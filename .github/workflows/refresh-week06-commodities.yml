@@ -50,5 +50,17 @@ jobs:
           fi
           git commit -m "data: refresh verified multi-source monthly commodity benchmarks"
           # Safely integrate concurrent Treasury/data commits before pushing.
-          git pull --rebase origin main
-          git push
+          # GitHub Actions refreshes (and human commits) may push in parallel.
+          # The remote can move between pull and push: retry non-fast-forward
+          # errors rather than failing after a single successful fetch.
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin main
+            if git push origin HEAD:main; then
+              echo "Refreshed data published on attempt ${attempt}."
+              exit 0
+            fi
+            echo "Concurrent push on attempt ${attempt}; retrying..."
+            sleep $((attempt * 2))
+          done
+          echo "Unable to publish after six attempts." >&2
+          exit 1
