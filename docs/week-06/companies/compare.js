@@ -149,9 +149,24 @@
         }));
       }
     }
-    // Each company's fiscal boundary is distinct. Do not imply otherwise with
-    // a shared projection-shading cutoff.
     const starts=traces.flatMap(t=>t.x).sort();
+    // Only forecast-bearing charts need a projection region. Companies can
+    // have different fiscal endpoints, so shade from the LAST reported date:
+    // every selected company is in forecast territory beyond that boundary.
+    // Dashed traces still begin at each company's own last reported date.
+    const forecasts=["company-chart","equity-revenue","equity-operating",
+      "equity-margins"].includes(id);
+    const latestReported=frames.map(f=>f.history.at(-1).fiscal_end).sort().at(-1);
+    const finalProjected=forecasts?
+      frames.map(f=>f.forecast.projected.at(-1).fiscal_end).sort().at(-1):null;
+    const forecastShapes=forecasts&&latestReported<finalProjected?[
+      {type:"rect",xref:"x",yref:"paper",
+        x0:latestReported,x1:finalProjected,y0:0,y1:1,
+        fillcolor:"rgba(11,127,115,.06)",line:{width:0},layer:"below"},
+      {type:"line",xref:"x",yref:"paper",
+        x0:latestReported,x1:latestReported,y0:0,y1:1,
+        line:{color:"#92aba7",width:1.35,dash:"dash"}}
+    ]:[];
     const yLabel=index?"Index (100 = shared FY "+anchorYear+")":
       nativeUnit==="percent"?"Percent (%)":nativeUnit==="ratio"?
         "Interest coverage (×)":"USD billions";
@@ -161,12 +176,15 @@
         nativeUnit==="usd"?"Nominal reported USD billions":
           nativeUnit==="percent"?"Reported and assumed margins (%)":
             "Reported operating income / interest expense")+" · "+
-      "Actual fiscal dates; dashed lines are separately modeled forecasts.";
+      "Actual fiscal dates; dashed lines are separately modeled forecasts."+
+      (forecastShapes.length?" Shading begins after the latest reported date "+
+        "when all selected companies are projected.":"");
     return {traces,context,
       layout:{
         autosize:true,
         margin:{l:65,r:14,t:53,b:42,autoexpand:false},
         paper_bgcolor:"#fff",plot_bgcolor:"#fff",
+        shapes:forecastShapes,
         font:{family:"Inter,system-ui,sans-serif",size:10,color:"#465865"},
         showlegend:true,hovermode:"closest",
         legend:{orientation:"h",x:.5,xanchor:"center",y:1.16,
@@ -178,7 +196,8 @@
           ticksuffix:!index&&nativeUnit==="usd"?"B":"",
           gridcolor:"#edf1f2",automargin:true},
         meta:{comparison:true,tickers:frames.map(f=>f.ticker),primary:frames[0].ticker,
-          indexed:index,anchorFiscalYear:anchorYear,perCompanyFiscalCalendars:true}
+          indexed:index,anchorFiscalYear:anchorYear,perCompanyFiscalCalendars:true,
+          sharedProjectionStart:forecastShapes.length?latestReported:null}
       }
     };
   }
