@@ -1,0 +1,42 @@
+name: Week 6 interactive dashboard browser smoke
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "docs/index.html"
+      - "docs/assets/site-transitions.css"
+      - "docs/week-06/**"
+      - "tests/week06_browser.test.cjs"
+      - ".github/workflows/test-week06-ui.yml"
+  push:
+    branches:
+      - main
+      - fix/week06-interactions-transitions
+    paths:
+      - "docs/index.html"
+      - "docs/assets/site-transitions.css"
+      - "docs/week-06/**"
+      - "tests/week06_browser.test.cjs"
+      - ".github/workflows/test-week06-ui.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  browser-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install browser test dependencies
+        run: |
+          npm install --no-save playwright@1.55.1 plotly.js-dist-min@2.32.0
+          npx playwright install --with-deps chromium
+      - name: Check scenario math
+        run: node --test tests/week_06_model.test.cjs
+      - name: Test real interactions and navigation in Chromium
+        run: node tests/week06_browser.test.cjs
