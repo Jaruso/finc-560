@@ -37,7 +37,7 @@ jobs:
         run: |
           python -m unittest discover -s tests -p 'test_week_06_companies.py'
           python -m unittest discover -s tests -p 'test_week06_featured_snapshots.py'
-          node --test tests/week06_companies_model.test.cjs
+          node --test tests/week06_companies_model.test.cjs tests/research_model.test.cjs
       - name: Install isolated browser test tools
         run: |
           npm install --no-save playwright@1.55.1 plotly.js-dist-min@2.32.0

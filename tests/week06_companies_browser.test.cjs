@@ -56,6 +56,51 @@ async function slide(page,id,value){
           d:ticker==="AAPL"?-1.23:2.55,dp:ticker==="AAPL"?-0.5:2.11,t:1790812740}
       });
     });
+    // Mock all public Finnhub routes. No real secret or live API dependency in CI.
+    await page.route("https://finc-560-finnhub.joseph-caruso-pc.workers.dev/profile?*",route=>{
+      const ticker=new URL(route.request().url()).searchParams.get("symbol");
+      assert.equal(route.request().headers().authorization,undefined);
+      return route.fulfill({headers:{"access-control-allow-origin":"*"},json:{
+        name:ticker==="NVDA"?"Research Example Corporation":ticker,
+        ticker,currency:"USD",finnhubIndustry:"Technology",
+        shareOutstanding:15000,marketCapitalization:2000000
+      }});
+    });
+    await page.route("https://finc-560-finnhub.joseph-caruso-pc.workers.dev/metrics?*",route=>
+      route.fulfill({headers:{"access-control-allow-origin":"*"},
+        json:{metric:{beta:1.15,peBasicExclExtraTTM:22.5,currentRatioAnnual:1.42}}}));
+    await page.route("https://finc-560-finnhub.joseph-caruso-pc.workers.dev/financials?*",route=>{
+      const ticker=new URL(route.request().url()).searchParams.get("symbol");
+      if(ticker!=="NVDA")return route.fulfill({
+        headers:{"access-control-allow-origin":"*"},json:{symbol:ticker,cik:1234567,data:[]}
+      });
+      const d=fixture("NVDA");
+      const data=d.annual.map((r,i)=>({
+        year:2019+i,endDate:r.fiscal_end,
+        startDate:r.fiscal_start,filedDate:(2019+i)+"-08-01",
+        accessNumber:"0000123456-"+String(2019+i).slice(-2)+"-000001",form:"10-K",
+        report:{
+          ic:[
+            {concept:"us-gaap_RevenueFromContractWithCustomerExcludingAssessedTax",unit:"USD",value:r.revenue_musd*1e6},
+            {concept:"us-gaap_OperatingIncomeLoss",unit:"USD",value:r.operating_income_musd*1e6},
+            {concept:"us-gaap_NetIncomeLoss",unit:"USD",value:r.net_income_musd*1e6},
+            {concept:"us-gaap_InterestExpenseNonOperating",unit:"USD",value:2300e6}
+          ],
+          bs:[
+            {concept:"us-gaap_CashAndCashEquivalentsAtCarryingValue",unit:"USD",value:20000e6},
+            {concept:"us-gaap_LongTermDebtCurrent",unit:"USD",value:12000e6},
+            {concept:"us-gaap_LongTermDebtNoncurrent",unit:"USD",value:75000e6}
+          ],
+          cf:[
+            {concept:"us-gaap_NetCashProvidedByUsedInOperatingActivities",unit:"USD",value:26000e6},
+            {concept:"us-gaap_PaymentsToAcquirePropertyPlantAndEquipment",unit:"USD",value:5500e6},
+            {concept:"us-gaap_DepreciationDepletionAndAmortization",unit:"USD",value:3400e6}
+          ]
+        }
+      }));
+      return route.fulfill({headers:{"access-control-allow-origin":"*"},
+        json:{symbol:ticker,cik:123456,data}});
+    });
     await page.route("**/week-06/companies/data/*.json",route=>{
       const ticker=route.request().url().match(/\/([A-Z]+)\.json$/)?.[1];
       const d=fixture(ticker);
@@ -346,6 +391,30 @@ async function slide(page,id,value){
     assert.equal(await page.locator("#data-error").isVisible(),false);
     assert.ok(await page.locator("#company-chart").evaluate(g=>g.data?.length>=2),
       "Market-quote failure may not break the SEC-backed financial forecast");
+    marketUnavailable=false;
+    // Arbitrary ticker with complete as-reported filings exercises all three panels.
+    await page.locator("#custom-ticker").fill("NVDA");
+    await page.locator("#symbol-form button").click();
+    await page.waitForFunction(()=>document.querySelector("#source-period")
+      ?.textContent==="FY ending 2025-06-30");
+    await page.waitForFunction(()=>document.querySelector("#research-source")
+      ?.textContent.includes("As-reported 10-K"));
+    assert.equal(await page.locator("#company-name").textContent(),"Research Example Corporation");
+    assert.match(await page.locator("#research-sector").textContent(),/Technology/);
+    assert.match(await page.locator("#health-kpis").textContent(),/Interest coverage/);
+    assert.match(await page.locator("#stress-kpis").textContent(),/Stressed coverage/);
+    assert.match(await page.locator("#valuation-kpis").textContent(),/Implied equity value\/share/);
+    assert.equal(await page.locator("#health-chart").isHidden(),false);
+    assert.equal(await page.locator("#stress-chart").isHidden(),false);
+    assert.equal(await page.locator("#valuation-chart").isHidden(),false);
+    const before=await page.locator("#stress-kpis").textContent();
+    await slide(page,"#rate-shock",200);
+    assert.notEqual(await page.locator("#stress-kpis").textContent(),before);
+    const valueBefore=await page.locator("#valuation-kpis").textContent();
+    await slide(page,"#discount-rate",12);
+    assert.notEqual(await page.locator("#valuation-kpis").textContent(),valueBefore);
+    assert.equal(await page.locator("#data-error").isVisible(),false);
+    assert.deepEqual(errors,[],"No uncaught browser errors during research loading");
     onCompany=false;
     await page.locator(".workspaces a").first().click();
     await page.waitForURL("**/week-06/");
