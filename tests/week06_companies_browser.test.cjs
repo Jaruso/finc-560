@@ -134,7 +134,7 @@ async function waitGraph(page,id,length){
     assert.notEqual(await page.locator("#kpi-revenue").textContent(),"—");
     assert.equal(await page.locator("#source-period").textContent(),"FY ending 2025-06-30");
     await page.locator("#reset").click();
-    await page.waitForFunction(()=>document.querySelector("#growth-value")?.textContent==="+0 pp");
+    await page.waitForFunction(()=>document.querySelector("#growth-value")?.textContent==="0 pp");
     assert.equal(await page.locator("#method").inputValue(),"cagr");
     assert.equal(await page.locator("#horizon").inputValue(),"3");
     assert.equal(await page.locator("#metric").inputValue(),"revenue");

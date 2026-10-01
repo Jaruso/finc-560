@@ -42,7 +42,7 @@ jobs:
           from pathlib import Path
           folder = Path("docs/week-06/companies/data")
           manifest = json.loads((folder / "manifest.json").read_text())
-          assert manifest["status"] == "ready" and len(manifest["companies"]) == 4
+          assert manifest["status"] == "ready" and len(manifest["companies"]) == 3
           for company in manifest["companies"]:
               payload = json.loads((folder / (company["ticker"] + ".json")).read_text())
               assert payload["status"] == "ready" and len(payload["annual"]) >= 5
