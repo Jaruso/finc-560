@@ -19,7 +19,20 @@
     method:el("method").value,horizon:Number(el("horizon").value),
     growth:Number(el("growth").value),margin:Number(el("margin").value)
   });
-  const fullChartHeight=()=>el("company-chart").clientHeight||340;
+  // Compute the plot viewport from the chart CARD, not the Plotly div
+  // itself. The div includes Plotly's previous inline height and a flex
+  // header; measuring it recursively would shrink the plot ~45px after
+  // every slider movement despite an identical y-axis range.
+  let cachedPlotHeight=null;
+  const fullChartHeight=()=>{
+    if(cachedPlotHeight!==null)return cachedPlotHeight;
+    const card=el("company-chart").closest(".chart-card");
+    const header=card.querySelector(".chart-heading");
+    const style=window.getComputedStyle(card);
+    const pad=(parseFloat(style.paddingTop)||0)+(parseFloat(style.paddingBottom)||0);
+    cachedPlotHeight=Math.max(235,Math.floor(card.clientHeight-header.offsetHeight-pad-2));
+    return cachedPlotHeight;
+  };
   // Plotly.react is async; rapidly changing sliders must not let an older
   // render paint over the most recent scenario.
   let queuedPlot=null,renderingPlot=false;
@@ -263,7 +276,8 @@
       });
       let timer;
       window.addEventListener("resize",()=>{
-        clearTimeout(timer);timer=setTimeout(render,130);
+        clearTimeout(timer);
+        timer=setTimeout(()=>{cachedPlotHeight=null;render();},130);
       });
       const res=await fetch("./data/manifest.json",{cache:"no-cache"});
       if(!res.ok)throw Error("Featured SEC financial snapshots are not published yet.");
