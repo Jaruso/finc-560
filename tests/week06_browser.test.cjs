@@ -176,7 +176,10 @@ async function slide(page,id,v){
     await page.selectOption("#chart-context","180");
     await page.waitForFunction(()=>document.querySelector("#chart-yields")?.data?.[0]?.x.length===180);
 
-    await page.selectOption("#chart-primary","chart-spread");
+    await page.locator("#chart-picker summary").click();
+    for(const id of ["chart-yields","chart-policy","chart-accuracy"]){
+      await page.locator("#chart-picker input[value="+id+"]").uncheck();
+    }
     await page.waitForFunction(()=>document.querySelector("#chart-spread")?.data?.length===4);
     const spread=await page.locator("#chart-spread").evaluate(n=>({
       first:n.data[0].y.at(-1),central:n.data[3].y,
@@ -209,7 +212,7 @@ async function slide(page,id,v){
     await page.waitForFunction(()=>document.querySelector("#delta-value").textContent==="0 bps");
     assert.equal(await page.locator("#horizon").inputValue(),"12");
     assert.equal(await page.locator("#show-bands").isChecked(),true);
-    await page.selectOption("#chart-primary","chart-yields");
+    assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"4");
     await page.waitForFunction(()=>document.querySelector("#chart-yields")?.data?.length===8);
     const desktop=await page.evaluate(()=>({
       bottom:document.querySelector("#chart-stage").getBoundingClientRect().bottom,
