@@ -30,3 +30,7 @@ Inside `worker/`: `npm install` then `npm test`. For local `npx wrangler dev`, c
 
 Cloudflare Workers Builds: https://developers.cloudflare.com/workers/ci-cd/builds/
 Finnhub API: https://finnhub.io/docs/api/
+
+## Three-panel research integration
+
+The Equities dashboard now starts parallel /profile, /metrics and /financials requests for each selected valid ticker; /quote remains independently refreshed. New USD US tickers are entered through the Analyze form. Responses never contain FINNHUB_TOKEN. It normalizes only explicitly supported as-reported USD US-GAAP annual 10-K concepts, deduplicating amendments, and requires five complete annual filings before enabling legacy CAGR/OLS forecasts. Curated verified snapshots remain if Finnhub fails or returns an older/incomplete statement history. The separate corporate financial resilience, Treasury-linked interest stress and simplified FCFF sensitivity panels are for analytical decision support, not price targets. Credit spread and exposed debt are **assumptions**. The existing Macro dashboard provides dated modeled baseline Treasury yields, not observed refinancing costs. Missing fields disable unsupported ratios/charts.

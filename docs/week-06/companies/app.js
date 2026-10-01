@@ -7,6 +7,8 @@
   const labels={revenue:"Revenue",operating:"Operating income",net:"Net income"};
   const cache=new Map();
   let manifest=null,company=null,sequence=0,scheduled=null;
+  let activeTicker=null;
+  const research=window.EquityResearchUI;
   // Public Worker address, not a credential. FINNHUB_TOKEN is server-side.
   const QUOTE_API="https://finc-560-finnhub.joseph-caruso-pc.workers.dev";
   let quoteController=null,quoteGeneration=0;
@@ -22,7 +24,7 @@
   }
   async function loadQuote(ticker){
     // Tickers are restricted to the verified published manifest.
-    if(!company || company.ticker!==ticker || !manifest?.companies.some(c=>c.ticker===ticker))return;
+    if(!ticker||activeTicker!==ticker)return;
     const generation=++quoteGeneration;
     if(quoteController)quoteController.abort();
     const controller=new AbortController();
@@ -38,7 +40,7 @@
       }
       const quote=await response.json();
       if(!Number.isFinite(quote.c)||quote.c<=0)throw Error("Finnhub returned no usable market price.");
-      if(generation!==quoteGeneration||company?.ticker!==ticker)return;
+      if(generation!==quoteGeneration||activeTicker!==ticker)return;
       const change=Number.isFinite(quote.d)?quote.d:
         Number.isFinite(quote.pc)&&quote.pc>0?quote.c-quote.pc:null;
       const percentage=Number.isFinite(quote.dp)?quote.dp:
@@ -52,13 +54,14 @@
         (percentage===null?"":" ("+(percentage>=0?"+":"−")+Math.abs(percentage).toFixed(2)+"%)");
       const stamp=Number.isFinite(quote.t)&&quote.t>=946684800&&
         quote.t<=Date.now()/1000+120?new Date(quote.t*1000):null;
+      research.setQuote(ticker,quote);
       el("quote-status").textContent=stamp
         ?"Finnhub · As of "+stamp.toLocaleString("en-US",{
           month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZoneName:"short"
         })+" · May be delayed"
         :"Finnhub latest quote · Time unavailable; may be delayed";
     }catch(error){
-      if(generation!==quoteGeneration||company?.ticker!==ticker)return;
+      if(generation!==quoteGeneration||activeTicker!==ticker)return;
       if(error.name==="AbortError")return;
       el("quote-price").textContent="—";
       el("quote-change").textContent="Unavailable";
@@ -268,51 +271,90 @@
     el("data-error").hidden=false;
     el("data-error").textContent=String(error.message||error);
   }
+  function showAnnual(payload){
+    if(!payload)return;
+    company=payload;
+    el("company-name").textContent=payload.company;
+    el("source-period").textContent="FY ending "+payload.annual.at(-1).fiscal_end;
+    el("data-refresh").textContent=payload.refresh_mode==="finnhub-as-reported"
+      ?"Finnhub 10-K financials · Retrieved "+payload.retrieved_utc.slice(0,10):
+      payload.refresh_mode==="curated"?"Verified annual snapshot · "+payload.retrieved_utc.slice(0,10):
+      "SEC refreshed "+payload.retrieved_utc.slice(0,10);
+    const source=payload.data_source;
+    if(source&&/^https:\/\/(?:data\.sec\.gov\/api\/xbrl\/companyfacts\/CIK\d{10}\.json|www\.sec\.gov\/Archives\/edgar\/data\/|(?:www\.)?microsoft\.com\/)/.test(source)){
+      el("sec-link").href=source;
+    }
+    el("data-error").hidden=true;
+    render();
+  }
+  function clearAnnual(ticker){
+    company=null;
+    el("company-name").textContent=ticker+" · Awaiting reported financials";
+    el("source-period").textContent="Awaiting 10-K data";
+    el("data-refresh").textContent="Finnhub as-reported · Checking coverage";
+    for(const id of ["kpi-revenue","kpi-profit","kpi-forecast-revenue","kpi-forecast-profit",
+      "preview-revenue","preview-profit"])el(id).textContent="—";
+    el("model-note").textContent="This company needs five comparable filings to enable revenue forecasts.";
+    el("backtest").textContent="Awaiting complete annual reports.";
+    el("chart-footnote").textContent="No historical or modeled values are shown until source validation succeeds.";
+    if(window.Plotly)window.Plotly.purge("company-chart");
+  }
   async function loadCompany(ticker){
-    if(!manifest)return;
+    if(!manifest||!M||!research)return;
+    ticker=String(ticker||"").trim().toUpperCase();
+    if(!/^[A-Z][A-Z.]{0,9}$/.test(ticker))return;
     const generation=++sequence;
+    activeTicker=ticker;
     el("company-name").textContent="Loading "+ticker+"…";
     resetQuote();
     el("data-error").hidden=true;
+    scaleContext=null;manualYRange=null;lastRenderedValues=null;
+    const item=manifest.companies.find(row=>row.ticker===ticker);
+    let curated=null;
     try{
-      let payload=cache.get(ticker);
-      if(!payload){
-        // Do not construct URLs from untrusted user input. Ticker must be
-        // an exact member of our verified published SEC manifest.
-        const item=manifest.companies.find(row=>row.ticker===ticker);
-        if(!item||!/^data\/[A-Z.]{1,10}\.json$/.test(item.file)){
-          throw Error("That ticker is not in the refreshed featured dataset.");
+      if(item){
+        curated=cache.get(ticker);
+        if(!curated){
+          if(!/^data\/[A-Z.]{1,10}\.json$/.test(item.file)){
+            throw Error("Published manifest contains an invalid company data path.");
+          }
+          const response=await fetch("./"+item.file,{cache:"no-cache"});
+          if(!response.ok)throw Error("Verified financial snapshots unavailable for "+ticker);
+          curated=M.verify(await response.json());
+          if(curated.ticker!==ticker)throw Error("Ticker does not match SEC snapshot");
+          cache.set(ticker,curated);
         }
-        const response=await fetch("./"+item.file,{cache:"no-cache"});
-        if(!response.ok)throw Error("Financial statements unavailable for "+ticker);
-        payload=M.verify(await response.json());
-        if(payload.ticker!==ticker)throw Error("Ticker does not match SEC snapshot");
-        cache.set(ticker,payload);
       }
       if(generation!==sequence)return;
-      company=payload;
-      el("company-name").textContent=payload.company;
-      el("source-period").textContent="FY ending "+payload.annual.at(-1).fiscal_end;
-      el("data-refresh").textContent=payload.refresh_mode==="curated"
-        ? "Verified annual snapshot · "+payload.retrieved_utc.slice(0,10)
-        : "SEC refreshed "+payload.retrieved_utc.slice(0,10);
-      // The URL is validated against the SEC API origin before link use.
-      const source=payload.data_source;
-      if(source&&/^https:\/\/(?:data\.sec\.gov\/api\/xbrl\/companyfacts\/CIK\d{10}\.json|www\.sec\.gov\/Archives\/edgar\/data\/|(?:www\.)?microsoft\.com\/)/.test(source)){
-        el("sec-link").href=source;
-      }
-      render();
+      if(curated)showAnnual(curated);
+      else clearAnnual(ticker);
       void loadQuote(ticker);
+      void research.load(ticker,curated,normalized=>{
+        if(generation!==sequence||activeTicker!==ticker)return;
+        const validated=M.verify(normalized);
+        // Do not replace a newer curated fiscal year with an older filing.
+        if(curated&&validated.annual.at(-1).fiscal_end<curated.annual.at(-1).fiscal_end)return;
+        showAnnual(validated);
+      });
     }catch(error){
       if(generation!==sequence)return;
-      company=null;
-      el("company-name").textContent="Financial data unavailable";
-      showError(error);
+      clearAnnual(ticker);
+      // Keep the live profile, metrics and statement retrieval available
+      // even when a featured local snapshot could not be retrieved.
+      void loadQuote(ticker);
+      void research.load(ticker,null,normalized=>{
+        if(generation!==sequence)return;
+        showAnnual(M.verify(normalized));
+      });
     }
   }
   async function initialize(){
     try{
-      if(!window.Plotly||!M)throw Error("Browser forecasting engine unavailable.");
+      if(!window.Plotly||!M||!research)throw Error("Browser research or forecasting engine unavailable.");
+      research.init();
+      el("symbol-form").addEventListener("research-ticker",event=>{
+        void loadCompany(event.detail.ticker);
+      });
       for(const id of ["method","horizon","metric","history"]){
         el(id).addEventListener("change",queueRender);
       }
@@ -322,11 +364,11 @@
       }
       el("ticker").addEventListener("change",()=>void loadCompany(el("ticker").value));
       el("quote-refresh").addEventListener("click",()=>{
-        if(company)void loadQuote(company.ticker);
+        if(activeTicker)void loadQuote(activeTicker);
       });
       // Refresh displayed market quotes approximately once per minute, only in visible tabs.
       window.setInterval(()=>{
-        if(company&&document.visibilityState==="visible")void loadQuote(company.ticker);
+        if(activeTicker&&document.visibilityState==="visible")void loadQuote(activeTicker);
       },60000);
       el("fit-company-projection").addEventListener("click",()=>{
         if(!lastRenderedValues||!company)return;

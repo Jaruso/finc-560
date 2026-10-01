@@ -9,10 +9,12 @@
   <link rel="stylesheet" href="../../assets/styles.css?v=20260906-week3-redesign">
   <link rel="stylesheet" href="../../assets/site-transitions.css?v=20261001">
   <link rel="stylesheet" href="../dashboard.css?v=sidebar-titles-202610">
-  <link rel="stylesheet" href="./company.css?v=week06-centered-nav-202610">
+  <link rel="stylesheet" href="./company.css?v=research-lab-20261001">
   <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
   <script defer src="./model.js?v=1"></script>
-  <script defer src="./app.js?v=finnhub-quote-20261001"></script>
+  <script defer src="./research.js?v=20261001"></script>
+  <script defer src="./research-ui.js?v=20261001"></script>
+  <script defer src="./app.js?v=research-lab-20261001"></script>
 </head>
 <body>
   <header class="site-header week-06-header company-header">
@@ -46,6 +48,15 @@
             </select>
           </label>
           <p id="company-name" class="company-name" aria-live="polite"></p>
+          <form id="symbol-form" class="ticker-entry" autocomplete="off">
+            <label for="custom-ticker">Research another US ticker</label>
+            <div class="ticker-entry-row">
+              <input id="custom-ticker" name="symbol" placeholder="e.g. NVDA or BRK.B"
+                maxlength="10" aria-describedby="ticker-input-status">
+              <button class="secondary" type="submit">Analyze</button>
+            </div>
+            <p id="ticker-input-status" class="ticker-input-status" role="status"></p>
+          </form>
           <section class="market-quote" aria-label="Latest market quote from Finnhub">
             <div class="market-quote-heading">
               <span>Market quote</span>
@@ -136,5 +147,81 @@
       </section>
     </div>
   </main>
+  <section class="research-board" aria-label="Company research and risk scenarios">
+    <header class="research-header">
+      <div>
+        <p class="research-eyebrow">FINC 560 · Corporate credit research</p>
+        <h2 id="research-company">Company research</h2>
+        <p id="research-sector" class="research-muted">Industry unavailable</p>
+      </div>
+      <div class="research-meta">
+        <strong id="research-market-cap">Market cap unavailable</strong>
+        <p id="research-metrics" class="research-muted">Finnhub fundamentals loading…</p>
+        <p id="research-source" class="research-muted">Awaiting reported statements…</p>
+        <a id="research-filing-link" href="https://www.sec.gov/edgar/search/"
+          target="_blank" rel="noopener noreferrer" hidden>View underlying SEC filing ↗</a>
+      </div>
+    </header>
+    <p id="research-status" class="research-state" aria-live="polite">Loading research data…</p>
+    <div class="research-columns">
+      <article class="research-panel card" aria-labelledby="health-title">
+        <div class="research-panel-heading">
+          <span class="research-number">01</span>
+          <div><h3 id="health-title">Financial resilience</h3>
+            <p>Can reported cash generation support debt servicing?</p></div>
+        </div>
+        <p id="health-kpis" class="research-kpis">Awaiting annual statements…</p>
+        <div id="health-chart" class="research-chart" role="img"
+          aria-label="Reported free cash flow versus interest expense" hidden></div>
+        <p id="health-note" class="research-note">Loading available financial statement fields…</p>
+        <p class="research-decision"><strong>Decision supported:</strong>
+          Detect changes in profitability, cash generation and debt-service capacity.</p>
+      </article>
+      <article class="research-panel card" aria-labelledby="stress-title">
+        <div class="research-panel-heading">
+          <span class="research-number">02</span>
+          <div><h3 id="stress-title">Treasury-linked rate stress</h3>
+            <p>What happens if exposed borrowing costs reprice?</p></div>
+        </div>
+        <div class="research-sliders">
+          <label>10Y forecast shock <input id="rate-shock" type="range" min="-300" max="300"
+            step="50" value="0"></label>
+          <label>Assumed credit spread <input id="spread-bps" type="range" min="0" max="800"
+            step="25" value="200"></label>
+          <label>Assumed exposed debt <input id="exposed-pct" type="range" min="0" max="100"
+            step="10" value="40"></label>
+        </div>
+        <p id="scenario-inputs" class="research-muted">Awaiting Treasury baseline…</p>
+        <p id="stress-kpis" class="research-kpis">Awaiting reported interest and debt…</p>
+        <div id="stress-chart" class="research-chart" role="img"
+          aria-label="Illustrative interest coverage by ten-year Treasury shock" hidden></div>
+        <p id="stress-note" class="research-note">No corporate borrowing rates are inferred from Treasury yields.</p>
+        <p class="research-decision"><strong>Decision supported:</strong>
+          Explore hypothetical refinancing and floating-rate exposure.</p>
+      </article>
+      <article class="research-panel card" aria-labelledby="valuation-title">
+        <div class="research-panel-heading">
+          <span class="research-number">03</span>
+          <div><h3 id="valuation-title">Illustrative cash-flow valuation</h3>
+            <p>How sensitive is implied value to model assumptions?</p></div>
+        </div>
+        <div class="research-sliders">
+          <label>Five-year FCFF growth <input id="fcf-growth" type="range" min="-20" max="25"
+            step="1" value="5"></label>
+          <label>Discount rate <input id="discount-rate" type="range" min="5" max="25"
+            step="1" value="10"></label>
+          <label>Terminal growth <input id="terminal-growth" type="range" min="0" max="4"
+            step="1" value="2"></label>
+        </div>
+        <p id="valuation-inputs" class="research-muted">Awaiting financial statements…</p>
+        <p id="valuation-kpis" class="research-kpis">Awaiting cash flow, net debt and share count…</p>
+        <div id="valuation-chart" class="research-chart" role="img"
+          aria-label="Illustrative equity-value sensitivity to discount and cash-flow growth" hidden></div>
+        <p id="valuation-note" class="research-note">An assumption-driven sensitivity, never a price target.</p>
+        <p class="research-decision"><strong>Decision supported:</strong>
+          Identify which valuation assumptions drive the greatest sensitivity.</p>
+      </article>
+    </div>
+  </section>
 </body>
 </html>
