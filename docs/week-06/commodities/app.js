@@ -355,7 +355,7 @@ async function init(){
         state.plotHeight=null;schedule();
       }
     });
-    state.canvas.setAvailable(OPTIONS.filter(id=>id!=="commodity-shock"));
+    state.canvas.setAvailable([]); // Hide all studies until a verified FRED snapshot loads.
     el("commodity").addEventListener("change",choose);
     for(const id of ["model","horizon","half-life","vol","history"])
       el(id).addEventListener("change",schedule);
