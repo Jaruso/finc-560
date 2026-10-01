@@ -29,7 +29,7 @@
     <header class="hero">
       <div><h1>Company forecasts</h1></div>
       <div class="source-stamp">
-        <span class="stamp-label">SEC annual filings</span>
+        <span class="stamp-label">Annual financial reports</span>
         <strong id="source-period">Loading…</strong>
         <span id="data-refresh">Featured-company snapshots</span>
       </div>
@@ -82,9 +82,9 @@
           <details class="methods card">
             <summary>Data and methods</summary>
             <div class="methods-body">
-              <p>Historical revenue, operating income and net income come from the SEC's annual <a href="https://www.sec.gov/edgar/search/">EDGAR</a> Company Facts US-GAAP data, without interpolated quarters. Individual filing concepts and accession numbers are included in each published company snapshot.</p>
+              <p>Initial featured-company figures come from directly linked public annual reports and SEC 10-K disclosures, with the latest source linked for each company. The Microsoft FY2026 source is its official annual earnings release. These are verified snapshots; automated SEC refresh is paused while hosted-runner access returns 403. No synthetic company data are published.</p>
               <p>Revenue forecasts use an OLS trend or a CAGR fitted to recent annual revenue. Operating and net margins use three-year recency-weighted historical averages. Growth adjustments compound relative to the selected baseline, while the margin adjustment changes both derived projected profit margins by the stated percentage points. This is a driver-based <em>conditional</em> projection, not a probability distribution or a complete integrated financial-statement model.</p>
-              <p>SEC filing dates, amendments, fiscal calendars and taxonomy changes can affect year-to-year comparability. Featured-company snapshots update when scheduled GitHub Actions successfully refreshes all companies. No API keys or simulated financials are included in the public site.</p>
+              <p>Fiscal-calendar differences and amendments affect comparability. The initial data are dated, and any future automated SEC refresh must pass all-source validation before replacing them. Forecasts are browser-calculated; no API key or invented historical data are published.</p>
               <p><a id="sec-link" href="https://www.sec.gov/edgar/search/" target="_blank" rel="noopener noreferrer">View source financial statements</a></p>
             </div>
           </details>

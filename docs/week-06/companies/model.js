@@ -16,7 +16,10 @@
        !d.annual.every((r,i)=>/^\d{4}-\d\d-\d\d$/.test(r.fiscal_end||"") &&
          r.revenue_musd>0 && Object.values(METRICS).every(k=>Number.isFinite(r[k])) &&
          (!i || r.fiscal_end>d.annual[i-1].fiscal_end) &&
-         r.filings && Object.values(r.filings).every(f=>f.filed && f.accession))){
+         r.filings && Object.values(r.filings).every(f=>
+           (f.filed && f.accession) ||
+           (typeof f.source_url === "string" &&
+            /^https:\/\/(?:www\.sec\.gov|www\.microsoft\.com|microsoft\.com)\//.test(f.source_url))))){
       throw new Error("Verified comparable annual SEC financials are unavailable.");
     }
     return d;

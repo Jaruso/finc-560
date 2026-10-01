@@ -112,7 +112,7 @@
       el("model-note").textContent=assumptions.growth===0&&assumptions.margin===0?
         "Historical "+(assumptions.method==="cagr"?"CAGR":"OLS trend")+
         " revenue with recent weighted profit margins.":
-        "Conditional "+(assumptions.growth>=0?"+":"")+assumptions.growth+
+        (assumptions.method==="cagr"?"CAGR":"OLS trend")+" · conditional "+(assumptions.growth>=0?"+":"")+assumptions.growth+
         " pp growth and "+(assumptions.margin>=0?"+":"")+assumptions.margin+
         " pp margin versus baseline; assumptions, not probabilities.";
       const back=M.backtestRevenue(company,assumptions.method);
@@ -157,10 +157,12 @@
       company=payload;
       el("company-name").textContent=payload.company;
       el("source-period").textContent="FY ending "+payload.annual.at(-1).fiscal_end;
-      el("data-refresh").textContent="Fetched "+payload.retrieved_utc.slice(0,10);
+      el("data-refresh").textContent=payload.refresh_mode==="curated"
+        ? "Verified annual snapshot · "+payload.retrieved_utc.slice(0,10)
+        : "SEC refreshed "+payload.retrieved_utc.slice(0,10);
       // The URL is validated against the SEC API origin before link use.
       const source=payload.data_source;
-      if(source&&/^https:\/\/data\.sec\.gov\/api\/xbrl\/companyfacts\/CIK\d{10}\.json$/.test(source)){
+      if(source&&/^https:\/\/(?:data\.sec\.gov\/api\/xbrl\/companyfacts\/CIK\d{10}\.json|www\.sec\.gov\/Archives\/edgar\/data\/|(?:www\.)?microsoft\.com\/)/.test(source)){
         el("sec-link").href=source;
       }
       render();

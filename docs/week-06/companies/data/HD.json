@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "status": "ready",
+  "refresh_mode": "curated",
+  "ticker": "HD",
+  "cik": "0000354950",
+  "company": "The Home Depot, Inc.",
+  "retrieved_utc": "2026-09-30",
+  "currency": "USD",
+  "unit": "USD millions",
+  "form": "Annual issuer reports / SEC 10-K",
+  "data_source": "https://www.sec.gov/Archives/edgar/data/354950/000162828026019436/hd-20260201.htm",
+  "as_reported_note": "Annual consolidated net sales, operating income and net earnings from FY2022/FY2025 SEC 10-Ks; fiscal 2024 is a 53-week year.",
+  "annual": [
+    {
+      "fiscal_end": "2022-01-30",
+      "revenue_musd": 151157,
+      "operating_income_musd": 23040,
+      "net_income_musd": 16433,
+      "filings": {
+        "revenue": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/354950/000035495023000059/hd-20230129.htm"
+        },
+        "operating": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/354950/000035495023000059/hd-20230129.htm"
+        },
+        "net": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/354950/000035495023000059/hd-20230129.htm"
+        }
+      },
+      "source_url": "https://www.sec.gov/Archives/edgar/data/354950/000035495023000059/hd-20230129.htm"
+    },
+    {
+      "fiscal_end": "2023-01-29",
+      "revenue_musd": 157403,
+      "operating_income_musd": 24039,
+      "net_income_musd": 17105,
+      "filings": {
+        "revenue": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/354950/000035495023000059/hd-20230129.htm"
+        },
+        "operating": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/354950/000035495023000059/hd-20230129.htm"
+        },
+        "net": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/354950/000035495023000059/hd-20230129.htm"
+        }
+      },
+      "source_url": "https://www.sec.gov/Archives/edgar/data/354950/000035495023000059/hd-20230129.htm"
+    },
+    {
+      "fiscal_end": "2024-01-28",
+      "revenue_musd": 152669,
+      "operating_income_musd": 21689,
+      "net_income_musd": 15143,
+      "filings": {
+        "revenue": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/354950/000162828026019436/hd-20260201.htm"
+        },
+        "operating": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/354950/000162828026019436/hd-20260201.htm"
+        },
+        "net": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/354950/000162828026019436/hd-20260201.htm"
+        }
+      },
+      "source_url": "https://www.sec.gov/Archives/edgar/data/354950/000162828026019436/hd-20260201.htm"
+    },
+    {
+      "fiscal_end": "2025-02-02",
+      "revenue_musd": 159514,
+      "operating_income_musd": 21526,
+      "net_income_musd": 14806,
+      "filings": {
+        "revenue": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/354950/000162828026019436/hd-20260201.htm"
+        },
+        "operating": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/354950/000162828026019436/hd-20260201.htm"
+        },
+        "net": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/354950/000162828026019436/hd-20260201.htm"
+        }
+      },
+      "source_url": "https://www.sec.gov/Archives/edgar/data/354950/000162828026019436/hd-20260201.htm"
+    },
+    {
+      "fiscal_end": "2026-02-01",
+      "revenue_musd": 164683,
+      "operating_income_musd": 20890,
+      "net_income_musd": 14156,
+      "filings": {
+        "revenue": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/354950/000162828026019436/hd-20260201.htm"
+        },
+        "operating": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/354950/000162828026019436/hd-20260201.htm"
+        },
+        "net": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/354950/000162828026019436/hd-20260201.htm"
+        }
+      },
+      "source_url": "https://www.sec.gov/Archives/edgar/data/354950/000162828026019436/hd-20260201.htm"
+    }
+  ]
+}
