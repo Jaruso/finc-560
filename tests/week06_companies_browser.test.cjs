@@ -521,6 +521,10 @@ async function selectPrimary(page,ticker){
     await page.locator("#custom-ticker").fill("AAPL");
     await page.locator("#custom-ticker").press("Enter");
     assert.equal(await page.locator("#ticker-pills .ticker-pill").count(),2);
+    assert.equal(await page.locator("#ticker-count").textContent(),"2 of 4");
+    assert.equal(await page.locator("#ticker-count").evaluate(node=>
+      node.classList.contains("is-pending")),true);
+    assert.equal(await page.locator("#ticker-input-status").textContent(),"");
     assert.equal(await page.locator("#ticker-pills .ticker-pill").first()
       .locator("strong").textContent(),"MSFT");
     assert.equal(await page.locator("#company-name").textContent(),"Test Corporation");
@@ -528,6 +532,9 @@ async function selectPrimary(page,ticker){
     assert.equal(newsCalls.length,oldNewsCalls);
     await page.locator("#ticker-pills .ticker-pill-remove").last().click();
     assert.equal(await page.locator("#ticker-pills .ticker-pill").count(),1);
+    assert.equal(await page.locator("#ticker-count").textContent(),"1 of 4");
+    assert.equal(await page.locator("#ticker-count").evaluate(node=>
+      node.classList.contains("is-pending")),false);
     assert.equal(marketCalls.length,oldQuoteCalls);
     await selectPrimary(page,"AAPL");
     await page.waitForFunction(()=>document.querySelector("#company-name")?.textContent==="Another Test Corporation");
@@ -723,6 +730,9 @@ async function selectPrimary(page,ticker){
     assert.equal(await page.locator("#company-name").textContent(),"Test Corporation");
     assert.equal(await page.locator("#company-chart").evaluate(g=>g.layout.meta.singleChart),true);
     await page.locator("#analyze-tickers").click();
+    assert.equal(await page.locator("#ticker-count").textContent(),"2 of 4");
+    assert.equal(await page.locator("#ticker-count").evaluate(node=>
+      node.classList.contains("is-pending")),false);
     await page.waitForFunction(()=>document.querySelector("#company-chart")?.layout?.meta
       ?.comparison===true&&document.querySelector("#company-chart")?.data?.length===4);
     const comparative=await page.locator("#company-chart").evaluate(g=>({
