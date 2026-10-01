@@ -61,12 +61,26 @@
     if(!available(frames).includes(id))
       throw Error("Not all companies disclose sufficient data for this chart.");
     const numeric=ABSOLUTE.includes(id),index=numeric&&mode==="indexed";
+    const focusedKey=id==="company-chart"?metricKeys[metric]:
+      id==="equity-revenue"?"revenue_musd":"operating_income_musd";
+    const required=id==="equity-cashflows"?coverage["equity-cashflows"]:
+      id==="equity-fcf"?coverage["equity-fcf"]:
+      id==="equity-balance"?coverage["equity-balance"]:
+      r=>Number.isFinite(r[focusedKey]);
+    // Index everyone at the same fiscal-ending YEAR, not at unrelated
+    // companies' first reported dates. Exact fiscal ends remain on X.
+    const years=frames.map(f=>new Set(f.history.filter(required)
+      .map(r=>r.fiscal_end.slice(0,4))));
+    const anchorYear=index?[...years[0]].sort().find(y=>
+      years.slice(1).every(other=>other.has(y))):null;
+    if(index&&!anchorYear)
+      throw Error("Indexed view requires a shared reported fiscal year; choose Nominal.");
     const nativeUnit=id==="equity-margins"?"percent":
       id==="equity-coverage"?"ratio":"usd";
     const traces=[],measure=id==="company-chart"?metricKeys[metric]:
       id==="equity-revenue"?"revenue_musd":"operating_income_musd";
     const add=(frame,name,observed,forecast,unit="usd")=>{
-      const first=observed.find(r=>Number.isFinite(r.value));
+      const first=observed.find(r=>r.fiscal_end.slice(0,4)===anchorYear);
       const anchor=index?first?.value:null;
       const args={unit,mode:index?"indexed":"nominal",anchor};
       // Values for financial metrics are in millions; non-USD ratios are native.
@@ -85,7 +99,8 @@
         })),f.forecast.projected.map(r=>({fiscal_end:r.fiscal_end,value:r[key]})));
         if(settings.growth||settings.margin){
           const baseline=f.forecast.baseline.map(r=>({fiscal_end:r.fiscal_end,value:r[key]}));
-          const anchor=index?f.history[0][key]:null;
+          const anchor=index?f.history.find(r=>
+            r.fiscal_end.slice(0,4)===anchorYear)?.[key]:null;
           traces.push(line(f,f.ticker+" · unadjusted baseline",baseline,r=>r.value,
             {mode:index?"indexed":"nominal",anchor,dash:"dot",width:1.2,rank:30}));
         }
@@ -110,7 +125,8 @@
           const rows=f.history.filter(r=>Number.isFinite(r[key])).map(r=>({
             fiscal_end:r.fiscal_end,value:key==="capex_musd"?Math.abs(r[key]):r[key]
           }));
-          const anchor=index?rows[0]?.value:null;
+          const anchor=index?rows.find(r=>
+            r.fiscal_end.slice(0,4)===anchorYear)?.value:null;
           traces.push(line(f,f.ticker+" · "+label,rows,r=>r.value,{
             mode:index?"indexed":"nominal",anchor,dash,rank:10
           }));
@@ -119,7 +135,8 @@
         const rows=f.history.filter(coverage[id]).map(r=>({
           fiscal_end:r.fiscal_end,value:r.cfo_musd-Math.abs(r.capex_musd)
         }));
-        const anchor=index?rows[0]?.value:null;
+        const anchor=index?rows.find(r=>
+            r.fiscal_end.slice(0,4)===anchorYear)?.value:null;
         traces.push(line(f,f.ticker+" · free cash flow",rows,r=>r.value,{
           mode:index?"indexed":"nominal",anchor,rank:10
         }));
@@ -135,12 +152,12 @@
     // Each company's fiscal boundary is distinct. Do not imply otherwise with
     // a shared projection-shading cutoff.
     const starts=traces.flatMap(t=>t.x).sort();
-    const yLabel=index?"Index (100 = first reported value per series)":
+    const yLabel=index?"Index (100 = shared FY "+anchorYear+")":
       nativeUnit==="percent"?"Percent (%)":nativeUnit==="ratio"?
         "Interest coverage (×)":"USD billions";
     const headline=frames.map((f,i)=>f.ticker+(i===0?" (primary)":"")).join(" · ");
     const context=headline+" · "+
-      (index?"100 = each series' first visible reported value":
+      (index?"Index 100 at shared FY "+anchorYear:
         nativeUnit==="usd"?"Nominal reported USD billions":
           nativeUnit==="percent"?"Reported and assumed margins (%)":
             "Reported operating income / interest expense")+" · "+
@@ -161,7 +178,7 @@
           ticksuffix:!index&&nativeUnit==="usd"?"B":"",
           gridcolor:"#edf1f2",automargin:true},
         meta:{comparison:true,tickers:frames.map(f=>f.ticker),primary:frames[0].ticker,
-          indexed:index,perCompanyFiscalCalendars:true}
+          indexed:index,anchorFiscalYear:anchorYear,perCompanyFiscalCalendars:true}
       }
     };
   }
