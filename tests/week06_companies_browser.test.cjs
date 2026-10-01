@@ -311,9 +311,13 @@ async function selectPrimary(page,ticker){
     // scenario-only controls; turning it back on restores the same settings.
     assert.equal(await page.locator("#projections-enabled").isChecked(),true);
     await page.locator("#projections-enabled").uncheck();
-    await page.waitForFunction(()=>
-      document.querySelector("#company-chart")?.layout?.meta?.projectionsEnabled===false &&
-      document.querySelector("#company-chart")?.data?.length===1);
+    await page.waitForFunction(()=>[
+      ["company-chart",1],["equity-revenue",1],
+      ["equity-operating",1],["equity-margins",2]
+    ].every(([id,n])=>{
+      const plot=document.getElementById(id);
+      return plot?.data?.length===n&&plot.layout?.shapes?.length===0;
+    })&&document.querySelector("#company-chart")?.layout?.meta?.projectionsEnabled===false);
     for(const [id,count] of [
       ["company-chart",1],["equity-revenue",1],
       ["equity-operating",1],["equity-margins",2]
@@ -800,8 +804,13 @@ async function selectPrimary(page,ticker){
     assert.deepEqual(comparative.tickers,["MSFT","AAPL"]);
     assert.equal(comparative.primary,"MSFT");
     await page.locator("#projections-enabled").uncheck();
-    await page.waitForFunction(()=>document.querySelector("#company-chart")?.layout?.meta
-      ?.projectionsEnabled===false&&document.querySelector("#company-chart")?.data?.length===2);
+    await page.waitForFunction(()=>[
+      ["company-chart",2],["equity-revenue",2],
+      ["equity-operating",2],["equity-margins",4]
+    ].every(([id,n])=>{
+      const plot=document.getElementById(id);
+      return plot?.data?.length===n&&plot.layout?.shapes?.length===0;
+    })&&document.querySelector("#company-chart")?.layout?.meta?.projectionsEnabled===false);
     for(const [id,count] of [["company-chart",2],["equity-revenue",2],
       ["equity-operating",2],["equity-margins",4]]){
       const plot=await page.locator("#"+id).evaluate(g=>({
