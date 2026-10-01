@@ -48,6 +48,27 @@ test("shock, half life and realized volatility have independent effects",()=>{
   assert.ok(bound.low.at(-1).price<bound.scenario.at(-1).price);
   assert.throws(()=>M.forecast(c,{horizon:48}),/Unsupported/);
 });
+test("half-life is inert at zero shock and changes every nonzero endpoint",()=>{
+  const c=commodity();
+  const neutral=[3,6,12].map(halfLife=>
+    M.forecast(c,{model:"mean",horizon:6,shock:0,halfLife}));
+  assert.deepEqual(neutral[0].scenario,neutral[1].scenario);
+  assert.deepEqual(neutral[1].scenario,neutral[2].scenario);
+  const scenarios=[3,6,12].map(halfLife=>
+    M.forecast(c,{model:"mean",horizon:6,shock:20,halfLife,vol:0}));
+  const expected=halfLife=>.20*Math.pow(.5,5/halfLife);
+  for(let i=0;i<scenarios.length;i++){
+    const row=scenarios[i].scenario.at(-1).price;
+    const baseline=scenarios[i].baseline.at(-1).price;
+    assert.ok(Math.abs(row/baseline-1-expected([3,6,12][i]))<1e-10);
+    assert.equal(scenarios[i].scenario[1].price,scenarios[0].scenario[1].price,
+      "The first forecast month has the same immediate shock");
+  }
+  assert.ok(scenarios[0].scenario.at(-1).price<
+    scenarios[1].scenario.at(-1).price);
+  assert.ok(scenarios[1].scenario.at(-1).price<
+    scenarios[2].scenario.at(-1).price);
+});
 test("history controls return exact observed months",()=>{
   const c=commodity();
   assert.deepEqual(M.history(c,24),c.observations.slice(-24));
