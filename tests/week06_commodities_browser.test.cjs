@@ -59,6 +59,22 @@ async function slide(page,n,value){
     assert.equal(await page.locator("#reset").textContent(),"Reset");
     assert.equal(await page.locator("#commodity-options input").count(),3);
     assert.equal(await page.locator("#commodity-summary").textContent(),"WTI crude oil");
+    assert.equal(await page.locator("#commodity-quote").isVisible(),true);
+    assert.equal(await page.locator("#commodity-quote-name").textContent(),"WTI crude oil");
+    const lastWTI=fixture().commodities[0].observations.at(-1).value;
+    assert.equal(await page.locator("#commodity-quote-price").textContent(),
+      "$"+lastWTI.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}));
+    assert.match(await page.locator("#commodity-quote-change").textContent(),/% \/ 12 mo/);
+    assert.match(await page.locator("#market-description").textContent(),
+      /USD\/barrel.*monthly average/);
+    assert.match(await page.locator("#commodity-quote-source").getAttribute("href"),
+      /DCOILWTICO/);
+    assert.equal(await page.locator("#commodity-count").isVisible(),false,
+      "Verification count belongs in picker logic, not the sidebar");
+    await page.locator(".sidebar-model-control .model-help summary").click();
+    assert.match(await page.locator(".sidebar-model-control .model-help-panel").textContent(),
+      /Mean reversion.*Recent log-price trend.*Unchanged price/s);
+    await page.locator(".sidebar-model-control .model-help summary").click();
     assert.equal(await page.locator("#commodity-selection-count").textContent(),"1 of 4");
     const picker=page.locator("#chart-picker");
     assert.equal(await picker.locator('input[type="checkbox"]').count(),8);
@@ -148,6 +164,10 @@ async function slide(page,n,value){
     await page.waitForFunction(()=>document.querySelector("#commodity-chart")
       ?.layout?.meta?.commodity==="gas");
     assert.equal(await page.locator("#kpi-unit").textContent(),"USD/MMBtu");
+    assert.equal(await page.locator("#commodity-quote-name").textContent(),
+      "Henry Hub natural gas");
+    assert.match(await page.locator("#market-description").textContent(),
+      /USD\/MMBtu.*monthly average/);
     assert.match(await page.locator("#commodity-source").getAttribute("href"),/DHHNGSP/);
     // Optional charts use the same verified spot data; no additional API calls.
     await picker.locator("summary").click();
