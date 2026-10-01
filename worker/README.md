@@ -1,29 +1,32 @@
 # FINC-560 Finnhub Worker
 
-Small authenticated Finnhub proxy for the Week 6 company dashboard. GitHub Pages remains static, and financial projections remain browser-side. The live frontend is deliberately NOT connected in this commit: configure and test the Worker first.
+Public, tightly scoped Finnhub proxy for the Week 6 company dashboard. GitHub Pages remains static and financial projections remain browser-side. The Finnhub API key is never in GitHub or downloaded by a browser.
 
 ## Configure Cloudflare
 
-1. Prefer the EXISTING Cloudflare Worker with your existing FINNHUB_TOKEN secret. The checked-in Worker name is finc-560-finnhub to match the existing Cloudflare Worker; keep worker/wrangler.jsonc in sync if you ever rename it. Creating a second Worker does not transfer secrets.
-2. In Worker Settings > Variables and Secrets, retain FINNHUB_TOKEN as a runtime Secret. Add a SECOND, independent runtime Secret named DASHBOARD_ACCESS_TOKEN with a long random value. Neither secret belongs in GitHub, build variables, query parameters, public JavaScript, screenshots, or chat.
-3. Worker Settings > Builds > Connect: select Jaruso/finc-560, branch main, root directory worker, leave Build command blank, Deploy command npx wrangler deploy. If available, set Build watch paths to worker/**.
-4. Once deployed, visit https://YOUR-WORKER.YOUR-SUBDOMAIN.workers.dev/health. It should return {"ok":true}; this does NOT verify Finnhub access. For authenticated testing, use curl with Authorization: Bearer <DASHBOARD_ACCESS_TOKEN> to request /quote?symbol=AAPL. Never include either secret in the URL or a saved terminal transcript.
+1. Use the **existing** Cloudflare Worker `finc-560-finnhub` (not a new Worker) with its existing `FINNHUB_TOKEN` **runtime Secret**. `worker/wrangler.jsonc` uses that exact Worker name.
+2. You **do not need** `DASHBOARD_ACCESS_TOKEN`. If you already created it in Cloudflare, you can delete it; the code no longer reads it.
+3. Under Worker Settings > Builds, connect `Jaruso/finc-560` on `main`, set the root path to `/worker`, leave build command empty, and use `npx wrangler deploy` as the deploy command. If available, use build watch path `worker/**`.
+4. After deployment, visit `https://YOUR-WORKER.YOUR-SUBDOMAIN.workers.dev/health` for `{"ok":true}` and visit `.../quote?symbol=AAPL` to verify the configured Finnhub secret and API access. **Never** put the Finnhub token in the URL, JavaScript, GitHub or screenshots.
 
-## Allowed data routes
+## Public API
 
-All data endpoints require the separate DASHBOARD_ACCESS_TOKEN bearer header. The Finnhub token is added server-side ONLY to Finnhub requests. Only these GET routes exist:
+No visitor password, user login or browser authorization header is needed. Only these GET routes exist:
 
-- /quote?symbol=AAPL : quote, 60-second edge TTL.
-- /profile?symbol=AAPL : company profile, 24-hour edge TTL.
-- /metrics?symbol=AAPL : basic financial metrics, 1-hour edge TTL.
-- /financials?symbol=AAPL&freq=annual&from=2015-01-01 : as-reported financials, 24-hour edge TTL; freq=annual|quarterly and ISO from/to dates are optional.
+- `/quote?symbol=AAPL`: quote, 60-second edge TTL.
+- `/profile?symbol=AAPL`: company profile, 24-hour edge TTL.
+- `/metrics?symbol=AAPL`: financial metrics, 1-hour edge TTL.
+- `/financials?symbol=AAPL&freq=annual&from=2015-01-01`: as-reported financials, 24-hour edge TTL; `freq=annual|quarterly` and ISO `from/to` dates optional.
 
-Plan access to financial-data endpoints depends on Finnhub. Failed requests are not cached. Browser CORS accepts only https://jaruso.github.io, but CORS is not authentication. The Cloudflare native rate-limit binding caps about 20 authenticated calls/minute per Cloudflare location, not an exact global budget. Cache API is local/best-effort, not a guarantee against upstream usage.
+All input parameters and paths are allowlisted. Finnhub authentication happens only inside the Worker using `FINNHUB_TOKEN` as a request header. Finnhub errors are returned in sanitized form without upstream body or credentials. Only successful JSON responses are cached on Cloudflare's edge. Cloudflare rate-limit binding caps approximately 20 calls/minute per location (not a global guarantee).
 
-For personal live-data mode, future frontend integration should prompt you for DASHBOARD_ACCESS_TOKEN at runtime and keep it only in memory for that tab; never embed it in public JavaScript or persistent browser storage. Existing public, curated demo data should stay available to classmates. Anyone you give the access token to can reuse it.
+Browser CORS allows `https://jaruso.github.io`; **CORS is not authentication**. Non-browser clients can call these public endpoints and spoof the Origin header, so people can use some of your Finnhub allowance. Keep the rate-limit binding configured and monitor Finnhub usage. The Worker protects the key from normal dashboard visitors, not from anyone with administrative access to your Cloudflare account.
 
-## Local development
+The existing curated public dataset and charts remain unchanged until the frontend is explicitly wired to this Worker. Check your Finnhub subscription terms for public display/redistribution rights even for an academic project.
 
-From this worker directory, run npm install and npm test. To run npx wrangler dev, copy .dev.vars.example to .dev.vars and supply local values there. .dev.vars and node_modules are Git-ignored. No real credentials are checked into this repository.
+## Local tests
 
-For reference: Cloudflare Workers Builds https://developers.cloudflare.com/workers/ci-cd/builds/ and Finnhub API https://finnhub.io/docs/api/.
+Inside `worker/`: `npm install` then `npm test`. For local `npx wrangler dev`, copy `.dev.vars.example` to `.dev.vars` and supply your own local key. `.dev.vars` and `node_modules` are Git-ignored. Never commit actual keys.
+
+Cloudflare Workers Builds: https://developers.cloudflare.com/workers/ci-cd/builds/
+Finnhub API: https://finnhub.io/docs/api/

@@ -64,11 +64,14 @@ export default {
       if (origin !== DASHBOARD_ORIGIN || request.headers.get('Access-Control-Request-Method') !== 'GET') {
         return json({ error: 'Preflight not allowed' }, 403);
       }
-      const wanted = (request.headers.get('Access-Control-Request-Headers') || '').toLowerCase().trim();
-      if (wanted !== 'authorization') return json({ error: 'Preflight headers not allowed' }, 403, cors);
+      // The public dashboard makes simple GET requests; it sends no secret or custom header.
+      // Do not enable credentialed CORS or authorize arbitrary request headers.
+      if (request.headers.get('Access-Control-Request-Headers')) {
+        return json({ error: 'Preflight headers not allowed' }, 403, cors);
+      }
       return new Response(null, {
         status: 204,
-        headers: { ...cors, 'Access-Control-Allow-Methods': 'GET', 'Access-Control-Allow-Headers': 'Authorization', 'Access-Control-Max-Age': '300', 'Cache-Control': 'no-store' },
+        headers: { ...cors, 'Access-Control-Allow-Methods': 'GET', 'Access-Control-Max-Age': '300', 'Cache-Control': 'no-store' },
       });
     }
     if (request.method !== 'GET') return json({ error: 'Method not allowed' }, 405, { ...cors, Allow: 'GET, OPTIONS' });
@@ -79,21 +82,19 @@ export default {
     if (!config) return json({ error: 'Unknown endpoint' }, 404, cors);
     if (url.toString().length > 512) return json({ error: 'Request too long' }, 414, cors);
 
-    // Fail closed: a public Worker must not serve anonymous Finnhub requests.
-    if (!env.FINNHUB_TOKEN || !env.DASHBOARD_ACCESS_TOKEN || !env.FINNHUB_RATE_LIMITER?.limit) {
+    // Public proxy: only FINNHUB_TOKEN is secret, held in Cloudflare (never in GitHub or browser).
+    // Fail closed if the secret or the protective rate-limit binding is missing.
+    if (!env.FINNHUB_TOKEN || !env.FINNHUB_RATE_LIMITER?.limit) {
       return json({ error: 'Gateway not configured' }, 503, cors);
-    }
-    if (request.headers.get('Authorization') !== 'Bearer ' + env.DASHBOARD_ACCESS_TOKEN) {
-      return json({ error: 'Unauthorized' }, 401, { ...cors, 'WWW-Authenticate': 'Bearer' });
     }
     const params = parseParams(url, route);
     if (!params) return json({ error: 'Invalid ticker or query parameters' }, 400, cors);
 
     // Cloudflare rate-limit binding is local to each location, not global accounting.
-    const { success } = await env.FINNHUB_RATE_LIMITER.limit({ key: 'finc-560-personal' });
+    const { success } = await env.FINNHUB_RATE_LIMITER.limit({ key: 'finc-560-public' });
     if (!success) return json({ error: 'Too many requests' }, 429, { ...cors, 'Retry-After': '60' });
 
-    // Normalize cache keys. Neither browser access token nor Finnhub key is cached.
+    // Normalize cache keys. The Finnhub token is never included in cache keys.
     const cacheUrl = new URL(url.origin);
     cacheUrl.pathname = url.pathname;
     cacheUrl.search = params.toString();
@@ -136,7 +137,7 @@ export default {
       headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=' + config.ttl },
     });
     ctx.waitUntil(cache.put(cacheKey, edgeResponse).catch(() => {}));
-    // Do not store authorized requests or their payloads in the browser cache.
+    // Prevent browser caching so dashboard data loads are handled by edge caching.
     return new Response(payload, {
       headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Cache': 'MISS', ...cors },
     });
