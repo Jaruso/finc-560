@@ -9,12 +9,12 @@
   <link rel="stylesheet" href="../../assets/styles.css?v=20260906-week3-redesign">
   <link rel="stylesheet" href="../../assets/site-transitions.css?v=20261001">
   <link rel="stylesheet" href="../dashboard.css?v=sidebar-titles-202610">
-  <link rel="stylesheet" href="./company.css?v=profit-impact-20261001">
+  <link rel="stylesheet" href="./company.css?v=revenue-help-20261001">
   <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
   <script defer src="./model.js?v=1"></script>
   <script defer src="./research.js?v=finnhub-timestamps-20261001"></script>
   <script defer src="./research-ui.js?v=international-feedback-20261001"></script>
-  <script defer src="./app.js?v=profit-impact-20261001"></script>
+  <script defer src="./app.js?v=revenue-help-20261001"></script>
 </head>
 <body>
   <header class="site-header week-06-header company-header">
@@ -69,10 +69,22 @@
             <p id="quote-status" class="market-quote-status" aria-live="polite">Loading latest market quote…</p>
           </section>
           <div class="control-grid">
-            <label class="control">
-              <span>Revenue model</span>
+            <div class="control model-method-control">
+              <div class="model-method-heading">
+                <label for="method">Revenue model</label>
+                <details class="model-help">
+                  <summary aria-label="Explain revenue forecast models" title="How the revenue models work">i</summary>
+                  <div class="model-help-panel" role="note" aria-label="Revenue forecasting methods explained">
+                    <strong class="model-help-title">Revenue forecasting methods</strong>
+                    <p><strong>Historical CAGR (compound annual growth rate)</strong> calculates the constant annual percentage change that connects the first and last revenue observations in the most recent five reported fiscal years. It compounds that percentage from the latest actual revenue for each projected year. This assumes a consistent proportional growth rate; it may exaggerate future growth when a company is maturing and is sensitive to the selected period's starting and ending years.</p>
+                    <p><strong>Linear trend (OLS, ordinary least squares)</strong> fits a straight line through up to six recent annual revenue observations, minimizing the sum of squared differences between the line and reported values. It extends the fitted trend as an approximately fixed dollar change each year rather than a fixed percentage. Projected revenue is floored at zero. The fit may be influenced by unusually strong or weak years and may miss compounding growth patterns.</p>
+                    <p><strong>Scenario adjustments:</strong> The annual growth slider compounds an additional percentage-point adjustment onto the selected model's revenue path. The profit-margin slider adds percentage points to the three-year, recency-weighted operating and net profit margins used to estimate projected earnings; it does not change revenue. The solid line shows reported financials, the dashed line shows the adjusted forecast, and a dotted baseline appears when assumptions change.</p>
+                    <p class="model-help-caution">Both methods extrapolate historical financials under explicit assumptions. Neither is an analyst consensus estimate, a prediction interval, or a guarantee of future performance.</p>
+                  </div>
+                </details>
+              </div>
               <select id="method"><option value="cagr">Historical CAGR</option><option value="linear">Linear trend (OLS)</option></select>
-            </label>
+            </div>
             <label class="control">
               <span>Projection</span>
               <select id="horizon"><option value="1">1 year</option><option value="2">2 years</option><option value="3" selected>3 years</option></select>
@@ -135,7 +147,7 @@
           <button id="fit-company-projection" class="secondary" type="button"
             title="The vertical scale stays fixed while changing assumptions" disabled>Scale locked</button>
           <a class="research-jump" href="#research-lab">Company research ↓</a>
-          <span class="chart-badge">Reported → browser-modeled</span>
+          <span class="chart-badge">Reported → modeled forecast</span>
         </div>
         <p id="revenue-margin-guidance" class="revenue-margin-guidance" hidden>
           Profit-margin adjustments change projected earnings, not revenue.
@@ -161,7 +173,7 @@
             <a href="#research-lab">View available research ↓</a>
           </div>
         </article>
-        <p id="chart-footnote" class="chart-footnote">Reported performance continues into the browser-model forecast.</p>
+        <p id="chart-footnote" class="chart-footnote">Reported performance continues into the modeled forecast.</p>
       </section>
     </div>
   </main>

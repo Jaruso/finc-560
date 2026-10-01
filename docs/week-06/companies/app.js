@@ -161,20 +161,20 @@
     const observedTrace={
       x:xObserved,y:actual,type:"scatter",mode:"lines+markers",
       name:"Reported (solid)",legendrank:10,line:{color,width:2.7},marker:{color,size:5},
-      hovertemplate:"FY ending %{x|%b %Y}<br>$%{y:,.2f}B<extra>Annual reported</extra>"
+      hovertemplate:"FY ending %{x|%b %Y}<br>$%{y:,.2f}B<extra></extra>"
     };
     const scenarioTrace={
       x:xProjected,y:projected,type:"scatter",mode:"lines+markers",
       name:displayBaseline?"Adjusted scenario (dashed)":"Model forecast (dashed)",
       legendrank:20,
       line:{color,width:2.65,dash:"dash"},marker:{color,size:5},
-      hovertemplate:"FY ending %{x|%b %Y}<br>$%{y:,.2f}B<extra>Browser model</extra>"
+      hovertemplate:"FY ending %{x|%b %Y}<br>$%{y:,.2f}B<extra></extra>"
     };
     const baselineTrace={
       x:xProjected,y:baseline,type:"scatter",mode:"lines",
       name:"Unadjusted baseline (dotted)",legendrank:30,
       line:{color:colors.baseline,width:1.9,dash:"dot"},
-      hovertemplate:"FY ending %{x|%b %Y}<br>$%{y:,.2f}B<extra>Unadjusted model</extra>"
+      hovertemplate:"FY ending %{x|%b %Y}<br>$%{y:,.2f}B<extra></extra>"
     };
     // There is exactly one date and financial-value axis. Future width is
     // determined by its actual elapsed calendar duration, not split cards.
@@ -218,7 +218,7 @@
     el("chart-footnote").textContent=overflow
       ? labels[metric]+" · Projection extends outside the locked scale. Use Fit projection to view it."
       : labels[metric]+" · "+unit+
-        " · Solid = reported • Dashed = browser forecast • Dotted = unadjusted baseline";
+        " · Solid = reported • Dashed = modeled forecast • Dotted = unadjusted baseline";
     const traces=displayBaseline?
       [observedTrace,baselineTrace,scenarioTrace]:
       [observedTrace,scenarioTrace];
