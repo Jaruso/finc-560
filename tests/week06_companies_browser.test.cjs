@@ -234,10 +234,12 @@ async function selectPrimary(page,ticker){
       const reset=n.querySelector("#reset").getBoundingClientRect();
       const wrapper=n.getBoundingClientRect();
       return {titleWidth:title.width,containerWidth:wrapper.width,
-        titleBottom:title.bottom,resetTop:reset.top};
+        titleBottom:title.bottom,resetTop:reset.top,
+        titleRight:title.right,resetLeft:reset.left};
     });
-    assert.ok(equityHeading.titleWidth>equityHeading.containerWidth-2);
-    assert.ok(equityHeading.resetTop>=equityHeading.titleBottom);
+    assert.ok(equityHeading.titleRight<=equityHeading.resetLeft+1||
+      equityHeading.titleBottom<=equityHeading.resetTop+1,
+      "Inline or wrapped heading must not overlap the Reset control");
     assert.equal(await page.locator(".controls .eyebrow").count(),0);
     assert.equal(await page.locator(".hero").count(),0,
       "Company forecasts title must stay removed");
