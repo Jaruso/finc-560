@@ -234,6 +234,18 @@ async function slide(page,id,v){
     }));
     assert.deepEqual(stressed.range,spread.yRange,"Spread dial cannot rescale y-axis");
     assert.deepEqual(stressed.hist,spread.hist);
+    // Additional views must render from the same verified dataset on demand.
+    for(const [id,expected] of [
+      ["chart-five",4],["chart-ten",4],
+      ["chart-shock",2],["chart-policy-gap",2]
+    ]){
+      const input=page.locator('#chart-picker input[value="'+id+'"]');
+      await input.check();
+      await page.waitForFunction(({id,n})=>
+        document.getElementById(id)?.data?.length===n,{id,n:expected});
+      assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"2");
+      await input.uncheck();
+    }
     await page.locator("#reset").click();
     await page.waitForFunction(()=>document.querySelector("#delta-value").textContent==="0 bps");
     assert.equal(await page.locator("#horizon").inputValue(),"12");
