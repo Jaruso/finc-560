@@ -80,27 +80,61 @@ test("unindexable negative baselines are refused instead of presenting a mislead
   assert.ok(C.study(selected,"company-chart","net","nominal",options).traces.length>=4);
 });
 
-test("all comparative forecast charts shade only the all-projected region",()=>{
+test("equity forecast charts layer each company's independently dated projection window",()=>{
   const series=frames();
-  const cutoff=series.map(f=>f.history.at(-1).fiscal_end).sort().at(-1);
-  const end=series.map(f=>f.forecast.projected.at(-1).fiscal_end).sort().at(-1);
+  const windows=series.map(f=>({
+    ticker:f.ticker,
+    start:f.history.at(-1).fiscal_end,
+    end:f.forecast.projected.at(-1).fiscal_end
+  }));
+  const cutoffs=[...new Set(windows.map(w=>w.start))].sort();
+  assert.equal(cutoffs.length,2,"Fixtures should have different fiscal endpoints");
   for(const id of ["company-chart","equity-revenue","equity-operating","equity-margins"]){
     for(const mode of ["indexed","nominal"]){
       const chart=C.study(series,id,"net",mode,options);
-      const [shade,divider]=chart.layout.shapes;
-      assert.equal(chart.layout.shapes.length,2,id+" "+mode);
-      assert.equal(shade.type,"rect");
-      assert.equal(shade.x0,cutoff);
-      assert.equal(shade.x1,end);
-      assert.equal(shade.y0,0);
-      assert.equal(shade.y1,1);
-      assert.equal(divider.type,"line");
-      assert.equal(divider.x0,cutoff);
-      assert.equal(divider.x1,cutoff);
-      assert.equal(chart.layout.meta.sharedProjectionStart,cutoff);
-      assert.match(chart.context,/Shading begins after the latest reported date/);
+      const shapes=chart.layout.shapes;
+      assert.equal(shapes.length,4,id+" "+mode+" has two fills and two dividers");
+      for(const [i,window] of windows.entries()){
+        const shade=shapes[i];
+        assert.equal(shade.type,"rect");
+        assert.equal(shade.x0,window.start);
+        assert.equal(shade.x1,window.end);
+        assert.equal(shade.y0,0);
+        assert.equal(shade.y1,1);
+        assert.equal(shade.layer,"below");
+        assert.equal(shade.fillcolor,shapes[0].fillcolor,
+          "Equal-opacity overlapping fills darken shared forecast periods");
+      }
+      assert.deepEqual(shapes.slice(windows.length).map(shape=>shape.x0),cutoffs);
+      assert.ok(shapes.slice(windows.length).every(shape=>
+        shape.type==="line"&&shape.x0===shape.x1));
+      assert.deepEqual(chart.layout.meta.projectionWindows,windows);
+      assert.equal(chart.layout.meta.sharedProjectionStart,cutoffs.at(-1));
+      assert.match(chart.context,/Layered shading marks overlapping projection periods/);
     }
   }
+});
+
+test("matching company cutoff dates use overlapping fills but one shared divider",()=>{
+  const series=frames();
+  // Simulate independently loaded firms whose latest reporting dates match.
+  const shared=series[0].history.at(-1).fiscal_end;
+  series[1].history.at(-1).fiscal_end=shared;
+  series[1].forecast.projected[0].fiscal_end=shared;
+  const chart=C.study(series,"company-chart","net","nominal",options);
+  assert.equal(chart.layout.shapes.filter(shape=>shape.type==="rect").length,2);
+  const dividers=chart.layout.shapes.filter(shape=>shape.type==="line");
+  assert.equal(dividers.length,1);
+  assert.equal(dividers[0].x0,shared);
+});
+
+test("projection shading scales to three independently reported companies",()=>{
+  const series=C.prepare([microsoft,apple,homeDepot],options,5);
+  const chart=C.study(series,"equity-margins","net","nominal",options);
+  assert.equal(chart.layout.shapes.filter(shape=>shape.type==="rect").length,3);
+  assert.equal(chart.layout.meta.projectionWindows.length,3);
+  assert.equal(chart.layout.shapes.filter(shape=>shape.type==="line").length,
+    new Set(series.map(f=>f.history.at(-1).fiscal_end)).size);
 });
 
 test("historical-only comparison charts never shade reported data",()=>{
@@ -112,4 +146,5 @@ test("historical-only comparison charts never shade reported data",()=>{
   const historical=C.study(series,"equity-coverage","net","nominal",options);
   assert.deepEqual(historical.layout.shapes,[]);
   assert.equal(historical.layout.meta.sharedProjectionStart,null);
+  assert.deepEqual(historical.layout.meta.projectionWindows,[]);
 });
