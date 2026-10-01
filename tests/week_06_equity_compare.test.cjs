@@ -110,7 +110,8 @@ test("equity forecast charts layer each company's independently dated projection
         shape.type==="line"&&shape.x0===shape.x1));
       assert.deepEqual(chart.layout.meta.projectionWindows,windows);
       assert.equal(chart.layout.meta.sharedProjectionStart,cutoffs.at(-1));
-      assert.match(chart.context,/Layered shading marks overlapping projection periods/);
+      assert.ok(chart.context.length<90,"Per-chart comparison copy stays concise");
+      assert.doesNotMatch(chart.context,/Actual fiscal dates|Layered shading/);
     }
   }
 });

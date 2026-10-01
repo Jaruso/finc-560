@@ -276,6 +276,11 @@
   }
   function renderComparisons(frames,assumptions){
     renderComparisonSources(frames);
+    const comparisonContext=el("equity-comparison-context");
+    comparisonContext.hidden=false;
+    comparisonContext.textContent=frames.map((frame,index)=>
+      frame.ticker+(index===0?" (primary)":"")).join(" · ")+
+      " · Actual fiscal dates are preserved; dashed lines and shading mark each company's forecast period.";
     const available=new Set(C.available(frames));
     canvas.setAvailable([...available]);
     const selected=new Set(canvas.selected());
@@ -303,7 +308,7 @@
       if(id==="company-chart"){
         el("chart-heading").textContent=labels[el("metric").value];
         el("chart-footnote").textContent=
-          "Color = equity · Solid = reported · Dashed = forecast · Each company uses its own fiscal dates.";
+          "Color = equity · Solid = reported · Dashed = forecast · Shading = projection period.";
         lastRenderedValues=null;
         queuedPlot={traces:chart.traces,layout:chart.layout};
         void plotLatest();
@@ -723,6 +728,7 @@
       }
       setScaleControls(false);
       el("equity-comparison-sources").hidden=true;
+      el("equity-comparison-context").hidden=true;
       // The selected chart set changes with actual statement coverage. Do not
       // imply debt or interest data exists for curated earnings-only snapshots.
       canvas.setAvailable(availableEquityCharts(history));
@@ -768,6 +774,7 @@
     company=null;
     canvas.setAvailable([]);
     el("equity-comparison-sources").hidden=true;
+    el("equity-comparison-context").hidden=true;
     el("company-name").textContent=ticker+" · Checking financial statements";
     el("company-empty").hidden=false;
     el("company-chart").hidden=true;

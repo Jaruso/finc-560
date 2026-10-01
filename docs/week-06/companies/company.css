@@ -212,3 +212,6 @@ body:has(.news-board){overflow:auto!important}
 .equity-comparison-sources>strong{font-weight:850;flex:1 1 100%}
 .equity-comparison-sources a{color:#186f64;text-decoration:underline;
   text-underline-offset:2px}
+.equity-comparison-context{margin:0 4px;padding:0 2px;color:#48636a;
+  font-size:.67rem;line-height:1.4}
+.equity-comparison-context[hidden]{display:none}

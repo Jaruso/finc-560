@@ -176,14 +176,10 @@
     const yLabel=index?"Index (100 = shared FY "+anchorYear+")":
       nativeUnit==="percent"?"Percent (%)":nativeUnit==="ratio"?
         "Interest coverage (×)":"USD billions";
-    const headline=frames.map((f,i)=>f.ticker+(i===0?" (primary)":"")).join(" · ");
-    const context=headline+" · "+
-      (index?"Index 100 at shared FY "+anchorYear:
-        nativeUnit==="usd"?"Nominal reported USD billions":
-          nativeUnit==="percent"?"Reported and assumed margins (%)":
-            "Reported operating income / interest expense")+" · "+
-      "Actual fiscal dates; dashed forecasts begin at each company's own fiscal end."+
-      (windows.length?" Layered shading marks overlapping projection periods.":"");
+    const context=index?"Index 100 at shared FY "+anchorYear+" · Hover for reported values.":
+      nativeUnit==="usd"?"Nominal reported USD billions · Hover for exact values.":
+        nativeUnit==="percent"?"Reported and modeled margins (%).":
+          "Reported operating income / interest expense.";
     return {traces,context,
       layout:{
         autosize:true,

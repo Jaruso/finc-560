@@ -737,6 +737,11 @@ async function selectPrimary(page,ticker){
     assert.equal(comparative.anchor2,100);
     assert.equal(await page.locator("#equity-comparison-sources").isVisible(),true);
     assert.equal(await page.locator("#equity-comparison-sources a").count(),2);
+    assert.equal(await page.locator("#equity-comparison-context").isVisible(),true);
+    assert.match(await page.locator("#equity-comparison-context").textContent(),
+      /MSFT \(primary\).*AAPL.*Actual fiscal dates/);
+    assert.ok((await page.locator("#company-chart-context").textContent()).length<90,
+      "Each comparison chart keeps only a concise scale subtitle");
     assert.match(await page.locator("#news-company-title").textContent(),/MSFT/,
       "News still follow primary ticker during a comparison");
     await page.locator('[data-chart="company-chart"] .equity-scale-switch '+
@@ -754,6 +759,7 @@ async function selectPrimary(page,ticker){
       ?.layout?.meta?.singleChart===true&&
       document.querySelector("#news-company-title")?.textContent.includes("AAPL"));
     assert.equal(await page.locator("#equity-comparison-sources").isVisible(),false);
+    assert.equal(await page.locator("#equity-comparison-context").isVisible(),false);
     assert.deepEqual(errors,[],"No uncaught browser errors during ticker/news loading");
     onCompany=false;
     await page.locator(".workspaces a").first().click();
