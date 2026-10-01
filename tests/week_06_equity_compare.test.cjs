@@ -149,3 +149,36 @@ test("historical-only comparison charts never shade reported data",()=>{
   assert.equal(historical.layout.meta.sharedProjectionStart,null);
   assert.deepEqual(historical.layout.meta.projectionWindows,[]);
 });
+
+test("projections can be hidden without altering historical or indexed comparison values",()=>{
+  const selected=frames();
+  const off={...options,projectionsEnabled:false};
+  const on={...options,projectionsEnabled:true};
+  for(const id of ["company-chart","equity-revenue","equity-operating","equity-margins"]){
+    for(const mode of ["nominal","indexed"]){
+      const enabled=C.study(selected,id,"net",mode,on);
+      const disabled=C.study(selected,id,"net",mode,off);
+      const historicalCount=id==="equity-margins"?4:2;
+      assert.equal(disabled.traces.length,historicalCount,id+" "+mode);
+      assert.equal(disabled.layout.shapes.length,0,id+" "+mode);
+      assert.deepEqual(disabled.layout.meta.projectionWindows,[]);
+      assert.equal(disabled.layout.meta.projectionsEnabled,false);
+      const historical=enabled.traces.filter(t=>!t.name.includes("forecast")&&
+        !t.name.includes("projected")&&!t.name.includes("baseline"));
+      assert.deepEqual(disabled.traces,historical,
+        id+" "+mode+" must preserve the original reported series");
+      assert.equal(disabled.layout.xaxis.range.at(-1),
+        disabled.traces.flatMap(trace=>trace.x).sort().at(-1),
+        "Historical-only x-axis must end at the last actual fiscal date");
+    }
+  }
+});
+
+test("historical-only cashflow studies remain unchanged by the projections switch",()=>{
+  const selected=frames();
+  const original=C.study(selected,"equity-cashflows","net","nominal",options);
+  const disabled=C.study(selected,"equity-cashflows","net","nominal",
+    {...options,projectionsEnabled:false});
+  assert.deepEqual(disabled.traces,original.traces);
+  assert.deepEqual(disabled.layout.shapes,[]);
+});
