@@ -7,6 +7,70 @@
   const labels={revenue:"Revenue",operating:"Operating income",net:"Net income"};
   const cache=new Map();
   let manifest=null,company=null,sequence=0,scheduled=null;
+  // Public Worker address, not a credential. FINNHUB_TOKEN is server-side.
+  const QUOTE_API="https://finc-560-finnhub.joseph-caruso-pc.workers.dev";
+  let quoteController=null,quoteGeneration=0;
+  function resetQuote(){
+    quoteGeneration++;
+    if(quoteController)quoteController.abort();
+    quoteController=null;
+    el("quote-price").textContent="—";
+    el("quote-change").textContent="—";
+    el("quote-change").className="market-change";
+    el("quote-status").textContent="Loading latest market quote…";
+    el("quote-refresh").disabled=true;
+  }
+  async function loadQuote(ticker){
+    // Tickers are restricted to the verified published manifest.
+    if(!company || company.ticker!==ticker || !manifest?.companies.some(c=>c.ticker===ticker))return;
+    const generation=++quoteGeneration;
+    if(quoteController)quoteController.abort();
+    const controller=new AbortController();
+    quoteController=controller;
+    el("quote-refresh").disabled=true;
+    try{
+      const response=await fetch(QUOTE_API+"/quote?symbol="+encodeURIComponent(ticker),{
+        method:"GET",mode:"cors",cache:"no-store",signal:controller.signal
+      });
+      if(!response.ok){
+        if(response.status===429)throw Error("Quote requests temporarily limited. Try again shortly.");
+        throw Error("Latest quote unavailable. Annual financial forecasts are unaffected.");
+      }
+      const quote=await response.json();
+      if(!Number.isFinite(quote.c)||quote.c<=0)throw Error("Finnhub returned no usable market price.");
+      if(generation!==quoteGeneration||company?.ticker!==ticker)return;
+      const change=Number.isFinite(quote.d)?quote.d:
+        Number.isFinite(quote.pc)&&quote.pc>0?quote.c-quote.pc:null;
+      const percentage=Number.isFinite(quote.dp)?quote.dp:
+        change!==null&&quote.pc>0?change/quote.pc*100:null;
+      el("quote-price").textContent=quote.c.toLocaleString("en-US",{
+        style:"currency",currency:"USD",minimumFractionDigits:2,maximumFractionDigits:2
+      });
+      el("quote-change").className="market-change"+(change===null?"":change<0?" is-down":" is-up");
+      el("quote-change").textContent=change===null?"Change unavailable":
+        (change>=0?"+":"−")+"$"+Math.abs(change).toFixed(2)+
+        (percentage===null?"":" ("+(percentage>=0?"+":"−")+Math.abs(percentage).toFixed(2)+"%)");
+      const stamp=Number.isFinite(quote.t)&&quote.t>=946684800&&
+        quote.t<=Date.now()/1000+120?new Date(quote.t*1000):null;
+      el("quote-status").textContent=stamp
+        ?"Finnhub · As of "+stamp.toLocaleString("en-US",{
+          month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZoneName:"short"
+        })+" · May be delayed"
+        :"Finnhub latest quote · Time unavailable; may be delayed";
+    }catch(error){
+      if(generation!==quoteGeneration||company?.ticker!==ticker)return;
+      if(error.name==="AbortError")return;
+      el("quote-price").textContent="—";
+      el("quote-change").textContent="Unavailable";
+      el("quote-change").className="market-change";
+      el("quote-status").textContent=error.message||"Quote unavailable; annual forecasts still work.";
+    }finally{
+      if(generation===quoteGeneration){
+        quoteController=null;
+        el("quote-refresh").disabled=false;
+      }
+    }
+  }
   // Manual range changes happen ONLY when the user explicitly presses
   // Fit projection. Dials, model choice and forecast horizon cannot rescale.
   let scaleContext=null,manualYRange=null,lastRenderedValues=null;
@@ -208,6 +272,7 @@
     if(!manifest)return;
     const generation=++sequence;
     el("company-name").textContent="Loading "+ticker+"…";
+    resetQuote();
     el("data-error").hidden=true;
     try{
       let payload=cache.get(ticker);
@@ -237,6 +302,7 @@
         el("sec-link").href=source;
       }
       render();
+      void loadQuote(ticker);
     }catch(error){
       if(generation!==sequence)return;
       company=null;
@@ -255,6 +321,13 @@
         el(id).addEventListener("change",queueRender);
       }
       el("ticker").addEventListener("change",()=>void loadCompany(el("ticker").value));
+      el("quote-refresh").addEventListener("click",()=>{
+        if(company)void loadQuote(company.ticker);
+      });
+      // Refresh displayed market quotes approximately once per minute, only in visible tabs.
+      window.setInterval(()=>{
+        if(company&&document.visibilityState==="visible")void loadQuote(company.ticker);
+      },60000);
       el("fit-company-projection").addEventListener("click",()=>{
         if(!lastRenderedValues||!company)return;
         if(el("fit-company-projection").textContent==="Restore scale"){

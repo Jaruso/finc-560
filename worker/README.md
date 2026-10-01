@@ -22,7 +22,7 @@ All input parameters and paths are allowlisted. Finnhub authentication happens o
 
 Browser CORS allows `https://jaruso.github.io`; **CORS is not authentication**. Non-browser clients can call these public endpoints and spoof the Origin header, so people can use some of your Finnhub allowance. Keep the rate-limit binding configured and monitor Finnhub usage. The Worker protects the key from normal dashboard visitors, not from anyone with administrative access to your Cloudflare account.
 
-The existing curated public dataset and charts remain unchanged until the frontend is explicitly wired to this Worker. Check your Finnhub subscription terms for public display/redistribution rights even for an academic project.
+The Equities frontend now uses the /quote route to display a clearly separated latest market quote, refreshing approximately once a minute while visible; published annual statements and browser-side forecasts remain untouched. The other endpoints are available to future integrations but are not used by this dashboard yet. Check your Finnhub subscription terms for public display/redistribution rights even for an academic project.
 
 ## Local tests
 

@@ -37,6 +37,25 @@ async function slide(page,id,value){
       contentType:"application/javascript"
     }));
     const symbols=["MSFT","AAPL","HD","CAT"];
+    const marketCalls=[];
+    let marketUnavailable=false;
+    await page.route("https://finc-560-finnhub.joseph-caruso-pc.workers.dev/quote?*",route=>{
+      const request=route.request();
+      const parsed=new URL(request.url());
+      assert.deepEqual([...parsed.searchParams.keys()],["symbol"],"Only a public ticker is sent to the Worker");
+      assert.equal(request.headers().authorization,undefined,"Never send a browser-side access credential");
+      const ticker=parsed.searchParams.get("symbol");
+      marketCalls.push(ticker);
+      if(marketUnavailable)return route.fulfill({
+        status:429,headers:{"access-control-allow-origin":"*"},
+        json:{error:"Too many requests"}
+      });
+      return route.fulfill({
+        headers:{"access-control-allow-origin":"*"},
+        json:{c:ticker==="AAPL"?245.67:123.45,
+          d:ticker==="AAPL"?-1.23:2.55,dp:ticker==="AAPL"?-0.5:2.11,t:1790812740}
+      });
+    });
     await page.route("**/week-06/companies/data/*.json",route=>{
       const ticker=route.request().url().match(/\/([A-Z]+)\.json$/)?.[1];
       const d=fixture(ticker);
@@ -110,6 +129,10 @@ async function slide(page,id,value){
       "Rendering a forecast must not show the old undefined .catch error");
     assert.equal(await page.locator("#ticker option").count(),4);
     assert.equal(await page.locator("#ticker").inputValue(),"MSFT");
+    await page.waitForFunction(()=>document.querySelector("#quote-price")?.textContent==="$123.45");
+    assert.equal(await page.locator("#quote-change").textContent(),"+$2.55 (+2.11%)");
+    assert.match(await page.locator("#quote-status").textContent(),/Finnhub.*May be delayed/);
+    assert.deepEqual(marketCalls,["MSFT"],"Initial market quote is fetched once");
 
     const first=await page.evaluate(()=>{
       const g=document.querySelector("#company-chart");
@@ -232,6 +255,9 @@ async function slide(page,id,value){
 
     await page.selectOption("#ticker","AAPL");
     await page.waitForFunction(()=>document.querySelector("#company-name")?.textContent==="Another Test Corporation");
+    await page.waitForFunction(()=>document.querySelector("#quote-price")?.textContent==="$245.67");
+    assert.equal(await page.locator("#quote-change").textContent(),"−$1.23 (−0.50%)");
+    assert.deepEqual(marketCalls,["MSFT","AAPL"],"Company switch fetches its own quote");
     assert.notEqual(await page.locator("#kpi-revenue").textContent(),"—");
     assert.equal(await page.locator("#source-period").textContent(),"FY ending 2025-06-30");
     assert.equal(await page.locator("#data-error").isVisible(),false,
@@ -313,6 +339,13 @@ async function slide(page,id,value){
     assert.equal(await page.locator(".week-06-header .source-stamp").isVisible(),true);
     await page.screenshot({path:"test-artifacts/week06-company-mobile.png",fullPage:true});
     assert.deepEqual(errors,[],"No uncaught browser errors");
+    // A Finnhub outage must not suppress previously loaded annual forecasts.
+    marketUnavailable=true;
+    await page.locator("#quote-refresh").click();
+    await page.waitForFunction(()=>document.querySelector("#quote-status")?.textContent.includes("limited"));
+    assert.equal(await page.locator("#data-error").isVisible(),false);
+    assert.ok(await page.locator("#company-chart").evaluate(g=>g.data?.length>=2),
+      "Market-quote failure may not break the SEC-backed financial forecast");
     onCompany=false;
     await page.locator(".workspaces a").first().click();
     await page.waitForURL("**/week-06/");

@@ -21,3 +21,15 @@
 .chart-footnote{height:16px;min-height:16px;white-space:nowrap;overflow:hidden;
   text-overflow:ellipsis;line-height:16px}
 
+
+/* Separate latest trading quote from dated annual reporting/modeling inputs. */
+.market-quote{border:1px solid #c4ddda;border-radius:8px;background:#f5faf8;padding:8px 9px;margin:3px 0 12px}
+.market-quote-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  color:#345e62;font-size:.66rem;letter-spacing:.035em;text-transform:uppercase;font-weight:800}
+.market-quote-heading .secondary{padding:4px 7px;font-size:.64rem;text-transform:none;letter-spacing:0}
+.market-quote-value{display:flex;align-items:baseline;flex-wrap:wrap;gap:7px;margin-top:4px}
+.market-quote-value strong{font-size:1.25rem;letter-spacing:-.035em;font-variant-numeric:tabular-nums}
+.market-change{font-size:.73rem;font-weight:800;font-variant-numeric:tabular-nums;color:var(--muted)}
+.market-change.is-up{color:#19785d}
+.market-change.is-down{color:#b84253}
+.market-quote-status{font-size:.62rem;line-height:1.35;color:var(--muted);margin:3px 0 0}

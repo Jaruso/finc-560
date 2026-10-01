@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="./company.css?v=week06-centered-nav-202610">
   <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
   <script defer src="./model.js?v=1"></script>
-  <script defer src="./app.js?v=company-header-202610"></script>
+  <script defer src="./app.js?v=finnhub-quote-20261001"></script>
 </head>
 <body>
   <header class="site-header week-06-header company-header">
@@ -46,6 +46,17 @@
             </select>
           </label>
           <p id="company-name" class="company-name" aria-live="polite"></p>
+          <section class="market-quote" aria-label="Latest market quote from Finnhub">
+            <div class="market-quote-heading">
+              <span>Market quote</span>
+              <button id="quote-refresh" class="secondary" type="button" disabled>Refresh</button>
+            </div>
+            <div class="market-quote-value" aria-live="polite">
+              <strong id="quote-price">—</strong>
+              <span id="quote-change" class="market-change">—</span>
+            </div>
+            <p id="quote-status" class="market-quote-status" aria-live="polite">Loading latest market quote…</p>
+          </section>
           <div class="control-grid">
             <label class="control">
               <span>Revenue model</span>
@@ -81,7 +92,7 @@
             <div class="methods-body">
               <p>Initial featured-company figures come from directly linked public annual reports and SEC 10-K disclosures, with the latest source linked for each company. The Microsoft FY2026 source is its official annual earnings release. These are verified snapshots; automated SEC refresh is paused while hosted-runner access returns 403. No synthetic company data are published.</p>
               <p>Revenue forecasts use an OLS trend or a CAGR fitted to recent annual revenue. Operating and net margins use three-year recency-weighted historical averages. Growth adjustments compound relative to the selected baseline, while the margin adjustment changes both derived projected profit margins by the stated percentage points. This is a driver-based <em>conditional</em> projection, not a probability distribution or a complete integrated financial-statement model.</p>
-              <p>Fiscal-calendar differences and amendments affect comparability. The initial data are dated, and any future automated SEC refresh must pass all-source validation before replacing them. Forecasts are browser-calculated; no API key or invented historical data are published.</p>
+              <p>Fiscal-calendar differences and amendments affect comparability. The annual financial figures above remain dated verified issuer/SEC snapshots. A separate Finnhub market quote is requested when you choose a company and approximately once per minute while this tab is visible. Market quotes may be delayed, particularly outside trading hours, and do not feed into or alter the annual revenue and profit forecasts. The dashboard calls a restricted Cloudflare Worker; the Finnhub API key stays server-side and is never published in the browser or this repository.</p>
               <p><a id="sec-link" href="https://www.sec.gov/edgar/search/" target="_blank" rel="noopener noreferrer">View source financial statements</a></p>
             </div>
           </details>
