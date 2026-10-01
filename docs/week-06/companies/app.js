@@ -256,7 +256,8 @@
     for(const frame of frames){
       const co=frame.company,entry=document.createElement("span");
       const label=frame.ticker+" · FY "+co.annual.at(-1).fiscal_end+
-        (co.refresh_mode==="curated"?" · Verified snapshot":" · As-reported data");
+        (co.refresh_mode==="curated"?" · Verified snapshot":" · As-reported data")+
+        (/unaudited/i.test(co.as_reported_note||"")?" · Includes unaudited figures":"");
       const source=String(co.data_source||"");
       // Only display trusted issuer/SEC or provider links taken from
       // verified metadata; do not let arbitrary remote text become a URL.
@@ -292,7 +293,8 @@
       try{
         chart=C.study(frames,id,el("metric").value,mode,assumptions);
       }catch(error){
-        if(mode!=="indexed"||!C.ABSOLUTE.includes(id))throw error;
+        if(mode!=="indexed"||!C.ABSOLUTE.includes(id)||
+          !/Indexed view requires/.test(String(error)))throw error;
         scaleModes[id]="nominal";
         chart=C.study(frames,id,el("metric").value,"nominal",assumptions);
         setScaleControls(true);
