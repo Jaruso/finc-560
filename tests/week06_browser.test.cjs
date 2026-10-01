@@ -261,6 +261,10 @@ async function slide(page,id,v){
     fs.mkdirSync("test-artifacts",{recursive:true});
     await page.screenshot({path:"test-artifacts/week06-fitted-model.png",fullPage:false});
     await page.setViewportSize({width:390,height:844});
+    // Plotly and the drawer relayout asynchronously after changing viewport.
+    // Check the fully settled mobile width rather than the desktop plot frame.
+    await page.waitForFunction(()=>document.documentElement.scrollWidth<=innerWidth+2,
+      null,{timeout:5000});
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));
     assert.equal(await page.locator(".mobile-controls-toggle").isVisible(),true);
     await page.waitForFunction(()=>getComputedStyle(
