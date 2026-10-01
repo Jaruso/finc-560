@@ -178,7 +178,7 @@ async function slide(page,id,v){
 
     await page.locator("#chart-picker summary").click();
     const chartInput=id=>page.locator('#chart-picker input[value="'+id+'"]');
-    await chartInput("chart-five").check();
+    await chartInput("chart-five").click();
     assert.equal(await chartInput("chart-five").isChecked(),false,
       "A fifth chart must be refused");
     assert.match(await page.locator("#chart-selection-status").textContent(),/maximum/);
@@ -203,7 +203,7 @@ async function slide(page,id,v){
       "Two charts must stack at full width");
     await chartInput("chart-yields").uncheck();
     assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"1");
-    await chartInput("chart-spread").uncheck();
+    await chartInput("chart-spread").click();
     assert.equal(await chartInput("chart-spread").isChecked(),true,
       "The last chart cannot be removed");
     await page.waitForFunction(()=>document.querySelector("#chart-spread")?.data?.length===4);
