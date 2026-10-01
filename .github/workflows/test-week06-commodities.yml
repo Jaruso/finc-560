@@ -1,24 +1,42 @@
 name: Week 6 commodities dashboard tests
 
+# Keep the passing commodity suite focused on actual code/model changes.
+# Publishing new monthly data alone must not reinstall Chromium.
 on:
   workflow_dispatch:
   pull_request:
     paths:
-      - "docs/week-06/**"
+      - "docs/week-06/commodities/**"
+      - "!docs/week-06/commodities/data.json"
+      - "docs/week-06/dashboard.css"
+      - "docs/week-06/chart-canvas.js"
+      - "docs/week-06/mobile-controls.js"
       - "scripts/export_week_06_commodities.py"
       - "tests/test_week06_commodities.py"
+      - "tests/test_world_bank_pink_sheet.py"
       - "tests/week06_commodities*"
       - ".github/workflows/test-week06-commodities.yml"
   push:
     branches: [main]
     paths:
-      - "docs/week-06/**"
+      - "docs/week-06/commodities/**"
+      - "!docs/week-06/commodities/data.json"
+      - "docs/week-06/dashboard.css"
+      - "docs/week-06/chart-canvas.js"
+      - "docs/week-06/mobile-controls.js"
       - "scripts/export_week_06_commodities.py"
       - "tests/test_week06_commodities.py"
+      - "tests/test_world_bank_pink_sheet.py"
       - "tests/week06_commodities*"
+      - ".github/workflows/test-week06-commodities.yml"
 
 permissions:
   contents: read
+
+# Rapid follow-up commits only need the newest test run for a branch.
+concurrency:
+  group: week06-commodity-tests-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   commodity-dashboard:
