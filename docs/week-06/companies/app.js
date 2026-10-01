@@ -126,13 +126,12 @@
       pill.append(remove);
       host.append(pill);
     }
-    el("ticker-count").textContent=stagedTickers.length+" of "+MAX_TICKERS+
-      " · First ticker is primary";
+    const count=el("ticker-count");
+    count.textContent=stagedTickers.length+" of "+MAX_TICKERS;
+    count.classList.toggle("is-pending",!sameTickers(stagedTickers,appliedTickers));
     el("ticker-add").disabled=stagedTickers.length>=MAX_TICKERS;
     el("analyze-tickers").disabled=!stagedTickers.length;
-    pillStatus(!sameTickers(stagedTickers,appliedTickers)
-      ?"Selection pending · Click Analyze to update charts."
-      :"Displayed: "+appliedTickers.join(" · ")+". Press Enter to add a ticker.");
+    pillStatus("");
   }
   function stageTicker(value){
     const ticker=String(value||"").trim().toUpperCase();
@@ -195,6 +194,7 @@
     comparisonController=new AbortController();
     const signal=comparisonController.signal;
     appliedTickers=[...stagedTickers];
+    renderPills(); // Clear pending color now that selection has been applied.
     scaleModes={};
     comparisonData=new Map();
     pillStatus("Loading "+appliedTickers.join(" · ")+"…");
@@ -212,8 +212,7 @@
     pillStatus(failed.length
       ?"Comparable annual filings unavailable for "+failed.join(", ")+
         ". Available companies are shown; missing financial values are not inferred."
-      :"Showing "+appliedTickers.join(" · ")+
-        ". Market quote and news follow primary "+primary+".");
+      :"");
     queueRender();
   }
   function createScaleControls(){

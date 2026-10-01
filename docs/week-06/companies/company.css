@@ -215,3 +215,7 @@ body:has(.news-board){overflow:auto!important}
 .equity-comparison-context{margin:0 4px;padding:0 2px;color:#48636a;
   font-size:.67rem;line-height:1.4}
 .equity-comparison-context[hidden]{display:none}
+
+/* The count alone signals an unapplied selection. Keep error feedback on demand. */
+#ticker-count.is-pending{color:var(--red);font-weight:800}
+#ticker-input-status:empty{display:none}
