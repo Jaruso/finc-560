@@ -57,9 +57,8 @@ async function slide(page,id,v){
       "Macro switch must be centered in the viewport");
     assert.match(await page.locator(".week-06-header .source-stamp").textContent(),
       /Historical data.*\d{4}-\d\d-\d\d/s);
-    assert.deepEqual(await page.locator("#chart-primary option").allTextContents(),
-      ["5Y & 10Y yields","10Y–5Y spread"]);
-    assert.equal(await page.locator("#chart-stage > .chart-card:not(.is-view-hidden)").count(),1);
+    assert.equal(await page.locator("#chart-picker input").count(),8);
+    assert.equal(await page.locator("#chart-stage > .chart-card:not(.is-view-hidden)").count(),4);
     assert.equal(await page.locator("#model-status").textContent(),
       "Fitted Diebold–Li style · 189 training months · 8 Treasury maturities");
     assert.equal(await page.locator("#controls-heading").textContent(),"Forecast controls");
@@ -111,7 +110,7 @@ async function slide(page,id,v){
     assert.equal(baseline.bands,true);
     const initialTerminal5=baseline.pred5.at(-1);
     const initialTerminal10=baseline.pred10.at(-1);
-    const actual5=await page.locator("#kpi-5").textContent();
+    const actual5=await page.locator("#chart-yields-context").textContent();
 
     // The policy input is data-calibrated, not separate arbitrary 5Y and 10Y slopes.
     assert.equal(await page.locator("#beta5").count(),0);
@@ -135,7 +134,7 @@ async function slide(page,id,v){
     assert.deepEqual(shocked.actual10,baseline.hist10);
     assert.equal(shocked.label,"5Y scenario (dashed)");
     assert.deepEqual(shocked.annotations,[]);
-    assert.equal(await page.locator("#kpi-5").textContent(),actual5);
+    assert.equal((await page.locator("#chart-yields-context").textContent()).slice(0,20),actual5.slice(0,20));
     assert.equal(shocked.meta.conditionalShockBp,50);
     assert.deepEqual(shocked.yRange,baseline.yRange,"Fed dial cannot rescale historical yields");
     assert.ok(Math.abs(shocked.historicPixel-baseline.historicPixel)<.001,
@@ -177,7 +176,36 @@ async function slide(page,id,v){
     await page.selectOption("#chart-context","180");
     await page.waitForFunction(()=>document.querySelector("#chart-yields")?.data?.[0]?.x.length===180);
 
-    await page.selectOption("#chart-primary","chart-spread");
+    await page.locator("#chart-picker summary").click();
+    const chartInput=id=>page.locator('#chart-picker input[value="'+id+'"]');
+    await chartInput("chart-five").click();
+    assert.equal(await chartInput("chart-five").isChecked(),false,
+      "A fifth chart must be refused");
+    assert.match(await page.locator("#chart-selection-status").textContent(),/maximum/);
+    const boxes=()=>page.locator("#chart-stage .chart-card:not(.is-view-hidden)")
+      .evaluateAll(cards=>cards.map(card=>{
+        const r=card.getBoundingClientRect();
+        return {top:Math.round(r.top),left:Math.round(r.left),width:r.width};
+      }));
+    const four=await boxes();
+    assert.ok(four[0].top===four[1].top&&four[2].top===four[3].top);
+    assert.ok(four[2].top>four[0].top&&four[1].left>four[0].left);
+    await chartInput("chart-accuracy").uncheck();
+    assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"3");
+    const three=await boxes();
+    assert.ok(three[0].width>three[1].width*1.8 &&
+      three[1].top===three[2].top && three[2].left>three[1].left,
+      "Three charts must show a full-width featured chart over two columns");
+    await chartInput("chart-policy").uncheck();
+    const two=await boxes();
+    assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"2");
+    assert.ok(two[1].top>two[0].top&&two[0].left===two[1].left,
+      "Two charts must stack at full width");
+    await chartInput("chart-yields").uncheck();
+    assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"1");
+    await chartInput("chart-spread").click();
+    assert.equal(await chartInput("chart-spread").isChecked(),true,
+      "The last chart cannot be removed");
     await page.waitForFunction(()=>document.querySelector("#chart-spread")?.data?.length===4);
     const spread=await page.locator("#chart-spread").evaluate(n=>({
       first:n.data[0].y.at(-1),central:n.data[3].y,
@@ -206,11 +234,23 @@ async function slide(page,id,v){
     }));
     assert.deepEqual(stressed.range,spread.yRange,"Spread dial cannot rescale y-axis");
     assert.deepEqual(stressed.hist,spread.hist);
+    // Additional views must render from the same verified dataset on demand.
+    for(const [id,expected] of [
+      ["chart-five",4],["chart-ten",4],
+      ["chart-shock",2],["chart-policy-gap",2]
+    ]){
+      const input=page.locator('#chart-picker input[value="'+id+'"]');
+      await input.check();
+      await page.waitForFunction(({id,n})=>
+        document.getElementById(id)?.data?.length===n,{id,n:expected});
+      assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"2");
+      await input.uncheck();
+    }
     await page.locator("#reset").click();
     await page.waitForFunction(()=>document.querySelector("#delta-value").textContent==="0 bps");
     assert.equal(await page.locator("#horizon").inputValue(),"12");
     assert.equal(await page.locator("#show-bands").isChecked(),true);
-    await page.selectOption("#chart-primary","chart-yields");
+    assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"4");
     await page.waitForFunction(()=>document.querySelector("#chart-yields")?.data?.length===8);
     const desktop=await page.evaluate(()=>({
       bottom:document.querySelector("#chart-stage").getBoundingClientRect().bottom,

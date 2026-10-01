@@ -4,12 +4,18 @@
   const Model=window.ForecastModel;
   const el=id=>document.getElementById(id);
   const COLOR={five:"#365977",ten:"#0b7f73",historical:"#314b5c",bound:"#81939e",red:"#b84253"};
-  const IDS=["chart-yields","chart-spread"];
+  const DEFAULT=["chart-yields","chart-spread","chart-policy","chart-accuracy"];
+  const IDS=[...DEFAULT,"chart-five","chart-ten","chart-shock","chart-policy-gap"];
   const latest=new Map(),queue=new Map(),drawing=new Set();
+  let selectedCharts=[...DEFAULT];
   let data=null,focused=false,frame=null;
   const pct=n=>Number(n).toFixed(2)+"%";
   const bps=n=>(n<0?"−":"+")+Math.abs(n*100).toFixed(0)+" bps";
-  const selected=()=>el("chart-primary").value;
+  const plotHeight=id=>{
+    const card=el(id).closest(".chart-card");
+    const heading=card.querySelector(".chart-heading");
+    return Math.max(185,card.clientHeight-(heading?.offsetHeight||45)-25);
+  };
   const state=()=>({
     delta:Number(el("delta").value),
     horizon:Number(el("horizon").value),
@@ -24,7 +30,9 @@
       while(queue.has(id)){
         const next=queue.get(id);
         queue.delete(id);
-        await window.Plotly.react(id,next.traces,next.layout,{
+        if(!visible(id))continue;
+        await window.Plotly.react(id,next.traces,
+          {...next.layout,height:plotHeight(id)},{
           responsive:true,displayModeBar:true,displaylogo:false,scrollZoom:false,
           modeBarButtonsToRemove:["select2d","lasso2d","hoverCompareCartesian"]
         });
@@ -38,22 +46,58 @@
     latest.set(id,{traces,layout});
     if(visible(id)){queue.set(id,{traces,layout});void drain(id);}
   }
-  function showChart(){
-    const active=selected();
-    IDS.forEach(id=>{
+  function showCharts(){
+    const selected=new Set(selectedCharts);
+    const stage=el("chart-stage");
+    for(const id of IDS){
       const card=el(id).closest(".chart-card");
-      card.classList.toggle("is-view-hidden",id!==active);
-      card.setAttribute("aria-hidden",String(id!==active));
-    });
-    el("chart-stage").prepend(el(active).closest(".chart-card"));
+      const active=selected.has(id);
+      card.classList.toggle("is-view-hidden",!active);
+      card.classList.toggle("is-featured",id===selectedCharts[0]);
+      card.setAttribute("aria-hidden",String(!active));
+    }
+    // User selection order determines layout. Remaining hidden cards are
+    // appended last so nth-child CSS cannot accidentally claim grid slots.
+    for(const id of [...selectedCharts,...IDS.filter(id=>!selected.has(id))]){
+      stage.append(el(id).closest(".chart-card"));
+    }
+    stage.dataset.count=String(selectedCharts.length);
+    el("chart-count").textContent=selectedCharts.length+" of 4";
     window.requestAnimationFrame(()=>{
-      const previous=latest.get(active);
-      if(previous){
-        queue.set(active,{traces:previous.traces,
-          layout:{...previous.layout,height:el(active).clientHeight||350}});
-        void drain(active);
+      for(const id of selectedCharts){
+        const previous=latest.get(id);
+        if(previous){
+          queue.set(id,previous);
+          void drain(id);
+        }
       }
     });
+  }
+  function toggleChart(event){
+    const input=event.target;
+    if(!input.matches('input[type="checkbox"]'))return;
+    const id=input.value;
+    if(!IDS.includes(id))return;
+    const status=el("chart-selection-status");
+    if(input.checked){
+      if(selectedCharts.length===4){
+        input.checked=false;
+        status.textContent="Four charts maximum. Deselect a chart to add another.";
+        return;
+      }
+      selectedCharts.push(id);
+    }else{
+      if(selectedCharts.length===1){
+        input.checked=true;
+        status.textContent="Keep at least one chart on the canvas.";
+        return;
+      }
+      selectedCharts=selectedCharts.filter(value=>value!==id);
+    }
+    status.textContent=selectedCharts.length+
+      (selectedCharts.length===1?" chart":" charts")+
+      " selected. Charts update together with your rate scenario.";
+    showCharts();
   }
   function plot(id,history,path){
     const isSpread=id==="chart-spread";
@@ -143,7 +187,7 @@
     const pad=Math.max((hi-lo)*.11,isSpread?.07:.14);
     const boundary=(Date.parse(base)-Date.parse(rangeStart))/(Date.parse(end)-Date.parse(rangeStart));
     const layout={
-      autosize:true,height:el(id).clientHeight||350,
+      autosize:true,height:plotHeight(id),
       margin:{l:55,r:16,t:62,b:49,autoexpand:false},paper_bgcolor:"#fff",plot_bgcolor:"#fff",
       font:{family:"Inter, system-ui, sans-serif",size:11,color:"#465865"},
       hovermode:"closest",showlegend:true,
@@ -177,13 +221,148 @@
     });
     putPlot(id,traces,layout);
   }
+  // Additional independent, related views are derived from the SAME verified
+  // historical observations, fitted model and rolling backtest. No new API
+  // data or pseudo-observations are manufactured for visual variety.
+  function plotAdditional(id,history,path){
+    const st=state(),hx=history.map(r=>r.date),px=path.map(r=>r.date);
+    const observed=history.at(-1),terminal=path.at(-1);
+    const historicalStart=focused
+      ?history[Math.max(0,history.length-25)].date:hx[0];
+    const end=px.at(-1);
+    const context=id.endsWith("accuracy")?
+      null:{range:[historicalStart,end],type:"date"};
+    const sourceNote=el(id+"-context");
+    const base={
+      autosize:true,height:plotHeight(id),
+      margin:{l:55,r:20,t:55,b:47,autoexpand:false},
+      paper_bgcolor:"#fff",plot_bgcolor:"#fff",showlegend:true,
+      font:{family:"Inter, system-ui, sans-serif",size:10,color:"#465865"},
+      hovermode:"closest",
+      legend:{orientation:"h",x:.5,xanchor:"center",y:1.16,
+        font:{size:10},itemwidth:30},
+      xaxis:{type:"date",range:[historicalStart,end],
+        tickformat:focused?"%b '%y":"%Y",nticks:8,
+        linecolor:"#dfe3e6"},
+      yaxis:{gridcolor:"#edf1f2",automargin:true},
+      annotations:[],shapes:[],meta:{chartKind:id}
+    };
+    const line=(name,x,y,color,unit="%",dash="solid")=>({
+      type:"scatter",mode:"lines",x,y,name,
+      line:{color,width:dash==="dash"?2.5:2.2,dash},
+      hovertemplate:"%{x|%b %Y}: %{y:.2f}"+unit+"<extra>"+name+"</extra>"
+    });
+    let traces=[];
+    if(id==="chart-policy"){
+      traces=[line("Effective federal funds rate (observed)",hx,
+        history.map(r=>r.policy),COLOR.historical)];
+      sourceNote.textContent="Latest observed DFF "+
+        pct(observed.policy)+" · Federal Reserve / FRED; no policy forecast.";
+      base.xaxis.range=[historicalStart,hx.at(-1)];
+      base.yaxis.title="Policy rate (%)";
+      base.showlegend=false;
+    }else if(id==="chart-policy-gap"){
+      const g5=history.map(r=>r.dgs5-r.policy),g10=history.map(r=>r.dgs10-r.policy);
+      traces=[
+        line("5Y yield less DFF (observed)",hx,g5,COLOR.five," pp"),
+        line("10Y yield less DFF (observed)",hx,g10,COLOR.ten," pp")
+      ];
+      sourceNote.textContent="Latest: 5Y − DFF "+(g5.at(-1)>=0?"+":"")+
+        g5.at(-1).toFixed(2)+" pp · 10Y − DFF "+(g10.at(-1)>=0?"+":"")+
+        g10.at(-1).toFixed(2)+" pp. Not an estimated term premium.";
+      base.xaxis.range=[historicalStart,hx.at(-1)];
+      base.yaxis.title="Yield − DFF (pp)";
+      base.shapes=[{type:"line",xref:"x",yref:"y",x0:historicalStart,
+        x1:hx.at(-1),y0:0,y1:0,
+        line:{color:"#a1b2b5",width:1,dash:"dot"}}];
+    }else if(id==="chart-accuracy"){
+      const labels=["5Y","10Y","10Y − 5Y"];
+      const keys=["5y","10y","spread"];
+      const rows=keys.map(key=>data.backtest.metrics.find(
+        r=>r.metric===key&&r.horizon_months===st.horizon));
+      if(rows.some(r=>!r))return;
+      traces=[
+        {type:"bar",name:"Fitted model",x:labels,
+          y:rows.map(r=>r.rmse_model_bp),marker:{color:COLOR.ten},
+          hovertemplate:"%{x}<br>Model: %{y:.1f} bp RMSE<extra></extra>"},
+        {type:"bar",name:"Unchanged-yield baseline",x:labels,
+          y:rows.map(r=>r.rmse_no_change_bp),marker:{color:COLOR.five},
+          hovertemplate:"%{x}<br>No change: %{y:.1f} bp RMSE<extra></extra>"}
+      ];
+      sourceNote.textContent=st.horizon+"-month expanding-window backtest · "+
+        "Lower RMSE means smaller historical forecast errors.";
+      base.xaxis={type:"category",title:"Forecast target",showgrid:false};
+      base.yaxis={title:"RMSE (basis points)",rangemode:"tozero",
+        gridcolor:"#edf1f2"};
+      base.barmode="group";
+      base.meta={chartKind:id,backtestHorizon:st.horizon};
+    }else if(id==="chart-shock"){
+      const basePath=data.forecast.slice(0,st.horizon+1);
+      const five=path.map((r,i)=>(r.y5-basePath[i].y5)*100);
+      const ten=path.map((r,i)=>(r.y10-basePath[i].y10)*100);
+      traces=[
+        line("5Y scenario effect",px,five,COLOR.five," bp"),
+        line("10Y scenario effect",px,ten,COLOR.ten," bp")
+      ];
+      sourceNote.textContent=st.delta===0
+        ?"Set a nonzero Fed-rate deviation to compare conditional model effects."
+        :"Conditional "+(st.delta>0?"+":"")+st.delta+
+          " bp Fed-rate deviation · Modeled change vs. the unchanged scenario.";
+      const envelope=[-100,100].flatMap(delta=>
+        data.forecast.slice(0,25).flatMap(r=>[
+          Math.abs(r.effect5_per_1pp*delta),
+          Math.abs(r.effect10_per_1pp*delta)
+        ]));
+      const limit=Math.max(1,...envelope)*1.15;
+      base.xaxis.range=[px[0],end];
+      base.yaxis={title:"Scenario effect (bp)",
+        range:[-limit,limit],gridcolor:"#edf1f2"};
+      base.shapes=[{type:"line",xref:"x",yref:"y",x0:px[0],x1:end,
+        y0:0,y1:0,line:{color:"#9aafb0",width:1,dash:"dot"}}];
+      base.meta={chartKind:id,conditionalShockBp:st.delta};
+    }else if(id==="chart-five"||id==="chart-ten"){
+      const five=id==="chart-five",key=five?"dgs5":"dgs10";
+      const val=five?"y5":"y10";
+      const low=five?"low5":"low10",high=five?"high5":"high10";
+      const color=five?COLOR.five:COLOR.ten,label=five?"5Y":"10Y";
+      traces=[line(label+" observed",hx,history.map(r=>r[key]),color)];
+      if(st.bands){
+        traces.push(
+          {type:"scatter",mode:"lines",x:px,y:path.map(r=>r[low]),
+            name:"Historical-error 10th percentile",showlegend:false,
+            line:{color:COLOR.bound,width:1,dash:"dot"},
+            hovertemplate:"%{x|%b %Y}: %{y:.2f}%<extra>10th percentile</extra>"},
+          {type:"scatter",mode:"lines",x:px,y:path.map(r=>r[high]),
+            name:"Historical-error 90th percentile",showlegend:true,
+            line:{color:COLOR.bound,width:1,dash:"dot"},
+            fill:"tonexty",fillcolor:"rgba(11,127,115,0.11)",
+            hovertemplate:"%{x|%b %Y}: %{y:.2f}%<extra>90th percentile</extra>"}
+        );
+      }
+      traces.push(line(label+" modeled (dashed)",px,path.map(r=>r[val]),color,"%","dash"));
+      sourceNote.textContent="Latest observed "+label+" "+pct(observed[key])+
+        " · "+st.horizon+"-month modeled "+pct(terminal[val])+
+        (st.bands?" · Historical-error range shown":"");
+      base.yaxis.title="Yield (%)";
+      const domain=focused?history.slice(-25):history;
+      const all=[...domain.map(r=>r[key]),...[-100,0,100].flatMap(delta=>
+        Model.forecast(data,delta,24).flatMap(r=>[r[val],r[low],r[high]]))];
+      const min=Math.min(...all),max=Math.max(...all),pad=Math.max(.14,(max-min)*.11);
+      base.yaxis.range=[min-pad,max+pad];
+      base.shapes=[
+        {type:"rect",xref:"x",yref:"paper",x0:px[0],x1:end,
+          y0:0,y1:1,fillcolor:"rgba(11,127,115,.04)",line:{width:0},layer:"below"},
+        {type:"line",xref:"x",yref:"paper",x0:px[0],x1:px[0],
+          y0:0,y1:1,line:{color:"#93a9a8",width:1.3,dash:"dash"}}
+      ];
+      base.meta={chartKind:id,observedEnd:hx.at(-1),scenarioEnd:end,
+        conditionalShockBp:st.delta,empiricalBands:st.bands};
+    }else return;
+    putPlot(id,traces,base);
+  }
   function summary(path){
     const s=state(),first=path[0],last=path.at(-1);
     el("delta-value").textContent=(s.delta<0?"−":s.delta>0?"+":"")+Math.abs(s.delta)+" bps";
-    el("kpi-5").textContent=pct(first.y5);
-    el("kpi-10").textContent=pct(first.y10);
-    el("kpi-base-spread").textContent=bps(first.spread);
-    el("kpi-terminal").textContent=bps(last.spread);
     el("preview-five").textContent=pct(last.y5);
     el("preview-ten").textContent=pct(last.y10);
     el("preview-spread").textContent=bps(last.spread);
@@ -198,12 +377,18 @@
         }
       }
     }
-    el("kpi-crossing").textContent=msg;
-    el("kpi-crossing").title=msg;
-    el("scenario-status").textContent=s.delta===0?
-      "Fitted model baseline; historical-error bands describe past out-of-sample errors.":
-      "Conditional "+(s.delta<0?"negative":"positive")+" "+Math.abs(s.delta)+
-      "-bp next-month DFF deviation. Historical association only; not a causal Fed-policy estimate.";
+    const label=s.delta===0
+      ?"Fitted model baseline; historical-error ranges describe past out-of-sample errors."
+      :"Conditional "+(s.delta<0?"negative":"positive")+" "+Math.abs(s.delta)+
+        "-bp next-month DFF deviation; observational association only.";
+    el("scenario-status").textContent=label+" "+msg;
+    el("chart-yields-context").textContent="Latest observed: 5Y "+pct(first.y5)+
+      " · 10Y "+pct(first.y10)+" · "+s.horizon+"-month modeled: 5Y "+
+      pct(last.y5)+" · 10Y "+pct(last.y10);
+    el("chart-spread-context").textContent="Observed "+bps(first.spread)+
+      " · "+s.horizon+"-month modeled "+bps(last.spread)+
+      (first.spread<0?" · Currently inverted":last.spread<0?
+        " · Modeled inversion":" · Zero = inversion threshold");
   }
   function render(){
     if(!data)return;
@@ -213,6 +398,7 @@
     summary(path);
     plot("chart-yields",history,path);
     plot("chart-spread",history,path);
+    for(const id of IDS.slice(2))plotAdditional(id,history,path);
     const label=el("chart-context").selectedOptions[0].textContent.trim();
     const date=new Date(path[0].date+"T00:00:00Z")
       .toLocaleDateString("en-US",{month:"short",year:"numeric",timeZone:"UTC"});
@@ -221,7 +407,7 @@
       " months observed, then "+s.horizon+" modeled months. Continuous dates.":
       label+" of actual yields ending "+date+" → "+s.horizon+
       " months "+(s.delta===0?"model forecast":"conditional policy scenario")+
-      ". Calendar distances are proportional; Focus projection for detail.";
+      ". Time-series charts preserve calendar distances; the accuracy view uses backtest horizons.";
   }
   function renderQueued(){
     if(!data)return;
@@ -253,16 +439,19 @@
     el("show-bands").checked=true;
     el("chart-context").value="120";
     focused=false;
+    selectedCharts=[...DEFAULT];
+    for(const input of el("chart-picker").querySelectorAll('input[type="checkbox"]')){
+      input.checked=selectedCharts.includes(input.value);
+    }
+    el("chart-selection-status").textContent="Four related views selected.";
+    showCharts();
     el("focus-projection").setAttribute("aria-pressed","false");
     el("focus-projection").textContent="Focus projection";
     render();
   }
   async function initialize(){
-    IDS.forEach(id=>{
-      const card=el(id).closest(".chart-card");
-      card.classList.toggle("is-view-hidden",id!==selected());
-    });
-    el("chart-primary").addEventListener("change",showChart);
+    showCharts();
+    el("chart-picker").addEventListener("change",toggleChart);
     el("chart-context").addEventListener("change",render);
     el("horizon").addEventListener("change",renderQueued);
     el("delta").addEventListener("input",renderQueued);
@@ -277,7 +466,7 @@
     });
     let resizing;
     window.addEventListener("resize",()=>{
-      clearTimeout(resizing);resizing=setTimeout(showChart,150);
+      clearTimeout(resizing);resizing=setTimeout(showCharts,150);
     });
     try{
       if(!window.Plotly||!Model)throw Error("Model renderer or Plotly unavailable.");

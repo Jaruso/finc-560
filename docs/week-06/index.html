@@ -8,11 +8,11 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="../assets/styles.css?v=20260906-week3-redesign">
   <link rel="stylesheet" href="../assets/site-transitions.css?v=20261001">
-  <link rel="stylesheet" href="./dashboard.css?v=sidebar-titles-202610">
+  <link rel="stylesheet" href="./dashboard.css?v=macro-four-chart-canvas-20261001">
   <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
   
   <script defer src="./forecast_model.js?v=dns-engine"></script>
-  <script defer src="./app.js?v=legend-only-20261001"></script>
+  <script defer src="./app.js?v=macro-four-chart-canvas-20261001"></script>
 </head>
 <body>
   <header class="site-header week-06-header">
@@ -84,19 +84,24 @@
     </section>
       </aside>
       <section class="analysis-pane" aria-label="Interactive yield chart workspace">
-    <section aria-label="Scenario summary" class="kpis">
-      <div class="kpi card"><span>5Y observed</span><strong id="kpi-5">—</strong><small>Latest available historical month</small></div>
-      <div class="kpi card"><span>10Y observed</span><strong id="kpi-10">—</strong><small>Latest available historical month</small></div>
-      <div class="kpi card"><span>Observed spread</span><strong id="kpi-base-spread">—</strong><small>Below 0 = inverted</small></div>
-      <div class="kpi card prominent"><span>Modeled spread</span><strong id="kpi-terminal">—</strong><small id="kpi-crossing">Requires historical data</small></div>
-    </section>
       <div class="chart-toolbar card" aria-label="Chart controls">
-        <label class="chart-choice"><span>Chart</span>
-          <select id="chart-primary" aria-label="Selected metric">
-            <option value="chart-yields" selected>5Y &amp; 10Y yields</option>
-            <option value="chart-spread">10Y–5Y spread</option>
-          </select>
-        </label>
+        <details id="chart-picker" class="chart-picker">
+          <summary aria-label="Choose up to four Treasury charts">Charts <strong id="chart-count">4 of 4</strong></summary>
+          <fieldset class="chart-options" aria-label="Select one to four related Treasury visualizations">
+            <legend>Choose 1–4 charts</legend>
+            <label><input type="checkbox" value="chart-yields" checked> 5Y &amp; 10Y yields</label>
+            <label><input type="checkbox" value="chart-spread" checked> 10Y–5Y spread</label>
+            <label><input type="checkbox" value="chart-policy" checked> Effective federal funds rate</label>
+            <label><input type="checkbox" value="chart-accuracy" checked> Forecast accuracy (RMSE)</label>
+            <label><input type="checkbox" value="chart-five"> 5Y forecast &amp; uncertainty</label>
+            <label><input type="checkbox" value="chart-ten"> 10Y forecast &amp; uncertainty</label>
+            <label><input type="checkbox" value="chart-shock"> Modeled policy-shock impact</label>
+            <label><input type="checkbox" value="chart-policy-gap"> Treasury vs. policy-rate gaps</label>
+            <p id="chart-selection-status" class="chart-picker-help" role="status" aria-live="polite">
+              Four related views selected. Uncheck one to choose another.
+            </p>
+          </fieldset>
+        </details>
         <label class="chart-choice chart-context"><span>History shown</span>
           <select id="chart-context" aria-label="Years of historical observations shown">
             <option value="12">1 year</option>
@@ -109,23 +114,74 @@
           </select>
         </label>
         <button id="focus-projection" type="button" class="secondary focus-button" aria-pressed="false">Focus projection</button>
-        <span class="chart-badge">Continuous calendar scale • One chart</span>
+        <span class="chart-badge">Observed and modeled values appear in chart hovers</span>
       </div>
-      <p id="axis-explanation" class="axis-explanation" aria-live="polite">Historical → projected</p>
-      <div class="chart-grid" id="chart-stage" aria-label="Continuous historical and projected time-series charts">
-        <article class="chart-card card">
+      <p id="axis-explanation" class="axis-explanation" aria-live="polite">Historical observations and modeled scenarios are identified separately.</p>
+      <div class="chart-grid" id="chart-stage" data-count="4"
+        aria-label="Configurable Treasury analytics chart canvas">
+        <article class="chart-card card" data-chart="chart-yields">
           <header class="chart-heading">
             <h2>5Y and 10Y Treasury yields</h2>
-            <p>Solid lines are observations; dashed paths show data-calibrated forecasts and conditional adjustments.</p>
+            <p id="chart-yields-context">Latest observed yields and modeled paths</p>
           </header>
-          <div id="chart-yields" class="plot" role="img" aria-label="Five-year and ten-year Treasury yields on one continuous calendar axis with hypothetical future paths"></div>
+          <div id="chart-yields" class="plot" role="img"
+            aria-label="Observed five-year and ten-year Treasury yields with modeled future paths"></div>
         </article>
-        <article class="chart-card card is-view-hidden" aria-hidden="true">
+        <article class="chart-card card" data-chart="chart-spread">
           <header class="chart-heading">
             <h2>10Y − 5Y spread</h2>
-            <p>Observed spread followed by fitted forecasts and historical forecast-error ranges.</p>
+            <p id="chart-spread-context">Latest observed and forecast spreads; zero indicates inversion</p>
           </header>
-          <div id="chart-spread" class="plot" role="img" aria-label="Observed 10-year minus 5-year spread and hypothetical scenarios on one continuous calendar axis"></div>
+          <div id="chart-spread" class="plot" role="img"
+            aria-label="Ten-year minus five-year observed and modeled spread, with inversion threshold"></div>
+        </article>
+        <article class="chart-card card" data-chart="chart-policy">
+          <header class="chart-heading">
+            <h2>Effective federal funds rate</h2>
+            <p id="chart-policy-context">Observed overnight policy rate (DFF); not a policy forecast</p>
+          </header>
+          <div id="chart-policy" class="plot" role="img"
+            aria-label="Historical effective federal funds rate observations"></div>
+        </article>
+        <article class="chart-card card" data-chart="chart-accuracy">
+          <header class="chart-heading">
+            <h2>Forecast accuracy</h2>
+            <p id="chart-accuracy-context">Model vs. unchanged-yield baseline; lower error is better</p>
+          </header>
+          <div id="chart-accuracy" class="plot" role="img"
+            aria-label="Out-of-sample model and unchanged-yield forecast error comparisons"></div>
+        </article>
+        <article class="chart-card card is-view-hidden" data-chart="chart-five" aria-hidden="true">
+          <header class="chart-heading">
+            <h2>Five-year Treasury outlook</h2>
+            <p id="chart-five-context">Observed 5Y yield and modeled forecast with historical-error range</p>
+          </header>
+          <div id="chart-five" class="plot" role="img"
+            aria-label="Five-year Treasury historical series, projected yields and empirical error bands"></div>
+        </article>
+        <article class="chart-card card is-view-hidden" data-chart="chart-ten" aria-hidden="true">
+          <header class="chart-heading">
+            <h2>Ten-year Treasury outlook</h2>
+            <p id="chart-ten-context">Observed 10Y yield and modeled forecast with historical-error range</p>
+          </header>
+          <div id="chart-ten" class="plot" role="img"
+            aria-label="Ten-year Treasury historical series, projected yields and empirical error bands"></div>
+        </article>
+        <article class="chart-card card is-view-hidden" data-chart="chart-shock" aria-hidden="true">
+          <header class="chart-heading">
+            <h2>Conditional policy-shock impact</h2>
+            <p id="chart-shock-context">Modeled change relative to the unadjusted 5Y and 10Y baseline</p>
+          </header>
+          <div id="chart-shock" class="plot" role="img"
+            aria-label="Modeled changes in five-year and ten-year yields from the selected policy shock"></div>
+        </article>
+        <article class="chart-card card is-view-hidden" data-chart="chart-policy-gap" aria-hidden="true">
+          <header class="chart-heading">
+            <h2>Treasury vs. policy-rate gaps</h2>
+            <p id="chart-policy-gap-context">Historical yield differences relative to the effective funds rate</p>
+          </header>
+          <div id="chart-policy-gap" class="plot" role="img"
+            aria-label="Observed five-year and ten-year Treasury yields minus the effective funds rate"></div>
         </article>
       </div>
       </section>
