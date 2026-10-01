@@ -27,7 +27,10 @@ test("indexed comparison normalizes each company independently without changing 
     const observed=chart.traces[index*2];
     const projected=chart.traces[index*2+1];
     assert.match(observed.name,new RegExp(ticker));
-    assert.equal(observed.y[0],100);
+    const anchor=observed.x.findIndex(date=>
+      date.slice(0,4)===chart.layout.meta.anchorFiscalYear);
+    assert.ok(anchor>=0,"Each company has a point in the common anchor year");
+    assert.equal(observed.y[anchor],100);
     assert.deepEqual(observed.x,series[index].history.map(r=>r.fiscal_end));
     assert.equal(projected.x[0],series[index].forecast.projected[0].fiscal_end);
     assert.equal(chart.layout.meta.tickers[index],ticker);
