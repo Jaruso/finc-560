@@ -1,5 +1,4 @@
 /* Corporate dashboard uses the exact same visual language as Treasury. */
-.company-name{color:var(--muted);font-size:.74rem;line-height:1.2;margin:3px 0 12px;min-height:1em}
 .controls-rail .control-grid{margin-top:9px}
 .company-preview{display:grid;grid-template-columns:1fr;gap:6px;margin-top:14px;background:var(--soft);
   border:1px solid #b7ddd6;border-radius:8px;padding:9px}
@@ -28,6 +27,8 @@
 .market-quote{border:1px solid #c4ddda;border-radius:8px;background:#f5faf8;padding:8px 9px;margin:3px 0 12px}
 .market-quote-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;
   color:#345e62;font-size:.66rem;letter-spacing:.035em;text-transform:uppercase;font-weight:800}
+.market-quote-heading .company-name{min-width:0;overflow-wrap:anywhere;
+  font-size:.77rem;font-weight:800;letter-spacing:0;line-height:1.25;text-transform:none}
 .market-quote-heading .secondary{padding:4px 7px;font-size:.64rem;text-transform:none;letter-spacing:0}
 .market-quote-value{display:flex;align-items:baseline;flex-wrap:wrap;gap:7px;margin-top:4px}
 .market-quote-value strong{font-size:1.25rem;letter-spacing:-.035em;font-variant-numeric:tabular-nums}

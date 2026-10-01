@@ -289,8 +289,9 @@
     el("chart-footnote").hidden=!focused;
     el("revenue-margin-guidance").hidden=
       !focused||el("metric").value!=="revenue";
-    el("company-name").textContent=frames[0].name+
-      " · Comparing with "+frames.slice(1).map(f=>f.ticker).join(", ");
+    // The quote card names only the primary equity; comparative context
+    // and legends already identify the remaining selected companies.
+    el("company-name").textContent=frames[0].name;
     for(const id of selected){
       if(!available.has(id))continue;
       let mode=scaleModes[id]||"indexed",chart;
@@ -774,7 +775,7 @@
     canvas.setAvailable([]);
     el("equity-comparison-sources").hidden=true;
     el("equity-comparison-context").hidden=true;
-    el("company-name").textContent=ticker+" · Checking financial statements";
+    el("company-name").textContent=ticker;
     el("company-empty").hidden=false;
     el("company-chart").hidden=true;
     el("company-empty-title").textContent="Checking financial statement coverage";
@@ -792,7 +793,7 @@
     if(company||activeTicker!==details.ticker)return;
     const p=details.profile||{};
     const international=(p.country&&p.country!=="US")||(p.currency&&p.currency!=="USD");
-    el("company-name").textContent=(p.name||details.ticker)+(p.exchange?" · "+p.exchange:"");
+    el("company-name").textContent=p.name||details.ticker;
     el("company-empty-title").textContent=international
       ?"International company: financial history unavailable":"Annual financial history unavailable";
     el("company-empty-message").textContent=international
@@ -821,7 +822,7 @@
     if(!/^[A-Z][A-Z.]{0,9}$/.test(ticker))return;
     const generation=++sequence;
     activeTicker=ticker;
-    el("company-name").textContent="Loading "+ticker+"…";
+    el("company-name").textContent=ticker;
     resetQuote();
     el("data-error").hidden=true;
     scaleContext=null;manualYRange=null;lastRenderedValues=null;
