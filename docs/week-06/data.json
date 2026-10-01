@@ -1,16 +1,49 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "status": "ready",
-  "source": "FRED / Federal Reserve: DGS5, DGS10, DFF",
-  "source_urls": {
-    "5y": "https://fred.stlouisfed.org/series/DGS5",
-    "10y": "https://fred.stlouisfed.org/series/DGS10",
-    "policy": "https://fred.stlouisfed.org/series/DFF"
+  "model": "Fixed-decay Nelson\u2013Siegel monthly factors + separate factor AR(1) (Diebold\u2013Li-style)",
+  "model_parameters": {
+    "lambda_per_month": 0.0609,
+    "maturities_months": [
+      12,
+      24,
+      36,
+      60,
+      84,
+      120,
+      240,
+      360
+    ],
+    "factor_ar_phi": [
+      0.97674,
+      0.97436,
+      0.93728
+    ],
+    "policy_factor_association_per_1pp": [
+      0.00038,
+      0.42046,
+      -0.05529
+    ],
+    "cross_section_rmse_bp": 8.01,
+    "complete_training_months": 249
   },
-  "retrieved_utc": "2026-10-01T01:42:55+00:00",
+  "source": "Federal Reserve / FRED H.15 Treasury constant maturities and DFF",
+  "source_urls": {
+    "DGS1": "https://fred.stlouisfed.org/series/DGS1",
+    "DGS2": "https://fred.stlouisfed.org/series/DGS2",
+    "DGS3": "https://fred.stlouisfed.org/series/DGS3",
+    "DGS5": "https://fred.stlouisfed.org/series/DGS5",
+    "DGS7": "https://fred.stlouisfed.org/series/DGS7",
+    "DGS10": "https://fred.stlouisfed.org/series/DGS10",
+    "DGS20": "https://fred.stlouisfed.org/series/DGS20",
+    "DGS30": "https://fred.stlouisfed.org/series/DGS30",
+    "DFF": "https://fred.stlouisfed.org/series/DFF"
+  },
+  "retrieved_utc": "2026-10-01T02:01:37+00:00",
   "latest_synchronized_daily_observation": "2026-09-29",
-  "frequency": "Monthly latest available observations; latest month may be partial.",
-  "unit": "Percent per annum",
+  "latest_month_is_partial": false,
+  "frequency": "Last complete COMMON trading-date Treasury cross-section each month; latest month may be partial",
+  "unit": "Percent per annum; forecast errors use basis points where marked",
   "observations": [
     {
       "date": "2006-01-01",
@@ -532,7 +565,7 @@
       "date": "2013-03-01",
       "dgs5": 0.77,
       "dgs10": 1.87,
-      "policy": 0.09
+      "policy": 0.13
     },
     {
       "date": "2013-04-01",
@@ -892,7 +925,7 @@
       "date": "2018-03-01",
       "dgs5": 2.56,
       "dgs10": 2.74,
-      "policy": 1.67
+      "policy": 1.68
     },
     {
       "date": "2018-04-01",
@@ -1506,5 +1539,748 @@
       "dgs10": 5.26,
       "policy": 3.88
     }
-  ]
+  ],
+  "forecast": [
+    {
+      "date": "2026-09-01",
+      "month": 0,
+      "y5": 5.06,
+      "y10": 5.26,
+      "spread": 0.2,
+      "effect5_per_1pp": 0,
+      "effect10_per_1pp": 0
+    },
+    {
+      "date": "2026-10-01",
+      "month": 1,
+      "y5": 5.03244,
+      "y10": 5.30312,
+      "spread": 0.27069,
+      "effect5_per_1pp": 0.099164,
+      "effect10_per_1pp": 0.050355
+    },
+    {
+      "date": "2026-11-01",
+      "month": 2,
+      "y5": 4.94848,
+      "y10": 5.23827,
+      "spread": 0.28979,
+      "effect5_per_1pp": 0.097116,
+      "effect10_per_1pp": 0.049343
+    },
+    {
+      "date": "2026-12-01",
+      "month": 3,
+      "y5": 4.8681,
+      "y10": 5.17584,
+      "spread": 0.30774,
+      "effect5_per_1pp": 0.095089,
+      "effect10_per_1pp": 0.048341
+    },
+    {
+      "date": "2027-01-01",
+      "month": 4,
+      "y5": 4.79111,
+      "y10": 5.11572,
+      "spread": 0.32461,
+      "effect5_per_1pp": 0.093085,
+      "effect10_per_1pp": 0.047347
+    },
+    {
+      "date": "2027-02-01",
+      "month": 5,
+      "y5": 4.71733,
+      "y10": 5.0578,
+      "spread": 0.34047,
+      "effect5_per_1pp": 0.091105,
+      "effect10_per_1pp": 0.046363
+    },
+    {
+      "date": "2027-03-01",
+      "month": 6,
+      "y5": 4.64661,
+      "y10": 5.00199,
+      "spread": 0.35538,
+      "effect5_per_1pp": 0.089151,
+      "effect10_per_1pp": 0.045391
+    },
+    {
+      "date": "2027-04-01",
+      "month": 7,
+      "y5": 4.57879,
+      "y10": 4.94818,
+      "spread": 0.3694,
+      "effect5_per_1pp": 0.087223,
+      "effect10_per_1pp": 0.044429
+    },
+    {
+      "date": "2027-05-01",
+      "month": 8,
+      "y5": 4.51372,
+      "y10": 4.89629,
+      "spread": 0.38258,
+      "effect5_per_1pp": 0.085322,
+      "effect10_per_1pp": 0.04348
+    },
+    {
+      "date": "2027-06-01",
+      "month": 9,
+      "y5": 4.45126,
+      "y10": 4.84623,
+      "spread": 0.39497,
+      "effect5_per_1pp": 0.083448,
+      "effect10_per_1pp": 0.042543
+    },
+    {
+      "date": "2027-07-01",
+      "month": 10,
+      "y5": 4.39129,
+      "y10": 4.79792,
+      "spread": 0.40663,
+      "effect5_per_1pp": 0.081603,
+      "effect10_per_1pp": 0.041619
+    },
+    {
+      "date": "2027-08-01",
+      "month": 11,
+      "y5": 4.33368,
+      "y10": 4.75127,
+      "spread": 0.41759,
+      "effect5_per_1pp": 0.079787,
+      "effect10_per_1pp": 0.040709
+    },
+    {
+      "date": "2027-09-01",
+      "month": 12,
+      "y5": 4.27832,
+      "y10": 4.70623,
+      "spread": 0.42791,
+      "effect5_per_1pp": 0.078,
+      "effect10_per_1pp": 0.039811
+    },
+    {
+      "date": "2027-10-01",
+      "month": 13,
+      "y5": 4.22509,
+      "y10": 4.66271,
+      "spread": 0.43761,
+      "effect5_per_1pp": 0.076242,
+      "effect10_per_1pp": 0.038928
+    },
+    {
+      "date": "2027-11-01",
+      "month": 14,
+      "y5": 4.17391,
+      "y10": 4.62065,
+      "spread": 0.44675,
+      "effect5_per_1pp": 0.074515,
+      "effect10_per_1pp": 0.038059
+    },
+    {
+      "date": "2027-12-01",
+      "month": 15,
+      "y5": 4.12466,
+      "y10": 4.58,
+      "spread": 0.45534,
+      "effect5_per_1pp": 0.072817,
+      "effect10_per_1pp": 0.037204
+    },
+    {
+      "date": "2028-01-01",
+      "month": 16,
+      "y5": 4.07725,
+      "y10": 4.54068,
+      "spread": 0.46343,
+      "effect5_per_1pp": 0.07115,
+      "effect10_per_1pp": 0.036363
+    },
+    {
+      "date": "2028-02-01",
+      "month": 17,
+      "y5": 4.03161,
+      "y10": 4.50266,
+      "spread": 0.47105,
+      "effect5_per_1pp": 0.069513,
+      "effect10_per_1pp": 0.035537
+    },
+    {
+      "date": "2028-03-01",
+      "month": 18,
+      "y5": 3.98764,
+      "y10": 4.46586,
+      "spread": 0.47822,
+      "effect5_per_1pp": 0.067906,
+      "effect10_per_1pp": 0.034725
+    },
+    {
+      "date": "2028-04-01",
+      "month": 19,
+      "y5": 3.94527,
+      "y10": 4.43025,
+      "spread": 0.48498,
+      "effect5_per_1pp": 0.06633,
+      "effect10_per_1pp": 0.033928
+    },
+    {
+      "date": "2028-05-01",
+      "month": 20,
+      "y5": 3.90443,
+      "y10": 4.39577,
+      "spread": 0.49134,
+      "effect5_per_1pp": 0.064783,
+      "effect10_per_1pp": 0.033146
+    },
+    {
+      "date": "2028-06-01",
+      "month": 21,
+      "y5": 3.86505,
+      "y10": 4.36238,
+      "spread": 0.49733,
+      "effect5_per_1pp": 0.063267,
+      "effect10_per_1pp": 0.032378
+    },
+    {
+      "date": "2028-07-01",
+      "month": 22,
+      "y5": 3.82706,
+      "y10": 4.33003,
+      "spread": 0.50297,
+      "effect5_per_1pp": 0.06178,
+      "effect10_per_1pp": 0.031625
+    },
+    {
+      "date": "2028-08-01",
+      "month": 23,
+      "y5": 3.7904,
+      "y10": 4.29869,
+      "spread": 0.50829,
+      "effect5_per_1pp": 0.060323,
+      "effect10_per_1pp": 0.030886
+    },
+    {
+      "date": "2028-09-01",
+      "month": 24,
+      "y5": 3.75501,
+      "y10": 4.26832,
+      "spread": 0.51331,
+      "effect5_per_1pp": 0.058896,
+      "effect10_per_1pp": 0.030161
+    }
+  ],
+  "empirical_error_bands": {
+    "5y": [
+      {
+        "month": 1,
+        "error_p10_pp": -0.37996,
+        "error_p90_pp": 0.48273,
+        "sample_count": 60
+      },
+      {
+        "month": 2,
+        "error_p10_pp": -0.44883,
+        "error_p90_pp": 0.56885,
+        "sample_count": 60
+      },
+      {
+        "month": 3,
+        "error_p10_pp": -0.60162,
+        "error_p90_pp": 0.90238,
+        "sample_count": 60
+      },
+      {
+        "month": 4,
+        "error_p10_pp": -0.64727,
+        "error_p90_pp": 1.2376,
+        "sample_count": 60
+      },
+      {
+        "month": 5,
+        "error_p10_pp": -0.33295,
+        "error_p90_pp": 1.3083,
+        "sample_count": 60
+      },
+      {
+        "month": 6,
+        "error_p10_pp": -0.30743,
+        "error_p90_pp": 1.47977,
+        "sample_count": 60
+      },
+      {
+        "month": 7,
+        "error_p10_pp": -0.17869,
+        "error_p90_pp": 1.69575,
+        "sample_count": 60
+      },
+      {
+        "month": 8,
+        "error_p10_pp": -0.03827,
+        "error_p90_pp": 1.67069,
+        "sample_count": 60
+      },
+      {
+        "month": 9,
+        "error_p10_pp": -0.16082,
+        "error_p90_pp": 1.94261,
+        "sample_count": 60
+      },
+      {
+        "month": 10,
+        "error_p10_pp": -0.25566,
+        "error_p90_pp": 1.98482,
+        "sample_count": 60
+      },
+      {
+        "month": 11,
+        "error_p10_pp": -0.27881,
+        "error_p90_pp": 2.114,
+        "sample_count": 60
+      },
+      {
+        "month": 12,
+        "error_p10_pp": -0.19664,
+        "error_p90_pp": 2.24036,
+        "sample_count": 60
+      },
+      {
+        "month": 13,
+        "error_p10_pp": 0.02083,
+        "error_p90_pp": 2.43424,
+        "sample_count": 60
+      },
+      {
+        "month": 14,
+        "error_p10_pp": 0.03026,
+        "error_p90_pp": 2.33345,
+        "sample_count": 60
+      },
+      {
+        "month": 15,
+        "error_p10_pp": 0.0961,
+        "error_p90_pp": 2.54521,
+        "sample_count": 60
+      },
+      {
+        "month": 16,
+        "error_p10_pp": 0.09926,
+        "error_p90_pp": 2.59327,
+        "sample_count": 60
+      },
+      {
+        "month": 17,
+        "error_p10_pp": 0.07777,
+        "error_p90_pp": 2.73496,
+        "sample_count": 60
+      },
+      {
+        "month": 18,
+        "error_p10_pp": 0.03511,
+        "error_p90_pp": 2.79385,
+        "sample_count": 60
+      },
+      {
+        "month": 19,
+        "error_p10_pp": 0.1027,
+        "error_p90_pp": 2.89184,
+        "sample_count": 60
+      },
+      {
+        "month": 20,
+        "error_p10_pp": 0.15667,
+        "error_p90_pp": 3.11092,
+        "sample_count": 60
+      },
+      {
+        "month": 21,
+        "error_p10_pp": 0.24375,
+        "error_p90_pp": 3.0368,
+        "sample_count": 60
+      },
+      {
+        "month": 22,
+        "error_p10_pp": 0.21351,
+        "error_p90_pp": 3.0808,
+        "sample_count": 60
+      },
+      {
+        "month": 23,
+        "error_p10_pp": 0.27383,
+        "error_p90_pp": 3.15959,
+        "sample_count": 60
+      },
+      {
+        "month": 24,
+        "error_p10_pp": 0.31067,
+        "error_p90_pp": 3.22476,
+        "sample_count": 60
+      }
+    ],
+    "10y": [
+      {
+        "month": 1,
+        "error_p10_pp": -0.51622,
+        "error_p90_pp": 0.31854,
+        "sample_count": 60
+      },
+      {
+        "month": 2,
+        "error_p10_pp": -0.42351,
+        "error_p90_pp": 0.45549,
+        "sample_count": 60
+      },
+      {
+        "month": 3,
+        "error_p10_pp": -0.57486,
+        "error_p90_pp": 0.74401,
+        "sample_count": 60
+      },
+      {
+        "month": 4,
+        "error_p10_pp": -0.59675,
+        "error_p90_pp": 0.89968,
+        "sample_count": 60
+      },
+      {
+        "month": 5,
+        "error_p10_pp": -0.56117,
+        "error_p90_pp": 1.09163,
+        "sample_count": 60
+      },
+      {
+        "month": 6,
+        "error_p10_pp": -0.36927,
+        "error_p90_pp": 1.20122,
+        "sample_count": 60
+      },
+      {
+        "month": 7,
+        "error_p10_pp": -0.33342,
+        "error_p90_pp": 1.19419,
+        "sample_count": 60
+      },
+      {
+        "month": 8,
+        "error_p10_pp": -0.30677,
+        "error_p90_pp": 1.19272,
+        "sample_count": 60
+      },
+      {
+        "month": 9,
+        "error_p10_pp": -0.38725,
+        "error_p90_pp": 1.40136,
+        "sample_count": 60
+      },
+      {
+        "month": 10,
+        "error_p10_pp": -0.24752,
+        "error_p90_pp": 1.34554,
+        "sample_count": 60
+      },
+      {
+        "month": 11,
+        "error_p10_pp": -0.2587,
+        "error_p90_pp": 1.46418,
+        "sample_count": 60
+      },
+      {
+        "month": 12,
+        "error_p10_pp": -0.01063,
+        "error_p90_pp": 1.57849,
+        "sample_count": 60
+      },
+      {
+        "month": 13,
+        "error_p10_pp": 0.13872,
+        "error_p90_pp": 1.64822,
+        "sample_count": 60
+      },
+      {
+        "month": 14,
+        "error_p10_pp": 0.17352,
+        "error_p90_pp": 1.92755,
+        "sample_count": 60
+      },
+      {
+        "month": 15,
+        "error_p10_pp": 0.26101,
+        "error_p90_pp": 1.83562,
+        "sample_count": 60
+      },
+      {
+        "month": 16,
+        "error_p10_pp": 0.13922,
+        "error_p90_pp": 1.90401,
+        "sample_count": 60
+      },
+      {
+        "month": 17,
+        "error_p10_pp": 0.1832,
+        "error_p90_pp": 1.92282,
+        "sample_count": 60
+      },
+      {
+        "month": 18,
+        "error_p10_pp": 0.18688,
+        "error_p90_pp": 2.10938,
+        "sample_count": 60
+      },
+      {
+        "month": 19,
+        "error_p10_pp": 0.27444,
+        "error_p90_pp": 2.09075,
+        "sample_count": 60
+      },
+      {
+        "month": 20,
+        "error_p10_pp": 0.26868,
+        "error_p90_pp": 2.13939,
+        "sample_count": 60
+      },
+      {
+        "month": 21,
+        "error_p10_pp": 0.34683,
+        "error_p90_pp": 2.23782,
+        "sample_count": 60
+      },
+      {
+        "month": 22,
+        "error_p10_pp": 0.24673,
+        "error_p90_pp": 2.16359,
+        "sample_count": 60
+      },
+      {
+        "month": 23,
+        "error_p10_pp": 0.42155,
+        "error_p90_pp": 2.25695,
+        "sample_count": 60
+      },
+      {
+        "month": 24,
+        "error_p10_pp": 0.3826,
+        "error_p90_pp": 2.37766,
+        "sample_count": 60
+      }
+    ],
+    "spread": [
+      {
+        "month": 1,
+        "error_p10_pp": -0.2182,
+        "error_p90_pp": 0.01256,
+        "sample_count": 60
+      },
+      {
+        "month": 2,
+        "error_p10_pp": -0.28432,
+        "error_p90_pp": 0.06278,
+        "sample_count": 60
+      },
+      {
+        "month": 3,
+        "error_p10_pp": -0.36494,
+        "error_p90_pp": 0.10483,
+        "sample_count": 60
+      },
+      {
+        "month": 4,
+        "error_p10_pp": -0.36703,
+        "error_p90_pp": 0.10703,
+        "sample_count": 60
+      },
+      {
+        "month": 5,
+        "error_p10_pp": -0.41167,
+        "error_p90_pp": 0.09598,
+        "sample_count": 60
+      },
+      {
+        "month": 6,
+        "error_p10_pp": -0.4863,
+        "error_p90_pp": 0.09966,
+        "sample_count": 60
+      },
+      {
+        "month": 7,
+        "error_p10_pp": -0.52661,
+        "error_p90_pp": 0.11255,
+        "sample_count": 60
+      },
+      {
+        "month": 8,
+        "error_p10_pp": -0.59951,
+        "error_p90_pp": 0.10579,
+        "sample_count": 60
+      },
+      {
+        "month": 9,
+        "error_p10_pp": -0.62909,
+        "error_p90_pp": 0.13295,
+        "sample_count": 60
+      },
+      {
+        "month": 10,
+        "error_p10_pp": -0.68738,
+        "error_p90_pp": 0.14419,
+        "sample_count": 60
+      },
+      {
+        "month": 11,
+        "error_p10_pp": -0.70414,
+        "error_p90_pp": 0.18696,
+        "sample_count": 60
+      },
+      {
+        "month": 12,
+        "error_p10_pp": -0.7306,
+        "error_p90_pp": 0.21706,
+        "sample_count": 60
+      },
+      {
+        "month": 13,
+        "error_p10_pp": -0.75889,
+        "error_p90_pp": 0.2262,
+        "sample_count": 60
+      },
+      {
+        "month": 14,
+        "error_p10_pp": -0.80791,
+        "error_p90_pp": 0.20822,
+        "sample_count": 60
+      },
+      {
+        "month": 15,
+        "error_p10_pp": -0.81074,
+        "error_p90_pp": 0.20803,
+        "sample_count": 60
+      },
+      {
+        "month": 16,
+        "error_p10_pp": -0.81393,
+        "error_p90_pp": 0.19739,
+        "sample_count": 60
+      },
+      {
+        "month": 17,
+        "error_p10_pp": -0.81018,
+        "error_p90_pp": 0.16809,
+        "sample_count": 60
+      },
+      {
+        "month": 18,
+        "error_p10_pp": -0.83657,
+        "error_p90_pp": 0.16244,
+        "sample_count": 60
+      },
+      {
+        "month": 19,
+        "error_p10_pp": -0.86306,
+        "error_p90_pp": 0.14492,
+        "sample_count": 60
+      },
+      {
+        "month": 20,
+        "error_p10_pp": -0.88752,
+        "error_p90_pp": 0.14605,
+        "sample_count": 60
+      },
+      {
+        "month": 21,
+        "error_p10_pp": -0.88339,
+        "error_p90_pp": 0.15989,
+        "sample_count": 60
+      },
+      {
+        "month": 22,
+        "error_p10_pp": -0.87196,
+        "error_p90_pp": 0.13833,
+        "sample_count": 60
+      },
+      {
+        "month": 23,
+        "error_p10_pp": -0.8625,
+        "error_p90_pp": 0.15997,
+        "sample_count": 60
+      },
+      {
+        "month": 24,
+        "error_p10_pp": -0.85571,
+        "error_p90_pp": 0.14295,
+        "sample_count": 60
+      }
+    ]
+  },
+  "backtest": {
+    "method": "60 expanding rolling origins, using data through each origin; fixed calendar 6/12/24-month targets",
+    "origin_count": 60,
+    "min_initial_training_months": 120,
+    "band_interpretation": "Historical 10th/90th percentile rolling-origin forecast error. Descriptive, not guaranteed 80% predictive coverage; one-time policy scenarios not separately backtested.",
+    "metrics": [
+      {
+        "horizon_months": 6,
+        "metric": "5y",
+        "origins": 60,
+        "rmse_model_bp": 86.16,
+        "rmse_no_change_bp": 81.03
+      },
+      {
+        "horizon_months": 6,
+        "metric": "10y",
+        "origins": 60,
+        "rmse_model_bp": 70.05,
+        "rmse_no_change_bp": 72.07
+      },
+      {
+        "horizon_months": 6,
+        "metric": "spread",
+        "origins": 60,
+        "rmse_model_bp": 27.72,
+        "rmse_no_change_bp": 23.14
+      },
+      {
+        "horizon_months": 12,
+        "metric": "5y",
+        "origins": 60,
+        "rmse_model_bp": 132.58,
+        "rmse_no_change_bp": 126.3
+      },
+      {
+        "horizon_months": 12,
+        "metric": "10y",
+        "origins": 60,
+        "rmse_model_bp": 99.48,
+        "rmse_no_change_bp": 103.21
+      },
+      {
+        "horizon_months": 12,
+        "metric": "spread",
+        "origins": 60,
+        "rmse_model_bp": 41.01,
+        "rmse_no_change_bp": 38.33
+      },
+      {
+        "horizon_months": 24,
+        "metric": "5y",
+        "origins": 60,
+        "rmse_model_bp": 205.42,
+        "rmse_no_change_bp": 204.71
+      },
+      {
+        "horizon_months": 24,
+        "metric": "10y",
+        "origins": 60,
+        "rmse_model_bp": 159.87,
+        "rmse_no_change_bp": 171.95
+      },
+      {
+        "horizon_months": 24,
+        "metric": "spread",
+        "origins": 60,
+        "rmse_model_bp": 52.88,
+        "rmse_no_change_bp": 47.78
+      }
+    ]
+  },
+  "policy_scenario": {
+    "interpretation": "One-time next-month DFF deviation versus the model baseline, in percentage points; observed association only (not a causal policy-surprise effect or futures-implied expectation).",
+    "applied_month": 1,
+    "response": "Monthly factor-difference/DFF-difference OLS association, propagated through fitted AR(1) factor dynamics"
+  }
 }
