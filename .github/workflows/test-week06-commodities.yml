@@ -48,7 +48,9 @@ jobs:
           npm install --no-save playwright@1.55.1 plotly.js-dist-min@2.32.0
           npx playwright install --with-deps chromium
       - name: Exercise three-asset dashboard in real Chromium
-        run: node tests/week06_commodities_browser.test.cjs
+        run: |
+          node tests/week06_commodities_browser.test.cjs
+          node tests/week06_commodities_catalog_browser.test.cjs
       - name: Attach screenshot
         if: always()
         uses: actions/upload-artifact@v4
