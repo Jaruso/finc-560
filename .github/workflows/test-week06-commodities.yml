@@ -15,7 +15,6 @@ on:
       - "tests/test_week06_commodities.py"
       - "tests/test_world_bank_pink_sheet.py"
       - "tests/week06_commodities*"
-      - ".github/workflows/test-week06-commodities.yml"
   push:
     branches: [main]
     paths:
@@ -28,7 +27,6 @@ on:
       - "tests/test_week06_commodities.py"
       - "tests/test_world_bank_pink_sheet.py"
       - "tests/week06_commodities*"
-      - ".github/workflows/test-week06-commodities.yml"
 
 permissions:
   contents: read
