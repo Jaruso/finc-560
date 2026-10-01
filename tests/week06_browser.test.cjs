@@ -265,6 +265,9 @@ async function slide(page,id,v){
     assert.equal(await page.locator(".mobile-controls-toggle").isVisible(),true);
     await page.waitForFunction(()=>getComputedStyle(
       document.querySelector(".controls-rail")).visibility==="hidden");
+    await page.waitForFunction(()=>
+      document.querySelector(".controls-rail").getBoundingClientRect().right<=1,
+      null,{timeout:4000}); // Wait for the 210ms off-canvas slide, not only visibility.
     assert.ok(await page.locator(".controls-rail").evaluate(n=>
       n.getBoundingClientRect().right<=1),"Closed controls stay outside the mobile viewport");
     await page.locator(".mobile-controls-toggle").click();
