@@ -211,6 +211,8 @@
       }
       el("ticker").addEventListener("change",()=>void loadCompany(el("ticker").value));
       el("reset").addEventListener("click",()=>{
+        manualYRange=null;
+        scaleContext=null;
         el("method").value="cagr";el("horizon").value="3";
         el("growth").value="0";el("margin").value="0";
         el("metric").value="revenue";el("history").value="5";

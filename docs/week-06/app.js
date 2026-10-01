@@ -120,13 +120,23 @@
     const base=px[0],end=px.at(-1),months=st.horizon;
     const recentCount=Math.min(history.length-1,Math.max(12,months));
     const rangeStart=focused?history[Math.max(0,history.length-1-recentCount)].date:hx[0];
-    const focusStartIndex=Math.max(0,history.length-1-recentCount);
-    let domainY=(isSpread?historicalSpread:observed5.concat(observed10))
-      .slice(focused?focusStartIndex:0);
-    // Combined view requires both maturities from the SAME observed period.
-    if(!isSpread&&focused)domainY=observed5.slice(focusStartIndex).concat(observed10.slice(focusStartIndex));
-    const futureKeys=isSpread?["spread","lowSpread","highSpread"]:["y5","low5","high5","y10","low10","high10"];
-    const values=domainY.concat(path.flatMap(r=>futureKeys.map(key=>r[key])));
+    // LOCK THE Y SCALE: it must never depend on the chosen Fed-rate dial,
+    // forecast horizon or visibility of error bands. Derive it exclusively
+    // from the selected observed context and the full range of supported
+    // 24-month policy scenarios (-100/0/+100 bp), including their bands.
+    // A different history window/chart (or explicit Focus) changes context.
+    const axisHistory=focused
+      ? history.slice(Math.max(0,history.length-25))
+      : history;
+    const domainY=isSpread
+      ? axisHistory.map(r=>r.dgs10-r.dgs5)
+      : axisHistory.flatMap(r=>[r.dgs5,r.dgs10]);
+    const futureKeys=isSpread
+      ? ["spread","lowSpread","highSpread"]
+      : ["y5","low5","high5","y10","low10","high10"];
+    const envelope=[-100,0,100].flatMap(shock=>
+      M.forecast(data,shock,24).flatMap(r=>futureKeys.map(key=>r[key])));
+    const values=domainY.concat(envelope);
     if(isSpread)values.push(0);
     const lo=Math.min(...values),hi=Math.max(...values);
     const pad=Math.max((hi-lo)*.11,isSpread?.07:.14);
@@ -162,7 +172,8 @@
       meta:{equalTimeScale:true,boundaryFraction:boundary,
         observedStart:hx[0],forecastStart:base,forecastEnd:end,
         focused,trainedModel:"Diebold–Li AR(1)",conditionalShockBp:st.delta,
-        empiricalBands:st.bands}
+        empiricalBands:st.bands,
+        yScale:"locked-to-observed-context-and-supported-scenario-envelope"}
     };
     if(isSpread)layout.shapes.push({
       type:"line",xref:"x",yref:"y",x0:rangeStart,x1:end,

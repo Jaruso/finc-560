@@ -88,6 +88,8 @@ async function slide(page,id,value){
         xaxis:g.layout.xaxis, yaxis:g.layout.yaxis,
         shapes:g.layout.shapes,annotations:g.layout.annotations,
         meta:g.layout.meta,
+        yRange:g.layout.yaxis.range.slice(),
+        historicalPixel:g._fullLayout.yaxis.l2p(g.data[0].y.at(-1)),
       };
     });
     assert.deepEqual(first.axes,[],"One Plotly x-axis and one y-axis only");
@@ -122,7 +124,9 @@ async function slide(page,id,value){
       projected:g.data[2].y.at(-1),
       baseline:g.data[1].y.at(-1),
       names:g.data.map(d=>d.name),
-      boundary:g.layout.meta.cutoffFraction
+      boundary:g.layout.meta.cutoffFraction,
+      yRange:g.layout.yaxis.range.slice(),
+      historicalPixel:g._fullLayout.yaxis.l2p(g.data[0].y.at(-1))
     }));
     assert.deepEqual(changed.historical,first.actual.y,
       "Input dials cannot change audited historical observations");
@@ -133,17 +137,37 @@ async function slide(page,id,value){
     assert.deepEqual(changed.boundary,first.meta.cutoffFraction,
       "Changing financial assumptions cannot move the historical boundary");
     assert.notEqual(await page.locator("#kpi-forecast-profit").textContent(),priorProfit);
+    assert.deepEqual(changed.yRange,first.yRange,
+      "Growth dial must not change the historical financial y-scale");
+    assert.ok(Math.abs(changed.historicalPixel-first.historicalPixel)<.001,
+      "Reported observations cannot move vertically as growth assumptions change");
+    assert.equal(await page.locator("#fit-company-projection").textContent(),"Fit projection");
+    assert.equal(await page.locator("#fit-company-projection").isEnabled(),true);
 
     await page.selectOption("#metric","net");
     await page.waitForFunction(()=>
       document.querySelector("#company-chart")?.layout?.meta?.measure==="net" &&
       document.querySelector("#chart-heading")?.textContent==="Net income");
+    const netInitial=await page.locator("#company-chart").evaluate(g=>({
+      range:g.layout.yaxis.range.slice(),
+      hist:g.data[0].y.slice(),forecast:g.data.at(-1).y.at(-1)
+    }));
     const revenueAfterGrowth=await page.locator("#kpi-forecast-revenue").textContent();
     const profitAfterGrowth=await page.locator("#kpi-forecast-profit").textContent();
     await slide(page,"#margin",4);
     await page.waitForFunction(old=>document.querySelector("#kpi-forecast-profit").textContent!==old,profitAfterGrowth);
     assert.equal(await page.locator("#kpi-forecast-revenue").textContent(),revenueAfterGrowth,
       "Margin dial must not silently change revenue");
+    await page.waitForFunction(previous=>{
+      const g=document.querySelector("#company-chart");
+      return g?.data?.length===3 && g.data[2].y.at(-1)!==previous;
+    },netInitial.forecast);
+    const netAfterMargin=await page.locator("#company-chart").evaluate(g=>({
+      range:g.layout.yaxis.range.slice(),history:g.data[0].y.slice()
+    }));
+    assert.deepEqual(netAfterMargin.range,netInitial.range,
+      "Margin dial must not move the net-income historical y-scale");
+    assert.deepEqual(netAfterMargin.history,netInitial.hist);
     await page.selectOption("#method","linear");
     await page.waitForFunction(()=>document.querySelector("#model-note")?.textContent.includes("OLS"));
     await page.selectOption("#horizon","1");
@@ -181,6 +205,37 @@ async function slide(page,id,value){
       document.querySelector("#company-chart")?.data?.length===2 &&
       document.querySelector("#company-chart")?.data?.[1]?.x.length===4);
     assert.equal(await page.locator(".company-timeline").count(),1);
+    const defaultRange=await page.locator("#company-chart").evaluate(g=>
+      g.layout.yaxis.range.slice());
+    // Extreme adjustments may exceed the scale, but must never silently
+    // squeeze history. Fit projection is the explicit exception.
+    await slide(page,"#growth",20);
+    await page.waitForFunction(()=>document.querySelector("#company-chart")
+      ?.layout?.meta?.projectionClipped===true);
+    assert.deepEqual(await page.locator("#company-chart").evaluate(g=>
+      g.layout.yaxis.range.slice()),defaultRange);
+    assert.equal(await page.locator("#fit-company-projection").textContent(),"Fit projection");
+    await page.locator("#fit-company-projection").click();
+    await page.waitForFunction(()=>document.querySelector("#company-chart")
+      ?.layout?.meta?.yScale==="manual-locked");
+    const fittedRange=await page.locator("#company-chart").evaluate(g=>
+      g.layout.yaxis.range.slice());
+    assert.ok(fittedRange[1]>defaultRange[1],
+      "Only an explicit Fit projection click may enlarge the vertical scale");
+    await slide(page,"#growth",15);
+    await page.waitForFunction(()=>document.querySelector("#company-chart")
+      ?.layout?.meta?.projectionClipped===false);
+    assert.deepEqual(await page.locator("#company-chart").evaluate(g=>
+      g.layout.yaxis.range.slice()),fittedRange,
+      "Dials cannot silently modify a manually fitted axis either");
+    await slide(page,"#growth",0);
+    await page.waitForFunction(()=>document.querySelector("#fit-company-projection")
+      ?.textContent==="Restore scale");
+    await page.locator("#fit-company-projection").click();
+    await page.waitForFunction(()=>document.querySelector("#company-chart")
+      ?.layout?.meta?.yScale==="baseline-locked");
+    assert.deepEqual(await page.locator("#company-chart").evaluate(g=>
+      g.layout.yaxis.range.slice()),defaultRange);
 
     const layout=await page.evaluate(()=>({
       bottom:document.querySelector(".company-timeline").getBoundingClientRect().bottom,

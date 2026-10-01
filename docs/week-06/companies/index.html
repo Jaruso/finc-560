@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="./company.css?v=single-timeline">
   <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
   <script defer src="./model.js?v=1"></script>
-  <script defer src="./app.js?v=single-timeline"></script>
+  <script defer src="./app.js?v=locked-y-202610"></script>
 </head>
 <body>
   <header class="site-header week-06-header">
@@ -113,6 +113,8 @@
               <option value="all">All available</option>
             </select>
           </label>
+          <button id="fit-company-projection" class="secondary" type="button"
+            title="The vertical scale stays fixed while changing assumptions" disabled>Scale locked</button>
           <span class="chart-badge">Reported → browser-modeled</span>
         </div>
         <article class="chart-card card company-timeline" aria-label="Unified historical and projected annual financial chart">

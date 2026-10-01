@@ -57,7 +57,9 @@ async function slide(page,id,v){
       histEnd:n.data[0].x.at(-1),futureStart:n.data[6].x[0],
       boundary:n.layout.meta.boundaryFraction,
       sameAxis:n.layout.xaxis2===undefined,
-      bands:n.layout.meta.empiricalBands,shapes:n.layout.shapes
+      bands:n.layout.meta.empiricalBands,shapes:n.layout.shapes,
+      yRange:n.layout.yaxis.range.slice(),
+      historicPixel:n._fullLayout.yaxis.l2p(n.data[0].y.at(-1))
     }));
     assert.deepEqual(baseline.names.slice(0,2),["5Y Treasury","10Y Treasury"]);
     assert.equal(baseline.pred5[0],baseline.hist5.at(-1));
@@ -83,7 +85,9 @@ async function slide(page,id,v){
     const shocked=await page.locator("#chart-yields").evaluate(n=>({
       p5:n.data[6].y.at(-1),p10:n.data[7].y.at(-1),
       actual5:n.data[0].y,actual10:n.data[1].y,
-      label:n.layout.annotations[1].text,meta:n.layout.meta
+      label:n.layout.annotations[1].text,meta:n.layout.meta,
+      yRange:n.layout.yaxis.range.slice(),
+      historicPixel:n._fullLayout.yaxis.l2p(n.data[0].y.at(-1))
     }));
     assert.notEqual(shocked.p10,initialTerminal10);
     assert.deepEqual(shocked.actual5,baseline.hist5);
@@ -91,24 +95,37 @@ async function slide(page,id,v){
     assert.equal(shocked.label,"<b>CONDITIONAL SCENARIO</b>");
     assert.equal(await page.locator("#kpi-5").textContent(),actual5);
     assert.equal(shocked.meta.conditionalShockBp,50);
+    assert.deepEqual(shocked.yRange,baseline.yRange,"Fed dial cannot rescale historical yields");
+    assert.ok(Math.abs(shocked.historicPixel-baseline.historicPixel)<.001,
+      "Historical data must stay at the exact same vertical position");
+    assert.match(shocked.meta.yScale,/locked/);
 
     // Confidence setting changes historical-error shading, never the central.
     await page.locator("#show-bands").uncheck();
     await page.waitForFunction(()=>document.querySelector("#chart-yields")?.data?.length===4);
-    const without=await page.locator("#chart-yields").evaluate(n=>n.data.map(t=>t.y.at(-1)));
-    assert.equal(without[2],shocked.p5);
-    assert.equal(without[3],shocked.p10);
+    const without=await page.locator("#chart-yields").evaluate(n=>({
+      last:n.data.map(t=>t.y.at(-1)),range:n.layout.yaxis.range.slice()
+    }));
+    assert.deepEqual(without.range,baseline.yRange,"Band toggle cannot rescale");
+    assert.equal(without.last[2],shocked.p5);
+    assert.equal(without.last[3],shocked.p10);
     await page.locator("#show-bands").check();
     await page.waitForFunction(()=>document.querySelector("#chart-yields")?.data?.length===8);
 
     await page.selectOption("#horizon","6");
     await page.waitForFunction(()=>document.querySelector("#chart-yields")?.data?.[6]?.x.length===7);
-    const short=await page.locator("#chart-yields").evaluate(n=>n.layout.meta.boundaryFraction);
-    assert.ok(short>.93&&short<.97);
+    const short=await page.locator("#chart-yields").evaluate(n=>({
+      cutoff:n.layout.meta.boundaryFraction,range:n.layout.yaxis.range.slice()
+    }));
+    assert.deepEqual(short.range,baseline.yRange,"Horizon must retain fixed y-range");
+    assert.ok(short.cutoff>.93&&short.cutoff<.97);
     await page.selectOption("#horizon","24");
     await page.waitForFunction(()=>document.querySelector("#chart-yields")?.data?.[6]?.x.length===25);
-    const long=await page.locator("#chart-yields").evaluate(n=>n.layout.meta.boundaryFraction);
-    assert.ok(long<short&&long>.81&&long<.87);
+    const long=await page.locator("#chart-yields").evaluate(n=>({
+      cutoff:n.layout.meta.boundaryFraction,range:n.layout.yaxis.range.slice()
+    }));
+    assert.deepEqual(long.range,baseline.yRange,"24-month horizon must retain fixed y-range");
+    assert.ok(long.cutoff<short.cutoff&&long.cutoff>.81&&long.cutoff<.87);
 
     await page.locator("#focus-projection").click();
     await page.waitForFunction(()=>document.querySelector("#chart-yields")?.layout?.meta?.focused===true);
@@ -124,12 +141,21 @@ async function slide(page,id,v){
       first:n.data[0].y.at(-1),central:n.data[3].y,
       lower:n.data[1].y,upper:n.data[2].y,
       zero:n.layout.shapes.find(s=>s.y0===0&&s.y1===0),
-      bound:n.layout.meta.forecastStart
+      bound:n.layout.meta.forecastStart,
+      yRange:n.layout.yaxis.range.slice(),hist:n.data[0].y.slice()
     }));
     assert.ok(spread.zero&&spread.zero.xref==="x");
     assert.equal(spread.lower[0],spread.first);
     assert.equal(spread.upper[0],spread.first);
     assert.equal(spread.central[0],spread.first);
+    await slide(page,"#delta",-100);
+    await page.waitForFunction(()=>
+      document.querySelector("#chart-spread")?.layout?.meta?.conditionalShockBp===-100);
+    const stressed=await page.locator("#chart-spread").evaluate(n=>({
+      range:n.layout.yaxis.range.slice(),hist:n.data[0].y.slice()
+    }));
+    assert.deepEqual(stressed.range,spread.yRange,"Spread dial cannot rescale y-axis");
+    assert.deepEqual(stressed.hist,spread.hist);
     await page.locator("#reset").click();
     await page.waitForFunction(()=>document.querySelector("#delta-value").textContent==="0 bps");
     assert.equal(await page.locator("#horizon").inputValue(),"12");
