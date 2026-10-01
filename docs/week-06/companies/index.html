@@ -17,7 +17,8 @@
   <script defer src="./news.js?v=company-news-20261001"></script>
   <script defer src="../chart-canvas.js?v=20261001"></script>
   <script defer src="../mobile-controls.js?v=20261001"></script>
-  <script defer src="./app.js?v=company-news-20261001"></script>
+  <script defer src="./compare.js?v=equity-comparisons-20261001"></script>
+  <script defer src="./app.js?v=equity-pill-comparisons-20261001"></script>
 </head>
 <body>
   <header class="site-header week-06-header company-header">
@@ -44,22 +45,24 @@
             <h2 id="controls-heading">Forecast controls</h2>
             <button id="reset" class="secondary" type="button">Reset</button>
           </div>
-          <label class="control">
-            <span>Company</span>
-            <select id="ticker" aria-label="Choose featured company" disabled>
-              <option>Loading SEC data…</option>
-            </select>
-          </label>
-          <p id="company-name" class="company-name" aria-live="polite"></p>
           <form id="symbol-form" class="ticker-entry" autocomplete="off">
-            <label for="custom-ticker">Research another US ticker</label>
+            <label for="custom-ticker">Equities <span>(up to four)</span></label>
+            <div id="ticker-pills" class="ticker-pills" aria-label="Pending equity selections"
+              aria-live="polite"></div>
             <div class="ticker-entry-row">
-              <input id="custom-ticker" name="symbol" placeholder="e.g. NVDA or BRK.B"
-                maxlength="10" aria-describedby="ticker-input-status">
-              <button class="secondary" type="submit">Analyze</button>
+              <input id="custom-ticker" name="symbol" placeholder="Type NVDA and press Enter"
+                maxlength="10" spellcheck="false" autocapitalize="characters"
+                aria-label="Add equity ticker" aria-describedby="ticker-input-status">
+              <button id="ticker-add" class="secondary" type="button">Add</button>
             </div>
-            <p id="ticker-input-status" class="ticker-input-status" role="status"></p>
+            <div class="ticker-entry-actions">
+              <span id="ticker-count">First ticker is primary · 1 of 4</span>
+              <button id="analyze-tickers" class="secondary" type="submit">Analyze</button>
+            </div>
+            <p id="ticker-input-status" class="ticker-input-status" role="status"
+              aria-live="polite">Press Enter to add; charts update only after Analyze.</p>
           </form>
+          <p id="company-name" class="company-name" aria-live="polite"></p>
           <section class="market-quote" aria-label="Latest market quote from Finnhub">
             <div class="market-quote-heading">
               <span>Market quote</span>
@@ -239,6 +242,8 @@
               aria-label="Reported corporate cash versus verifiable outstanding debt"></div>
           </article>
         </div>
+        <div id="equity-comparison-sources" class="equity-comparison-sources"
+          aria-label="Source dates for compared equities" hidden></div>
         <div id="company-empty" class="company-empty" role="status" hidden>
           <div class="company-empty-icon" aria-hidden="true">i</div>
           <h3 id="company-empty-title">Checking financial statements</h3>
