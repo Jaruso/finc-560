@@ -299,3 +299,28 @@ input[type="range"] { display: block; width: 100%; height: 19px; margin: 0;
   }
   .dashboard{height:auto;min-height:calc(100dvh - 167px)}
 }
+
+/* Common forecast sidebar header. Title has its own full-width line;
+   the same compact Reset action sits below it in each workspace. */
+.controls > .forecast-heading{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  justify-items:stretch;
+  align-content:start;
+  gap:5px;
+  margin-bottom:12px;
+}
+.controls > .forecast-heading h2{
+  display:block;
+  width:100%;
+  margin:0;
+  font-size:1.05rem;
+  line-height:1.3;
+  letter-spacing:-.025em;
+}
+.controls > .forecast-heading #reset{
+  justify-self:end;
+  min-width:58px;
+  padding:5px 12px;
+  line-height:1.2;
+}
