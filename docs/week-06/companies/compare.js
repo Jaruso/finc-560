@@ -61,6 +61,7 @@
     if(!available(frames).includes(id))
       throw Error("Not all companies disclose sufficient data for this chart.");
     const numeric=ABSOLUTE.includes(id),index=numeric&&mode==="indexed";
+    const projectionsEnabled=settings.projectionsEnabled!==false;
     const focusedKey=id==="company-chart"?metricKeys[metric]:
       id==="equity-revenue"?"revenue_musd":"operating_income_musd";
     const required=id==="equity-cashflows"?coverage["equity-cashflows"]:
@@ -88,7 +89,7 @@
       const future=forecast?.map(r=>({fiscal_end:r.fiscal_end,value:r.value}));
       traces.push(line(frame,frame.ticker+" · "+name,rows,r=>r.value,
         {...args,dash:"solid",rank:10}));
-      if(future)traces.push(line(frame,frame.ticker+" · forecast "+name,future,r=>r.value,
+      if(future&&projectionsEnabled)traces.push(line(frame,frame.ticker+" · forecast "+name,future,r=>r.value,
         {...args,dash:"dash",rank:20}));
     };
     for(const f of frames){
@@ -97,7 +98,7 @@
         add(f,key.replace("_musd","").replaceAll("_"," "),f.history.map(r=>({
           fiscal_end:r.fiscal_end,value:r[key]
         })),f.forecast.projected.map(r=>({fiscal_end:r.fiscal_end,value:r[key]})));
-        if(settings.growth||settings.margin){
+        if(projectionsEnabled&&(settings.growth||settings.margin)){
           const baseline=f.forecast.baseline.map(r=>({fiscal_end:r.fiscal_end,value:r[key]}));
           const anchor=index?f.history.find(r=>
             r.fiscal_end.slice(0,4)===anchorYear)?.[key]:null;
@@ -114,7 +115,7 @@
           }));
           traces.push(line(f,f.ticker+" · "+label+" margin",obs,r=>r.value,
             {unit:"percent",dash,rank:10}));
-          traces.push(line(f,f.ticker+" · projected "+label+" margin",fut,r=>r.value,
+          if(projectionsEnabled)traces.push(line(f,f.ticker+" · projected "+label+" margin",fut,r=>r.value,
             {unit:"percent",dash:label==="operating"?"dash":"dashdot",rank:20}));
         }
       }else if(id==="equity-cashflows"||id==="equity-balance"){
@@ -157,7 +158,7 @@
     // translucent rectangle per company: early forecast-only territory is
     // light; overlaps become progressively darker. Individual rectangles end
     // at that company's own forecast horizon, never at another firm's date.
-    const windows=forecasts?frames.map(f=>({
+    const windows=forecasts&&projectionsEnabled?frames.map(f=>({
       ticker:f.ticker,
       start:f.history.at(-1).fiscal_end,
       end:f.forecast.projected.at(-1).fiscal_end
@@ -178,7 +179,7 @@
         "Interest coverage (×)":"USD billions";
     const context=index?"Index 100 at shared FY "+anchorYear+" · Hover for reported values.":
       nativeUnit==="usd"?"Nominal reported USD billions · Hover for exact values.":
-        nativeUnit==="percent"?"Reported and modeled margins (%).":
+        nativeUnit==="percent"?(projectionsEnabled?"Reported and modeled margins (%).":"Reported margins only (%)."):
           "Reported operating income / interest expense.";
     return {traces,context,
       layout:{
@@ -198,6 +199,7 @@
           gridcolor:"#edf1f2",automargin:true},
         meta:{comparison:true,tickers:frames.map(f=>f.ticker),primary:frames[0].ticker,
           indexed:index,anchorFiscalYear:anchorYear,perCompanyFiscalCalendars:true,
+          projectionsEnabled,
           sharedProjectionStart:cutoffs.length?cutoffs.at(-1):null,
           projectionWindows:windows}
       }
