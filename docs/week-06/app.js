@@ -63,14 +63,14 @@
     const historicalSpread=history.map(r=>r.dgs10-r.dgs5);
     const st=state();
     const traces=isSpread?[
-      {x:hx,y:historicalSpread,type:"scatter",mode:"lines",name:"Observed spread",
+      {x:hx,y:historicalSpread,type:"scatter",mode:"lines",name:"Observed spread (solid)",legendrank:10,
         line:{color:COLOR.historical,width:2.25},
         hovertemplate:"%{x|%b %Y}: %{y:.2f} pp<extra>FRED observed</extra>"}
     ]:[
-      {x:hx,y:observed5,type:"scatter",mode:"lines",name:"5Y Treasury",
+      {x:hx,y:observed5,type:"scatter",mode:"lines",name:"5Y observed (solid)",legendrank:10,
         line:{color:COLOR.five,width:2.35},legendgroup:"five",
         hovertemplate:"%{x|%b %Y}: %{y:.2f}%<extra>5Y observed</extra>"},
-      {x:hx,y:observed10,type:"scatter",mode:"lines",name:"10Y Treasury",
+      {x:hx,y:observed10,type:"scatter",mode:"lines",name:"10Y observed (solid)",legendrank:20,
         line:{color:COLOR.ten,width:2.35},legendgroup:"ten",
         hovertemplate:"%{x|%b %Y}: %{y:.2f}%<extra>10Y observed</extra>"}
     ];
@@ -78,11 +78,11 @@
       if(isSpread){
         traces.push(
           {x:px,y:path.map(r=>r.lowSpread),type:"scatter",mode:"lines",
-            name:"10th percentile historical error",legendgroup:"bounds",
+            name:"10th percentile historical error",legendgroup:"bounds",showlegend:false,
             line:{color:COLOR.bound,width:1,dash:"dot"},
             hovertemplate:"%{x|%b %Y}: %{y:.2f} pp<extra>Historical-error lower bound</extra>"},
           {x:px,y:path.map(r=>r.highSpread),type:"scatter",mode:"lines",
-            name:"90th percentile historical error",legendgroup:"bounds",
+            name:"Historical error bounds (dotted)",legendgroup:"bounds",legendrank:50,
             line:{color:COLOR.bound,width:1,dash:"dot"},fill:"tonexty",
             fillcolor:"rgba(11,127,115,0.10)",
             hovertemplate:"%{x|%b %Y}: %{y:.2f} pp<extra>Historical-error upper bound</extra>"}
@@ -104,17 +104,18 @@
     }
     if(isSpread){
       traces.push({x:px,y:path.map(r=>r.spread),type:"scatter",mode:"lines",
-        name:"Model forecast / scenario",line:{color:COLOR.ten,width:2.55,dash:"dash"},
+        name:st.delta===0?"Spread forecast (dashed)":"Spread scenario (dashed)",
+        legendrank:30,line:{color:COLOR.ten,width:2.55,dash:"dash"},
         hovertemplate:"%{x|%b %Y}: %{y:.2f} pp<extra>Modeled spread</extra>"});
     }else{
       for(const spec of [
-        {name:"5Y model forecast",key:"y5",color:COLOR.five,group:"five"},
-        {name:"10Y model forecast",key:"y10",color:COLOR.ten,group:"ten"}
+        {name:"5Y forecast (dashed)",scenario:"5Y scenario (dashed)",key:"y5",color:COLOR.five,group:"five",rank:30},
+        {name:"10Y forecast (dashed)",scenario:"10Y scenario (dashed)",key:"y10",color:COLOR.ten,group:"ten",rank:40}
       ]){
         traces.push({x:px,y:path.map(r=>r[spec.key]),type:"scatter",mode:"lines",
-          name:spec.name,legendgroup:spec.group,showlegend:false,
+          name:st.delta===0?spec.name:spec.scenario,legendgroup:spec.group,showlegend:true,legendrank:spec.rank,
           line:{color:spec.color,width:2.65,dash:"dash"},
-          hovertemplate:"%{x|%b %Y}: %{y:.2f}%<extra>"+spec.name+"</extra>"});
+          hovertemplate:"%{x|%b %Y}: %{y:.2f}%<extra>"+(st.delta===0?spec.name:spec.scenario)+"</extra>"});
       }
     }
     const base=px[0],end=px.at(-1),months=st.horizon;
@@ -143,25 +144,20 @@
     const boundary=(Date.parse(base)-Date.parse(rangeStart))/(Date.parse(end)-Date.parse(rangeStart));
     const layout={
       autosize:true,height:el(id).clientHeight||350,
-      margin:{l:55,r:16,t:62,b:49},paper_bgcolor:"#fff",plot_bgcolor:"#fff",
+      margin:{l:55,r:16,t:62,b:49,autoexpand:false},paper_bgcolor:"#fff",plot_bgcolor:"#fff",
       font:{family:"Inter, system-ui, sans-serif",size:11,color:"#465865"},
       hovermode:"closest",showlegend:true,
       legend:{orientation:"h",x:.5,xanchor:"center",y:1.14,
-        font:{size:10},itemwidth:32},
+        font:{size:10},itemwidth:32,autoexpand:false},
       xaxis:{type:"date",range:[rangeStart,end],showgrid:false,
         tickformat:focused?"%b '%y":"%Y",nticks:focused?8:10,
         linecolor:"#dfe3e6",tickfont:{size:10},automargin:true},
       yaxis:{title:{text:isSpread?"Spread (pp)":"Yield (%)",font:{size:11}},
         range:[lo-pad,hi+pad],zeroline:false,
         gridcolor:"#edf1f2",automargin:true},
-      annotations:[
-        {x:base,xref:"x",y:1.04,yref:"paper",showarrow:false,
-          xanchor:"right",text:"<b>OBSERVED</b>",
-          font:{size:10,color:COLOR.historical}},
-        {x:end,xref:"x",y:1.04,yref:"paper",showarrow:false,
-          xanchor:"right",text:st.delta===0?"<b>MODEL FORECAST</b>":"<b>CONDITIONAL SCENARIO</b>",
-          font:{size:10,color:COLOR.ten}}
-      ],
+      // Shading marks the projection period. Legend, not labels over the
+      // plot, explains solid observations, dashed forecasts and dotted bounds.
+      annotations:[],
       shapes:[
         {type:"rect",xref:"x",yref:"paper",x0:base,x1:end,
           y0:0,y1:1,fillcolor:"rgba(11,127,115,0.04)",

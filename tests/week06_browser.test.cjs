@@ -81,6 +81,8 @@ async function slide(page,id,v){
 
     const baseline=await page.locator("#chart-yields").evaluate(n=>({
       names:n.data.map(t=>t.name),hist5:n.data[0].y,hist10:n.data[1].y,
+      legend:n.data.filter(t=>t.showlegend!==false).map(t=>({name:t.name,dash:t.line?.dash||"solid"})),
+      annotations:n.layout.annotations,
       pred5:n.data[6].y,pred10:n.data[7].y,
       scenarioStart:n.layout.meta.forecastStart,
       histEnd:n.data[0].x.at(-1),futureStart:n.data[6].x[0],
@@ -90,7 +92,16 @@ async function slide(page,id,v){
       yRange:n.layout.yaxis.range.slice(),
       historicPixel:n._fullLayout.yaxis.l2p(n.data[0].y.at(-1))
     }));
-    assert.deepEqual(baseline.names.slice(0,2),["5Y Treasury","10Y Treasury"]);
+    assert.deepEqual(baseline.names.slice(0,2),
+      ["5Y observed (solid)","10Y observed (solid)"]);
+    assert.deepEqual(baseline.annotations,[],
+      "Do not float OBSERVED/FORECAST labels above the shaded graph");
+    assert.deepEqual(baseline.legend,[
+      {name:"5Y observed (solid)",dash:"solid"},
+      {name:"10Y observed (solid)",dash:"solid"},
+      {name:"5Y forecast (dashed)",dash:"dash"},
+      {name:"10Y forecast (dashed)",dash:"dash"}
+    ]);
     assert.equal(baseline.pred5[0],baseline.hist5.at(-1));
     assert.equal(baseline.pred10[0],baseline.hist10.at(-1));
     assert.notEqual(baseline.pred5.at(-1),baseline.hist5.at(-1));
@@ -114,14 +125,16 @@ async function slide(page,id,v){
     const shocked=await page.locator("#chart-yields").evaluate(n=>({
       p5:n.data[6].y.at(-1),p10:n.data[7].y.at(-1),
       actual5:n.data[0].y,actual10:n.data[1].y,
-      label:n.layout.annotations[1].text,meta:n.layout.meta,
+      label:n.data[6].name,meta:n.layout.meta,
+      annotations:n.layout.annotations,
       yRange:n.layout.yaxis.range.slice(),
       historicPixel:n._fullLayout.yaxis.l2p(n.data[0].y.at(-1))
     }));
     assert.notEqual(shocked.p10,initialTerminal10);
     assert.deepEqual(shocked.actual5,baseline.hist5);
     assert.deepEqual(shocked.actual10,baseline.hist10);
-    assert.equal(shocked.label,"<b>CONDITIONAL SCENARIO</b>");
+    assert.equal(shocked.label,"5Y scenario (dashed)");
+    assert.deepEqual(shocked.annotations,[]);
     assert.equal(await page.locator("#kpi-5").textContent(),actual5);
     assert.equal(shocked.meta.conditionalShockBp,50);
     assert.deepEqual(shocked.yRange,baseline.yRange,"Fed dial cannot rescale historical yields");
@@ -171,12 +184,20 @@ async function slide(page,id,v){
       lower:n.data[1].y,upper:n.data[2].y,
       zero:n.layout.shapes.find(s=>s.y0===0&&s.y1===0),
       bound:n.layout.meta.forecastStart,
-      yRange:n.layout.yaxis.range.slice(),hist:n.data[0].y.slice()
+      yRange:n.layout.yaxis.range.slice(),hist:n.data[0].y.slice(),
+      legend:n.data.filter(t=>t.showlegend!==false).map(t=>({name:t.name,dash:t.line?.dash||"solid"})),
+      annotations:n.layout.annotations
     }));
     assert.ok(spread.zero&&spread.zero.xref==="x");
     assert.equal(spread.lower[0],spread.first);
     assert.equal(spread.upper[0],spread.first);
     assert.equal(spread.central[0],spread.first);
+    assert.deepEqual(spread.annotations,[]);
+    assert.deepEqual(spread.legend,[
+      {name:"Observed spread (solid)",dash:"solid"},
+      {name:"Historical error bounds (dotted)",dash:"dot"},
+      {name:"Spread scenario (dashed)",dash:"dash"}
+    ]);
     await slide(page,"#delta",-100);
     await page.waitForFunction(()=>
       document.querySelector("#chart-spread")?.layout?.meta?.conditionalShockBp===-100);
