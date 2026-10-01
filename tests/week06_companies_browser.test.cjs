@@ -212,6 +212,45 @@ async function slide(page,id,value){
     assert.equal(await page.locator("#ticker option").count(),4);
     assert.equal(await page.locator("#ticker").inputValue(),"MSFT");
     assert.equal(await page.locator("#metric").inputValue(),"net");
+    const picker=page.locator("#chart-picker");
+    assert.equal(await picker.locator('input[type="checkbox"]').count(),8);
+    assert.equal(await picker.locator("input:checked").count(),4);
+    assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"4");
+    assert.equal(await page.locator(".kpis").count(),0);
+    assert.equal(await picker.locator('input[value="equity-cashflows"]').isDisabled(),true,
+      "Do not imply curated earnings-only filings contain cash-flow disclosures");
+    await page.waitForFunction(()=>
+      document.querySelector("#equity-revenue")?.data?.length===2 &&
+      document.querySelector("#equity-operating")?.data?.length===2 &&
+      document.querySelector("#equity-margins")?.data?.length===4);
+    assert.match(await page.locator("#company-chart-context").textContent(),/Latest reported/);
+    assert.match(await page.locator("#equity-revenue-context").textContent(),/Latest reported/);
+    const layoutRects=()=>page.locator("#chart-stage").evaluate(stage=>
+      [...stage.querySelectorAll(".chart-card:not(.is-view-hidden)")].map(card=>{
+        const r=card.getBoundingClientRect();
+        return {x:Math.round(r.x),y:Math.round(r.y),w:r.width};
+      }));
+    const four=await layoutRects();
+    assert.equal(four[0].y,four[1].y);
+    assert.equal(four[2].y,four[3].y);
+    assert.ok(four[1].x>four[0].x&&four[2].y>four[0].y);
+    await picker.locator("summary").click();
+    await picker.locator('input[value="equity-margins"]').uncheck();
+    const three=await layoutRects();
+    assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"3");
+    assert.ok(three[0].w>three[1].w*1.8&&
+      three[1].y===three[2].y&&three[2].x>three[1].x);
+    await picker.locator('input[value="equity-operating"]').uncheck();
+    const two=await layoutRects();
+    assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"2");
+    assert.ok(two[1].y>two[0].y&&two[0].x===two[1].x);
+    await picker.locator('input[value="equity-revenue"]').uncheck();
+    assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"1");
+    await picker.locator('input[value="company-chart"]').click();
+    assert.equal(await picker.locator('input[value="company-chart"]').isChecked(),true);
+    await page.locator("#reset").click();
+    await page.waitForFunction(()=>document.querySelector("#chart-stage")?.dataset.count==="4");
+    await picker.locator("summary").click();
     assert.equal(await page.locator("#chart-heading").textContent(),"Net income");
     assert.equal(await page.locator("#revenue-margin-guidance").isHidden(),true);
     await page.waitForFunction(()=>document.querySelector("#quote-price")?.textContent==="$123.45");
@@ -551,6 +590,24 @@ async function slide(page,id,value){
       ?.textContent.includes("As-reported 10-K"));
     assert.equal(await page.locator("#company-name").textContent(),"Research Example Corporation");
     assert.match(await page.locator("#research-sector").textContent(),/Technology/);
+    await page.waitForFunction(()=>
+      document.querySelector("#chart-picker input[value='equity-fcf']")?.disabled===false &&
+      document.querySelector("#chart-picker input[value='equity-balance']")?.disabled===false);
+    await picker.locator("summary").click();
+    await picker.locator('input[value="equity-margins"]').uncheck();
+    for(const [id,expected] of [
+      ["equity-cashflows",2],["equity-fcf",1],
+      ["equity-coverage",1],["equity-balance",2]
+    ]){
+      const control=picker.locator('input[value="'+id+'"]');
+      await control.check();
+      await page.waitForFunction(({id,count})=>
+        document.getElementById(id)?.data?.length===count,
+        {id,count:expected});
+      await control.uncheck();
+    }
+    await picker.locator('input[value="equity-margins"]').check();
+    await picker.locator("summary").click();
     assert.match(await page.locator("#health-kpis").textContent(),/Interest coverage/);
     assert.match(await page.locator("#stress-kpis").textContent(),/Stressed coverage/);
     assert.match(await page.locator("#valuation-kpis").textContent(),/Implied equity value\/share/);
@@ -579,6 +636,8 @@ async function slide(page,id,value){
     assert.equal(await page.locator("#health-kpis").textContent().then(t=>t.includes("Unavailable")),false,
       "Do not leave unavailable financial KPIs inside an otherwise useful card");
     assert.equal(await page.locator(".research-panel:visible").count(),1);
+    assert.equal(await picker.locator('input[value="equity-balance"]').isDisabled(),true,
+      "Cash/debt view needs reported total debt; unavailable panels are disabled");
     assert.equal(await page.locator("#health-panel .research-number").textContent(),"01");
     // Two supported models: debt and interest are reported, but valuation
     // cannot subtract net debt because no verified cash balance exists.
@@ -590,6 +649,8 @@ async function slide(page,id,value){
     assert.equal(await page.locator("#stress-panel").isVisible(),true);
     assert.equal(await page.locator("#valuation-panel").isHidden(),true);
     assert.equal(await page.locator(".research-panel:visible").count(),2);
+    assert.equal(await picker.locator('input[value="equity-balance"]').isDisabled(),true,
+      "Cash/debt view needs reported cash; unavailable panels are disabled");
     assert.equal(await page.locator("#stress-panel .research-number").textContent(),"02");
     // Once a fully reported issuer is selected, all three panels return.
     await page.locator("#custom-ticker").fill("NVDA");
