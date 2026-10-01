@@ -9,12 +9,12 @@
 <link rel="stylesheet" href="../../assets/styles.css?v=20260906-week3-redesign">
 <link rel="stylesheet" href="../../assets/site-transitions.css?v=20261001">
 <link rel="stylesheet" href="../dashboard.css?v=multi-chart-commodities-20261001">
-<link rel="stylesheet" href="./commodities.css?v=multi-asset-20261001">
+<link rel="stylesheet" href="./commodities.css?v=single-multi-picker-20261001">
 <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 <script defer src="./model.js?v=commodity-catalog-20261001"></script>
-<script defer src="./comparison.js?v=multi-asset-20261001"></script>
+<script defer src="./comparison.js?v=single-multi-picker-20261001"></script>
 <script defer src="../chart-canvas.js?v=20261001"></script>
-<script defer src="./app.js?v=multi-asset-20261001"></script>
+<script defer src="./app.js?v=single-multi-picker-20261001"></script>
 </head>
 <body>
 <header class="site-header week-06-header commodity-header">
@@ -47,26 +47,25 @@
               <option>Loading categories…</option>
             </select>
           </label>
-          <label class="control"><span>Commodity</span>
-            <input id="commodity-search" type="search" autocomplete="off" placeholder="Find a commodity…" aria-label="Search commodity benchmarks" disabled>
-            <select id="commodity" disabled><option>Loading verified prices…</option></select>
+          <label class="control" for="commodity-search"><span>Commodity</span>
+            <input id="commodity-search" type="search" autocomplete="off"
+              placeholder="Find a commodity…" aria-label="Search commodity benchmarks" disabled>
           </label>
-          <p id="commodity-count" class="commodity-count" role="status" aria-live="polite"></p>
-          <div class="comparison-picker-wrap">
-            <details id="comparison-picker" class="comparison-picker">
-              <summary>Compare commodities <strong id="comparison-count">1 of 4</strong></summary>
-              <div class="comparison-picker-content">
-                <label class="comparison-search-label" for="comparison-search">Find another benchmark</label>
-                <input id="comparison-search" type="search" autocomplete="off"
-                  placeholder="Search all categories…" aria-label="Search commodities to compare" disabled>
-                <div id="comparison-options" class="comparison-options" role="group"
-                  aria-label="Select up to four commodities to compare"></div>
-                <p id="comparison-status" role="status" aria-live="polite">Choose up to four.</p>
+          <details id="commodity-picker" class="commodity-multi-picker">
+            <summary aria-label="Select up to four commodities">
+              <span id="commodity-summary">Loading verified prices…</span>
+              <span id="commodity-selection-count">1 of 4</span>
+            </summary>
+            <div class="commodity-multi-content">
+              <div id="commodity-options" class="commodity-multi-options"
+                role="group" aria-label="Verified commodity choices"></div>
+              <div class="commodity-multi-footer">
+                <p id="commodity-selection-status" role="status" aria-live="polite"></p>
+                <button id="commodity-clear" type="button" class="secondary">Clear</button>
               </div>
-            </details>
-            <div id="comparison-chips" class="comparison-chips" aria-label="Selected commodities"
-              aria-live="polite"></div>
-          </div>
+            </div>
+          </details>
+          <p id="commodity-count" class="commodity-count" role="status" aria-live="polite"></p>
           <p id="market-description" class="commodity-description">Verified monthly benchmarks, not exchange futures quotes.</p>
           <label class="control"><span>Price model</span>
             <select id="model">
@@ -166,56 +165,112 @@
         <article class="chart-card card commodity-chart-card" data-chart="commodity-chart"
           aria-label="Unified commodity price history and projection">
           <header class="chart-heading">
-            <h2 id="chart-heading">Commodity spot price</h2>
+            <div class="chart-heading-top">
+              <h2 id="chart-heading">Commodity spot price</h2>
+              <div class="chart-scale-toggle" data-chart-mode="commodity-chart" role="group"
+                aria-label="Display commodity spot prices as indexed or nominal">
+                <button type="button" data-mode="indexed" aria-pressed="false">Indexed</button>
+                <button type="button" data-mode="nominal" aria-pressed="false">Nominal</button>
+              </div>
+            </div>
             <p id="chart-subtitle">Observed averages and modeled price scenarios</p>
           </header>
           <div id="commodity-chart" class="plot" role="img" aria-label="Verified monthly spot history and modeled conditional projection"></div>
         </article>
         <article class="chart-card card" data-chart="commodity-yoy">
           <header class="chart-heading">
-            <h2>Year-over-year price change</h2>
+            <div class="chart-heading-top">
+              <h2>Year-over-year price change</h2>
+              <div class="chart-scale-toggle" data-chart-mode="commodity-yoy" role="group"
+                aria-label="Display yoy as indexed or nominal">
+                <button type="button" data-mode="indexed" aria-pressed="false">Indexed</button>
+                <button type="button" data-mode="nominal" aria-pressed="false">Nominal</button>
+              </div>
+            </div>
             <p id="commodity-yoy-context">Percentage change from the comparable prior year</p>
           </header>
           <div id="commodity-yoy" class="plot" role="img" aria-label="Year-over-year change in actual commodity prices"></div>
         </article>
         <article class="chart-card card" data-chart="commodity-returns">
           <header class="chart-heading">
-            <h2>Monthly price returns</h2>
+            <div class="chart-heading-top">
+              <h2>Monthly price returns</h2>
+              <div class="chart-scale-toggle" data-chart-mode="commodity-returns" role="group"
+                aria-label="Display returns as indexed or nominal">
+                <button type="button" data-mode="indexed" aria-pressed="false">Indexed</button>
+                <button type="button" data-mode="nominal" aria-pressed="false">Nominal</button>
+              </div>
+            </div>
             <p id="commodity-returns-context">Observed monthly percentage changes</p>
           </header>
           <div id="commodity-returns" class="plot" role="img" aria-label="Observed month-over-month percentage changes in commodity spot prices"></div>
         </article>
         <article class="chart-card card" data-chart="commodity-vol">
           <header class="chart-heading">
-            <h2>Rolling price volatility</h2>
+            <div class="chart-heading-top">
+              <h2>Rolling price volatility</h2>
+              <div class="chart-scale-toggle" data-chart-mode="commodity-vol" role="group"
+                aria-label="Display vol as indexed or nominal">
+                <button type="button" data-mode="indexed" aria-pressed="false">Indexed</button>
+                <button type="button" data-mode="nominal" aria-pressed="false">Nominal</button>
+              </div>
+            </div>
             <p id="commodity-vol-context">Trailing 12-month realized volatility of monthly returns</p>
           </header>
           <div id="commodity-vol" class="plot" role="img" aria-label="Trailing historical monthly-return volatility"></div>
         </article>
         <article class="chart-card card is-view-hidden" data-chart="commodity-seasonality" aria-hidden="true">
           <header class="chart-heading">
-            <h2>Monthly seasonal averages</h2>
+            <div class="chart-heading-top">
+              <h2>Monthly seasonal averages</h2>
+              <div class="chart-scale-toggle" data-chart-mode="commodity-seasonality" role="group"
+                aria-label="Display seasonality as indexed or nominal">
+                <button type="button" data-mode="indexed" aria-pressed="false">Indexed</button>
+                <button type="button" data-mode="nominal" aria-pressed="false">Nominal</button>
+              </div>
+            </div>
             <p id="commodity-seasonality-context">Historical calendar-month averages, descriptive only</p>
           </header>
           <div id="commodity-seasonality" class="plot" role="img" aria-label="Mean observed spot prices grouped by calendar month"></div>
         </article>
         <article class="chart-card card is-view-hidden" data-chart="commodity-models" aria-hidden="true">
           <header class="chart-heading">
-            <h2>Compare forecasting models</h2>
+            <div class="chart-heading-top">
+              <h2>Compare forecasting models</h2>
+              <div class="chart-scale-toggle" data-chart-mode="commodity-models" role="group"
+                aria-label="Display models as indexed or nominal">
+                <button type="button" data-mode="indexed" aria-pressed="false">Indexed</button>
+                <button type="button" data-mode="nominal" aria-pressed="false">Nominal</button>
+              </div>
+            </div>
             <p id="commodity-models-context">Mean reversion, recent trend and unchanged-price paths</p>
           </header>
           <div id="commodity-models" class="plot" role="img" aria-label="Comparison of three assumption-driven commodity price models"></div>
         </article>
         <article class="chart-card card is-view-hidden" data-chart="commodity-shock" aria-hidden="true">
           <header class="chart-heading">
-            <h2>Conditional price-shock sensitivity</h2>
+            <div class="chart-heading-top">
+              <h2>Conditional price-shock sensitivity</h2>
+              <div class="chart-scale-toggle" data-chart-mode="commodity-shock" role="group"
+                aria-label="Display shock as indexed or nominal">
+                <button type="button" data-mode="indexed" aria-pressed="false">Indexed</button>
+                <button type="button" data-mode="nominal" aria-pressed="false">Nominal</button>
+              </div>
+            </div>
             <p id="commodity-shock-context">Difference from the selected no-shock model baseline</p>
           </header>
           <div id="commodity-shock" class="plot" role="img" aria-label="Percentage difference between the selected scenario and the fitted baseline"></div>
         </article>
         <article class="chart-card card is-view-hidden" data-chart="commodity-drawdown" aria-hidden="true">
           <header class="chart-heading">
-            <h2>Historical price drawdowns</h2>
+            <div class="chart-heading-top">
+              <h2>Historical price drawdowns</h2>
+              <div class="chart-scale-toggle" data-chart-mode="commodity-drawdown" role="group"
+                aria-label="Display drawdown as indexed or nominal">
+                <button type="button" data-mode="indexed" aria-pressed="false">Indexed</button>
+                <button type="button" data-mode="nominal" aria-pressed="false">Nominal</button>
+              </div>
+            </div>
             <p id="commodity-drawdown-context">Declines from the preceding observed price peak</p>
           </header>
           <div id="commodity-drawdown" class="plot" role="img" aria-label="Historical commodity price declines relative to preceding observed peaks"></div>
