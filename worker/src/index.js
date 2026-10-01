@@ -165,7 +165,9 @@ export default {
         payload = JSON.stringify(parsed.filter(article=>
           article && typeof article.headline === 'string' &&
           typeof article.url === 'string' && /^https:\/\//i.test(article.url) &&
-          Number.isFinite(Number(article.datetime)) && Number(article.datetime) > 0
+          Number.isFinite(Number(article.datetime)) &&
+          Number(article.datetime) >= Date.parse(params.get('from') + 'T00:00:00Z') / 1000 &&
+          Number(article.datetime) < Date.parse(params.get('to') + 'T00:00:00Z') / 1000 + 86400
         ).map(article=>({
           id: String(article.id ?? ''),
           headline: article.headline.slice(0, 280),
