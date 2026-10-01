@@ -47,4 +47,6 @@ jobs:
             exit 0
           fi
           git commit -m "data: refresh real EIA/FRED commodity monthly spot averages"
+          # Safely integrate concurrent Treasury/data commits before pushing.
+          git pull --rebase origin main
           git push

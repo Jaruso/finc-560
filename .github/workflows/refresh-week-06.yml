@@ -12,6 +12,8 @@ on:
       - "src/assignments/week_06.py"
       - "scripts/export_week_06.py"
       - "docs/week-06/**"
+      - "!docs/week-06/commodities/**"
+      - "!docs/week-06/companies/**"
       - "tests/**"
       - ".github/workflows/refresh-week-06.yml"
 
@@ -56,4 +58,6 @@ jobs:
             exit 0
           fi
           git commit -m "data: refresh Week 6 FRED Treasury observations"
+          # Another data refresher or an agent may have committed meanwhile.
+          git pull --rebase origin main
           git push
