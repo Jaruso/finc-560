@@ -187,6 +187,9 @@ async function slide(page,id,value){
       "Rendering a forecast must not show the old undefined .catch error");
     assert.equal(await page.locator("#ticker option").count(),4);
     assert.equal(await page.locator("#ticker").inputValue(),"MSFT");
+    assert.equal(await page.locator("#metric").inputValue(),"net");
+    assert.equal(await page.locator("#chart-heading").textContent(),"Net income");
+    assert.equal(await page.locator("#revenue-margin-guidance").isHidden(),true);
     await page.waitForFunction(()=>document.querySelector("#quote-price")?.textContent==="$123.45");
     assert.equal(await page.locator("#quote-change").textContent(),"+$2.55 (+2.11%)");
     assert.match(await page.locator("#quote-status").textContent(),/Finnhub.*May be delayed/);
@@ -234,6 +237,33 @@ async function slide(page,id,value){
     assert.ok(first.forecast.y.at(-1)>first.forecast.y[0]);
     const baseline=first.forecast.y.at(-1);
     const priorProfit=await page.locator("#kpi-forecast-profit").textContent();
+    const initialRevenueKpi=await page.locator("#kpi-forecast-revenue").textContent();
+    // With Net income selected by default, profit margin MUST move the graph,
+    // while historical values and chart geometry remain fixed.
+    await slide(page,"#margin",2);
+    await page.waitForFunction(previous=>{
+      const g=document.querySelector("#company-chart");
+      return g?.data?.length===3 && g.layout?.meta?.measure==="net" &&
+        g.data[2].y.at(-1)>previous;
+    },first.forecast.y.at(-1));
+    const marginPreview=await page.locator("#company-chart").evaluate(g=>({
+      historical:g.data[0].y.slice(),
+      adjusted:g.data[2].y.at(-1),
+      baseline:g.data[1].y.at(-1),
+      yRange:g.layout.yaxis.range.slice(),
+      pixel:g._fullLayout.yaxis.l2p(g.data[0].y.at(-1))
+    }));
+    assert.deepEqual(marginPreview.historical,first.actual.y);
+    assert.equal(marginPreview.baseline,first.forecast.y.at(-1));
+    assert.deepEqual(marginPreview.yRange,first.yRange);
+    assert.ok(Math.abs(marginPreview.pixel-first.historicalPixel)<.001);
+    assert.equal(await page.locator("#kpi-forecast-revenue").textContent(),initialRevenueKpi);
+    assert.notEqual(await page.locator("#kpi-forecast-profit").textContent(),priorProfit);
+    await slide(page,"#margin",0);
+    await page.waitForFunction(expected=>{
+      const g=document.querySelector("#company-chart");
+      return g?.data?.length===2 && Math.abs(g.data[1].y.at(-1)-expected)<1e-8;
+    },first.forecast.y.at(-1));
 
     await slide(page,"#growth",10);
     await page.waitForFunction(old=>{
@@ -278,10 +308,8 @@ async function slide(page,id,value){
     assert.equal(await page.locator("#fit-company-projection").textContent(),"Fit projection");
     assert.equal(await page.locator("#fit-company-projection").isEnabled(),true);
 
-    await page.selectOption("#metric","net");
-    await page.waitForFunction(()=>
-      document.querySelector("#company-chart")?.layout?.meta?.measure==="net" &&
-      document.querySelector("#chart-heading")?.textContent==="Net income");
+    assert.equal(await page.locator("#metric").inputValue(),"net");
+    assert.equal(await page.locator("#chart-heading").textContent(),"Net income");
     const netInitial=await page.locator("#company-chart").evaluate(g=>({
       range:g.layout.yaxis.range.slice(),
       hist:g.data[0].y.slice(),forecast:g.data.at(-1).y.at(-1)
@@ -302,6 +330,40 @@ async function slide(page,id,value){
     assert.deepEqual(netAfterMargin.range,netInitial.range,
       "Margin dial must not move the net-income historical y-scale");
     assert.deepEqual(netAfterMargin.history,netInitial.hist);
+
+    // Revenue must remain independent of margin assumptions. Provide a
+    // deliberate one-click path to the affected earnings measure.
+    await page.selectOption("#metric","revenue");
+    await page.waitForFunction(()=>
+      document.querySelector("#company-chart")?.layout?.meta?.measure==="revenue");
+    assert.equal(await page.locator("#revenue-margin-guidance").isVisible(),true);
+    assert.match(await page.locator("#revenue-margin-guidance").textContent(),
+      /Profit-margin adjustments change projected earnings, not revenue/);
+    const revenueBefore=await page.locator("#company-chart").evaluate(g=>({
+      history:g.data[0].y.slice(),projected:g.data.at(-1).y.slice(),
+      yRange:g.layout.yaxis.range.slice()
+    }));
+    const profitBefore=await page.locator("#kpi-forecast-profit").textContent();
+    await slide(page,"#margin",5);
+    await page.waitForFunction(prior=>
+      document.querySelector("#kpi-forecast-profit")?.textContent!==prior,
+      profitBefore);
+    assert.equal(await page.locator("#margin-value").textContent(),"+5 pp");
+    const revenueAfter=await page.locator("#company-chart").evaluate(g=>({
+      history:g.data[0].y.slice(),projected:g.data.at(-1).y.slice(),
+      yRange:g.layout.yaxis.range.slice()
+    }));
+    assert.deepEqual(revenueAfter,revenueBefore,
+      "Revenue and its axis must remain unchanged when only margins change");
+    assert.equal(await page.locator("#revenue-margin-guidance").isVisible(),true);
+    await page.locator("#view-profit-impact").click();
+    await page.waitForFunction(()=>
+      document.querySelector("#company-chart")?.layout?.meta?.measure==="net" &&
+      document.querySelector("#chart-heading")?.textContent==="Net income");
+    assert.equal(await page.locator("#metric").inputValue(),"net");
+    assert.equal(await page.locator("#revenue-margin-guidance").isHidden(),true);
+    assert.equal(await page.locator("#data-error").isVisible(),false);
+
     await page.selectOption("#method","linear");
     await page.waitForFunction(()=>document.querySelector("#model-note")?.textContent.includes("OLS"));
     await page.selectOption("#horizon","1");
@@ -337,7 +399,7 @@ async function slide(page,id,value){
     await page.waitForFunction(()=>document.querySelector("#growth-value")?.textContent==="0 pp");
     assert.equal(await page.locator("#method").inputValue(),"cagr");
     assert.equal(await page.locator("#horizon").inputValue(),"3");
-    assert.equal(await page.locator("#metric").inputValue(),"revenue");
+    assert.equal(await page.locator("#metric").inputValue(),"net");
     assert.equal(await page.locator("#ticker").inputValue(),"AAPL");
     assert.equal(await page.locator("#history").inputValue(),"5");
     await page.waitForFunction(()=>

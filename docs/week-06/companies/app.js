@@ -235,6 +235,10 @@
       const finish=result.projected.at(-1);
       el("growth-value").textContent=signed(assumptions.growth);
       el("margin-value").textContent=signed(assumptions.margin);
+      // Revenue and margins are different financial measures. Make the
+      // impact discoverable without silently changing the historical graph
+      // or y-axis when the user turns a dial.
+      el("revenue-margin-guidance").hidden=el("metric").value!=="revenue";
       el("kpi-revenue").textContent=USD(last.revenue_musd);
       el("kpi-profit").textContent=USD(last.net_income_musd);
       el("kpi-forecast-revenue").textContent=USD(finish.revenue_musd);
@@ -403,6 +407,12 @@
         el(id).addEventListener("change",queueRender);
       }
       el("ticker").addEventListener("change",()=>void loadCompany(el("ticker").value));
+      el("view-profit-impact").addEventListener("click",()=>{
+        // A deliberate, user-initiated measure change. Dials themselves
+        // never change the chart measure or move reported observations.
+        el("metric").value="net";
+        queueRender();
+      });
       el("quote-refresh").addEventListener("click",()=>{
         if(activeTicker)void loadQuote(activeTicker);
       });
@@ -427,7 +437,7 @@
         scaleContext=null;
         el("method").value="cagr";el("horizon").value="3";
         el("growth").value="0";el("margin").value="0";
-        el("metric").value="revenue";el("history").value="5";
+        el("metric").value="net";el("history").value="5";
         queueRender();
       });
       let timer;
