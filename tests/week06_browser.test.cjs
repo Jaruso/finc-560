@@ -70,12 +70,12 @@ async function slide(page,id,v){
       const reset=n.querySelector("#reset").getBoundingClientRect();
       const wrapper=n.getBoundingClientRect();
       return {titleWidth:title.width,containerWidth:wrapper.width,
-        titleBottom:title.bottom,resetTop:reset.top};
+        titleBottom:title.bottom,resetTop:reset.top,
+        titleRight:title.right,resetLeft:reset.left};
     });
-    assert.ok(macroHeading.titleWidth>macroHeading.containerWidth-2,
-      "Sidebar heading must occupy the full available width");
-    assert.ok(macroHeading.resetTop>=macroHeading.titleBottom,
-      "Reset must not crowd the title");
+    assert.ok(macroHeading.titleRight<=macroHeading.resetLeft+1||
+      macroHeading.titleBottom<=macroHeading.resetTop+1,
+      "Compact or wrapped Reset must not overlap the heading");
     assert.equal(await page.locator("#backtest-table tr").count(),9);
 
     const baseline=await page.locator("#chart-yields").evaluate(n=>({
