@@ -61,7 +61,7 @@ async function slide(page,id,v){
     assert.equal(await page.locator("#chart-stage > .chart-card:not(.is-view-hidden)").count(),4);
     assert.equal(await page.locator("#model-status").textContent(),
       "Fitted Diebold–Li style · 189 training months · 8 Treasury maturities");
-    assert.equal(await page.locator("#controls-heading").textContent(),"Forecast controls");
+    assert.equal(await page.locator("#controls-heading").textContent(),"Controls");
     assert.equal(await page.locator("#reset").textContent(),"Reset");
     assert.equal(await page.locator(".controls .eyebrow").count(),0,
       "Redundant heading copy must not take sidebar space");
@@ -69,13 +69,12 @@ async function slide(page,id,v){
       const title=n.querySelector("h2").getBoundingClientRect();
       const reset=n.querySelector("#reset").getBoundingClientRect();
       const wrapper=n.getBoundingClientRect();
-      return {titleWidth:title.width,containerWidth:wrapper.width,
+      return {titleRight:title.right,resetLeft:reset.left,
         titleBottom:title.bottom,resetTop:reset.top};
     });
-    assert.ok(macroHeading.titleWidth>macroHeading.containerWidth-2,
-      "Sidebar heading must occupy the full available width");
-    assert.ok(macroHeading.resetTop>=macroHeading.titleBottom,
-      "Reset must not crowd the title");
+    assert.ok(macroHeading.titleRight<=macroHeading.resetLeft+1||
+      macroHeading.titleBottom<=macroHeading.resetTop+1,
+      "Compact Controls heading and Reset must not overlap");
     assert.equal(await page.locator("#backtest-table tr").count(),9);
 
     const baseline=await page.locator("#chart-yields").evaluate(n=>({

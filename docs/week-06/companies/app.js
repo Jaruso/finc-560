@@ -94,8 +94,24 @@
   const metricKey=()=>M.METRICS[el("metric").value];
   const settings=()=>({
     method:el("method").value,horizon:Number(el("horizon").value),
-    growth:Number(el("growth").value),margin:Number(el("margin").value)
+    growth:Number(el("growth").value),margin:Number(el("margin").value),
+    projectionsEnabled:el("projections-enabled").checked
   });
+  function updateProjectionControls(){
+    const enabled=el("projections-enabled").checked;
+    for(const control of document.querySelectorAll(".projection-dependent")){
+      control.hidden=!enabled;
+    }
+    el("method").disabled=!enabled;
+    // A reported-only chart should not claim to be displaying a forecast.
+    for(const [id,modeled,reported] of [
+      ["equity-revenue","Revenue forecasting","Revenue history"],
+      ["equity-operating","Operating-income forecasting","Operating-income history"]
+    ]){
+      el(id).closest(".chart-card").querySelector(".chart-heading h2").textContent=
+        enabled?modeled:reported;
+    }
+  }
   // Pill edits remain staged. No chart, news or API request runs before Analyze.
   const tickerPattern=/^[A-Z][A-Z.]{0,9}$/;
   const sameTickers=(a,b)=>a.length===b.length&&a.every((ticker,i)=>ticker===b[i]);
@@ -279,7 +295,9 @@
     comparisonContext.hidden=false;
     comparisonContext.textContent=frames.map((frame,index)=>
       frame.ticker+(index===0?" (primary)":"")).join(" · ")+
-      " · Actual fiscal dates are preserved; dashed lines and shading mark each company's forecast period.";
+      (assumptions.projectionsEnabled
+        ?" · Actual fiscal dates are preserved; dashed lines and shading mark each company's forecast period."
+        :" · Only reported annual results; projections hidden.");
     const available=new Set(C.available(frames));
     canvas.setAvailable([...available]);
     const selected=new Set(canvas.selected());
@@ -288,7 +306,7 @@
     el("fit-company-projection").hidden=true;
     el("chart-footnote").hidden=!focused;
     el("revenue-margin-guidance").hidden=
-      !focused||el("metric").value!=="revenue";
+      !assumptions.projectionsEnabled||!focused||el("metric").value!=="revenue";
     // The quote card names only the primary equity; comparative context
     // and legends already identify the remaining selected companies.
     el("company-name").textContent=frames[0].name;
@@ -307,8 +325,9 @@
       el(id+"-context").textContent=chart.context;
       if(id==="company-chart"){
         el("chart-heading").textContent=labels[el("metric").value];
-        el("chart-footnote").textContent=
-          "Color = equity · Solid = reported · Dashed = forecast · Shading = projection period.";
+        el("chart-footnote").textContent=assumptions.projectionsEnabled
+          ?"Color = equity · Solid = reported · Dashed = forecast · Shading = projection period."
+          :"Color = equity · Solid = reported annual results; projections hidden.";
         lastRenderedValues=null;
         queuedPlot={traces:chart.traces,layout:chart.layout};
         void plotLatest();
@@ -349,6 +368,7 @@
     finally{renderingPlot=false;}
   }
   function financialCharts(history,result){
+    const showProjection=el("projections-enabled").checked;
     const key=metricKey(),metric=el("metric").value;
     const color=colors[metric],unit="USD billions";
     const actual=history.map(r=>r[key]/1000);
@@ -361,28 +381,32 @@
        !history.length||xObserved[0]>=endDate){
       throw Error("Forecast must connect to the final reported fiscal year.");
     }
-    const displayBaseline=settings().growth!==0||settings().margin!==0;
+    const displayBaseline=showProjection&&
+      (settings().growth!==0||settings().margin!==0);
     // Lock scale for this COMPANY + MEASURE + HISTORICAL WINDOW. Two
     // unadjusted model baselines at the maximum 3-year horizon anchor the
     // default range: never include a live dial-adjusted projection here.
     const context=[company.ticker,company.annual.at(-1).fiscal_end,
-      metric,el("history").value].join("|");
+      metric,el("history").value,showProjection?"projection":"reported-only"].join("|");
     if(scaleContext!==context){
       manualYRange=null;
       scaleContext=context;
     }
-    const referenceValues=actual.concat(["cagr","linear"].flatMap(method=>
-      M.forecast(company,{method,horizon:3,growth:0,margin:0})
-        .projected.map(r=>r[key]/1000)));
+    const referenceValues=showProjection
+      ?actual.concat(["cagr","linear"].flatMap(method=>
+        M.forecast(company,{method,horizon:3,growth:0,margin:0})
+          .projected.map(r=>r[key]/1000)))
+      :actual;
     const baseMin=Math.min(...referenceValues),baseMax=Math.max(...referenceValues);
     const basePadding=Math.max((baseMax-baseMin)*.14,Math.abs(baseMax)*.035,.5);
     const defaultYRange=[baseMin-basePadding,baseMax+basePadding];
     const range=manualYRange||defaultYRange;
-    const shownValues=actual.concat(projected,displayBaseline?baseline:[]);
+    const shownValues=showProjection
+      ?actual.concat(projected,displayBaseline?baseline:[]):actual;
     lastRenderedValues=shownValues;
     const overflow=shownValues.some(v=>v<range[0]||v>range[1]);
     const fitButton=el("fit-company-projection");
-    fitButton.disabled=!overflow&&!manualYRange;
+    fitButton.disabled=!showProjection||(!overflow&&!manualYRange);
     fitButton.textContent=overflow?"Fit projection":
       manualYRange?"Restore scale":"Scale locked";
     fitButton.title=overflow
@@ -410,7 +434,8 @@
     // There is exactly one date and financial-value axis. Future width is
     // determined by its actual elapsed calendar duration, not split cards.
     const total=Date.parse(endDate)-Date.parse(xObserved[0]);
-    const cutoff=(Date.parse(boundary)-Date.parse(xObserved[0]))/total;
+    const cutoff=showProjection
+      ?(Date.parse(boundary)-Date.parse(xObserved[0]))/total:1;
     const layout={
       autosize:true,height:fullChartHeight(),
       margin:{l:66,r:18,t:68,b:47,autoexpand:false},
@@ -419,7 +444,7 @@
       showlegend:true,hovermode:"closest",
       legend:{orientation:"h",x:.5,xanchor:"center",y:1.14,font:{size:10},autoexpand:false},
       xaxis:{
-        type:"date",range:[xObserved[0],endDate],
+        type:"date",range:[xObserved[0],showProjection?endDate:boundary],
         tickformat:"%Y",dtick:"M12",showgrid:false,
         linecolor:"#dfe3e6",automargin:true,
       },
@@ -429,31 +454,38 @@
         gridcolor:"#edf1f2",range:range.slice(),
         zeroline:false,automargin:true,
       },
-      shapes:[
+      shapes:showProjection?[
         {type:"rect",xref:"x",yref:"paper",x0:boundary,x1:endDate,
           y0:0,y1:1,fillcolor:"rgba(11,127,115,.045)",line:{width:0},layer:"below"},
         {type:"line",xref:"x",yref:"paper",x0:boundary,x1:boundary,
           y0:0,y1:1,line:{color:"#92aba7",width:1.35,dash:"dash"}}
-      ],
+      ]:[],
       // Projection shading and the style-specific legend replace repeated
       // labels floating above the observed/projected boundary.
       annotations:[],
       meta:{singleChart:true,continuousCalendar:true,cutoffFraction:cutoff,
         observedStart:xObserved[0],observedEnd:boundary,
-        projectionStart:xProjected[0],projectionEnd:endDate,
+        projectionStart:showProjection?xProjected[0]:null,
+        projectionEnd:showProjection?endDate:null,
+        projectionsEnabled:showProjection,
         measure:metric,unit,model:result.method,
         yScale:manualYRange?"manual-locked":"baseline-locked",
-        defaultYRange:defaultYRange.slice(),projectionClipped:overflow}
+        defaultYRange:defaultYRange.slice(),
+        projectionClipped:showProjection&&overflow}
     };
     el("chart-heading").textContent=labels[metric];
     el("company-chart-context").textContent="Latest reported "+USD(history.at(-1)[key])+
-      " · "+settings().horizon+"-year modeled "+USD(result.projected.at(-1)[key])+
-      (overflow?" · Focused scenario beyond locked axis":"");
-    el("chart-footnote").textContent=overflow
-      ? labels[metric]+" · Projection extends outside the locked scale. Use Fit projection to view it."
-      : labels[metric]+" · "+unit+
-        " · Solid = reported • Dashed = modeled forecast • Dotted = unadjusted baseline";
-    const traces=displayBaseline?
+      (showProjection
+        ?" · "+settings().horizon+"-year modeled "+USD(result.projected.at(-1)[key])+
+          (overflow?" · Focused scenario beyond locked axis":"")
+        :" · Reported annual results only");
+    el("chart-footnote").textContent=!showProjection
+      ?labels[metric]+" · "+unit+" · Solid = reported; projections hidden"
+      :overflow
+        ?labels[metric]+" · Projection extends outside the locked scale. Use Fit projection to view it."
+        :labels[metric]+" · "+unit+
+          " · Solid = reported • Dashed = modeled forecast • Dotted = unadjusted baseline";
+    const traces=!showProjection?[observedTrace]:displayBaseline?
       [observedTrace,baselineTrace,scenarioTrace]:
       [observedTrace,scenarioTrace];
     queuedPlot={traces,layout};
@@ -498,6 +530,7 @@
     })();
   }
   function renderExtraEquity(history,result,assumptions){
+    const showProjection=assumptions.projectionsEnabled;
     const selected=new Set(canvas.selected());
     const xs=history.map(r=>r.fiscal_end);
     const xp=result.projected.map(r=>r.fiscal_end);
@@ -539,7 +572,8 @@
         "<extra>"+name+"</extra>"
     });
     const addBoundary=(layout)=>{
-      layout.xaxis.range=[xs[0],end];
+      layout.xaxis.range=[xs[0],showProjection?end:boundary];
+      if(!showProjection)return;
       layout.shapes.push(
         {type:"rect",xref:"x",yref:"paper",x0:boundary,x1:end,
           y0:0,y1:1,fillcolor:"rgba(11,127,115,.045)",line:{width:0},layer:"below"},
@@ -555,29 +589,33 @@
       if(!selected.has(spec.id))continue;
       const actual=history.map(r=>value(r[spec.key]));
       const forecast=result.projected.map(r=>value(r[spec.key]));
-      const showBase=assumptions.growth!==0||assumptions.margin!==0;
+      const showBase=showProjection&&(assumptions.growth!==0||assumptions.margin!==0);
       const traces=[line("Reported "+spec.label,xs,actual,spec.color,{markers:true})];
       if(showBase){
         traces.push(line("Unadjusted baseline",xp,
           result.baseline.map(r=>value(r[spec.key])),bcolor,{dash:"dot"}));
       }
-      traces.push(line(showBase?"Adjusted scenario":"Modeled forecast",
+      if(showProjection)traces.push(line(showBase?"Adjusted scenario":"Modeled forecast",
         xp,forecast,spec.color,{dash:"dash",markers:true}));
       const cfg=base(spec.id);
       addBoundary(cfg);
       // Reference range includes the current scenario, so optional charts
       // never clip a meaningful forecast without warning.
-      const values=actual.concat(forecast,showBase?
-        result.baseline.map(r=>value(r[spec.key])):[]);
+      const values=showProjection
+        ?actual.concat(forecast,showBase?result.baseline.map(r=>value(r[spec.key])):[])
+        :actual;
       const lo=Math.min(...values),hi=Math.max(...values);
       const pad=Math.max(.5,(hi-lo)*.13);
       cfg.yaxis.range=[lo-pad,hi+pad];
-      cfg.meta={...cfg.meta,projectionStart:boundary,projectionEnd:end,
-        method:result.method,conditioned:true};
+      cfg.meta={...cfg.meta,projectionStart:showProjection?boundary:null,
+        projectionEnd:showProjection?end:null,projectionsEnabled:showProjection,
+        method:result.method,conditioned:showProjection};
       note(spec.id,"Latest reported "+USD(latest[spec.key])+
-        " · "+assumptions.horizon+"-year modeled "+
-        USD(result.projected.at(-1)[spec.key])+
-        " · "+(result.method==="cagr"?"Historical CAGR":"OLS trend"));
+        (showProjection
+          ?" · "+assumptions.horizon+"-year modeled "+
+            USD(result.projected.at(-1)[spec.key])+
+            " · "+(result.method==="cagr"?"Historical CAGR":"OLS trend")
+          :" · Reported annual results only"));
       extraPlot(spec.id,traces,cfg);
     }
     if(selected.has("equity-margins")){
@@ -594,15 +632,19 @@
         scenarioMarginPp:assumptions.margin};
       const traces=[
         line("Operating margin · reported",xs,opActual,colors.operating,{percent:true}),
-        line("Net margin · reported",xs,netActual,colors.net,{percent:true}),
+        line("Net margin · reported",xs,netActual,colors.net,{percent:true})
+      ];
+      if(showProjection)traces.push(
         line("Operating margin · scenario",xp,opFuture,colors.operating,
           {percent:true,dash:"dash"}),
         line("Net margin · scenario",xp,netFuture,colors.net,
           {percent:true,dash:"dash"})
-      ];
+      );
+      cfg.meta.projectionsEnabled=showProjection;
       note("equity-margins","Latest operating margin "+
         (opActual.at(-1)).toFixed(1)+"% · Net margin "+
-        (netActual.at(-1)).toFixed(1)+"% · Future margins are assumptions.");
+        (netActual.at(-1)).toFixed(1)+"%"+
+        (showProjection?" · Future margins are assumptions.":" · Reported annual results only."));
       extraPlot("equity-margins",traces,cfg);
     }
     if(selected.has("equity-cashflows")){
@@ -702,13 +744,18 @@
       // impact discoverable without silently changing the historical graph
       // or y-axis when the user turns a dial.
       el("revenue-margin-guidance").hidden=
-        !canvas.visible("company-chart")||el("metric").value!=="revenue";
+        !assumptions.projectionsEnabled||!canvas.visible("company-chart")||
+        el("metric").value!=="revenue";
       el("kpi-revenue").textContent=USD(last.revenue_musd);
       el("kpi-profit").textContent=USD(last.net_income_musd);
-      el("kpi-forecast-revenue").textContent=USD(finish.revenue_musd);
-      el("kpi-forecast-profit").textContent=USD(finish.net_income_musd);
-      el("preview-revenue").textContent=USD(finish.revenue_musd);
-      el("preview-profit").textContent=USD(finish.net_income_musd);
+      el("kpi-forecast-revenue").textContent=assumptions.projectionsEnabled
+        ?USD(finish.revenue_musd):"—";
+      el("kpi-forecast-profit").textContent=assumptions.projectionsEnabled
+        ?USD(finish.net_income_musd):"—";
+      el("preview-revenue").textContent=assumptions.projectionsEnabled
+        ?USD(finish.revenue_musd):"—";
+      el("preview-profit").textContent=assumptions.projectionsEnabled
+        ?USD(finish.net_income_musd):"—";
       el("model-note").textContent=assumptions.growth===0&&assumptions.margin===0?
         "Historical "+(assumptions.method==="cagr"?"CAGR":"OLS trend")+
         " revenue with recent weighted profit margins.":
@@ -733,7 +780,7 @@
       // imply debt or interest data exists for curated earnings-only snapshots.
       canvas.setAvailable(availableEquityCharts(history));
       const focused=canvas.visible("company-chart");
-      el("fit-company-projection").hidden=!focused;
+      el("fit-company-projection").hidden=!focused||!assumptions.projectionsEnabled;
       el("chart-footnote").hidden=!focused;
       if(focused)financialCharts(history,result);
       else el("fit-company-projection").disabled=true;
@@ -899,6 +946,13 @@
           stageTicker(button.dataset.researchExample);
         });
       });
+      el("projections-enabled").addEventListener("change",()=>{
+        updateProjectionControls();
+        scaleContext=null;
+        manualYRange=null;
+        queueRender();
+      });
+      updateProjectionControls();
       for(const id of ["method","horizon","metric","history"]){
         el(id).addEventListener("change",queueRender);
       }
@@ -937,6 +991,8 @@
         el("method").value="cagr";el("horizon").value="3";
         el("growth").value="0";el("margin").value="0";
         el("metric").value="net";el("history").value="5";
+        el("projections-enabled").checked=true;
+        updateProjectionControls();
         canvas.reset();queueRender();
       });
       let timer;

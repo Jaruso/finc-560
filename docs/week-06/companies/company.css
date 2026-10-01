@@ -76,6 +76,25 @@
 .model-method-control{position:relative}
 .model-method-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .model-method-heading>label{font:inherit;cursor:pointer}
+.model-method-actions{display:flex;align-items:center;gap:9px;flex:0 0 auto}
+.projection-switch{position:relative;display:inline-flex;align-items:center;
+  cursor:pointer;flex:0 0 auto;min-width:31px;min-height:22px}
+.projection-switch input{position:absolute;opacity:0;width:31px;height:22px;
+  margin:0;cursor:pointer;z-index:1}
+.projection-switch-track{display:block;position:relative;width:31px;height:17px;
+  border:1px solid #91aaa9;border-radius:12px;background:#c7d4d4;
+  transition:background .15s ease,border-color .15s ease}
+.projection-switch-track::after{content:"";position:absolute;left:2px;top:2px;
+  width:11px;height:11px;border-radius:50%;background:white;
+  box-shadow:0 1px 2px #1b45482b;transition:transform .15s ease}
+.projection-switch input:checked+.projection-switch-track{
+  background:var(--teal);border-color:var(--teal)}
+.projection-switch input:checked+.projection-switch-track::after{transform:translateX(13px)}
+.projection-switch input:focus-visible+.projection-switch-track{
+  outline:2px solid #155f8d;outline-offset:3px}
+@media(prefers-reduced-motion:reduce){
+  .projection-switch-track,.projection-switch-track::after{transition:none}
+}
 .model-help{position:static;flex:0 0 auto}
 .model-help>summary{display:grid;place-items:center;list-style:none;cursor:pointer;
   width:21px;height:21px;border:1px solid #9bbdb8;border-radius:50%;background:#f2faf8;
