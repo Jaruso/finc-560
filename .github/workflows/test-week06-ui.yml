@@ -40,3 +40,10 @@ jobs:
         run: node --test tests/week_06_model.test.cjs
       - name: Test real interactions and navigation in Chromium
         run: node tests/week06_browser.test.cjs
+      - name: Upload browser layouts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: week06-layout-screenshots
+          path: test-artifacts/
+          if-no-files-found: ignore
