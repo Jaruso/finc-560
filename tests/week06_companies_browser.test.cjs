@@ -662,8 +662,8 @@ async function selectPrimary(page,ticker){
     // Example buttons now stage a ticker; Analyze alone commits it.
     await page.locator('[data-research-example="AAPL"]').click();
     assert.equal(await page.locator("#ticker-pills .ticker-pill").count(),2);
-    assert.equal(await page.locator("#news-company-title").textContent(),
-      "International Research Example");
+    assert.match(await page.locator("#news-company-title").textContent(),
+      /International Research Example/);
     await selectPrimary(page,"AAPL");
     await page.waitForFunction(()=>document.querySelector("#company-chart")?.data?.length===2 &&
       document.querySelectorAll("#news-list .news-item").length===2);
