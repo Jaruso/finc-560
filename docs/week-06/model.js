@@ -93,5 +93,22 @@
     return { path, crossing, terminal: path[path.length - 1] };
   }
 
-  return { fitSensitivities, lastYears, project };
+  // "High" and "low" are user-supplied sensitivity envelopes, not
+  // estimated standard deviations or statistical prediction intervals.
+  // Yield bounds vary by half the corridor in opposite maturity directions
+  // so the extreme spread envelope remains the full selected corridor.
+  function scenarioBands(path, metric) {
+    if (!["dgs5", "dgs10", "spread"].includes(metric)) {
+      throw new Error("Unsupported metric for scenario bands");
+    }
+    if (!Array.isArray(path)) throw new Error("Scenario path must be an array");
+    return path.map(row => {
+      const central = metric === "dgs5" ? row.y5 : metric === "dgs10" ? row.y10 : row.spread;
+      const spreadWidth = row.upper - row.spread;
+      const width = metric === "spread" ? spreadWidth : spreadWidth / 2;
+      return { date: row.date, center: central, low: central - width, high: central + width };
+    });
+  }
+
+  return { fitSensitivities, lastYears, project, scenarioBands };
 });

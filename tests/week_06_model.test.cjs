@@ -43,3 +43,21 @@ test("insufficient policy variation cannot produce a fitted response", () => {
   }));
   assert.equal(fitSensitivities(rows), null);
 });
+
+test("user-defined envelope is symmetric, not an estimated standard deviation", () => {
+  const { scenarioBands } = require("../docs/week-06/model.js");
+  const sim = project({ date: "2026-09-01", dgs5: 4, dgs10: 4.2 }, -100, 0.7, 0.3, 12, 40);
+  const five = scenarioBands(sim.path, "dgs5");
+  const ten = scenarioBands(sim.path, "dgs10");
+  const spread = scenarioBands(sim.path, "spread");
+  assert.equal(five.length, 13);
+  for (const band of [five, ten, spread]) {
+    assert.equal(band[0].high, band[0].center);
+    assert.equal(band[0].low, band[0].center);
+    assert.ok(Math.abs(band.at(-1).center * 2 - band.at(-1).high - band.at(-1).low) < 1e-9);
+  }
+  assert.ok(Math.abs(five.at(-1).high - five.at(-1).center - 0.2) < 1e-9);
+  assert.ok(Math.abs(ten.at(-1).high - ten.at(-1).center - 0.2) < 1e-9);
+  assert.ok(Math.abs(spread.at(-1).high - spread.at(-1).center - 0.4) < 1e-9);
+  assert.throws(() => scenarioBands(sim.path, "policy"), /Unsupported/);
+});
