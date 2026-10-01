@@ -602,7 +602,7 @@ async function slide(page,id,value){
     onCompany=false;
     await page.locator(".workspaces a").first().click();
     await page.waitForURL("**/week-06/");
-    assert.equal(await page.locator(".workspaces [aria-current=page]").textContent(),"Macro");
+    assert.equal(await page.locator(".workspaces [aria-current=page]").textContent(),"Bonds");
     console.log("PASS: two compact workspace tabs, browser-calculated model, source switch, "+
       "one continuous chronological company chart and mobile.");
   }finally{
