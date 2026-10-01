@@ -9,13 +9,14 @@
   <link rel="stylesheet" href="../../assets/styles.css?v=20260906-week3-redesign">
   <link rel="stylesheet" href="../../assets/site-transitions.css?v=20261001">
   <link rel="stylesheet" href="../dashboard.css?v=multi-chart-equities-20261001">
-  <link rel="stylesheet" href="./company.css?v=multi-chart-equities-20261001">
+  <link rel="stylesheet" href="./company.css?v=company-news-20261001">
   <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
   <script defer src="./model.js?v=1"></script>
   <script defer src="./research.js?v=finnhub-timestamps-20261001"></script>
-  <script defer src="./research-ui.js?v=conditional-research-panels-20261001"></script>
+  <script defer src="./research-ui.js?v=company-news-loader-20261001"></script>
+  <script defer src="./news.js?v=company-news-20261001"></script>
   <script defer src="../chart-canvas.js?v=20261001"></script>
-  <script defer src="./app.js?v=multi-chart-equities-20261001"></script>
+  <script defer src="./app.js?v=company-news-20261001"></script>
 </head>
 <body>
   <header class="site-header week-06-header company-header">
@@ -162,7 +163,7 @@
           </label>
           <button id="fit-company-projection" class="secondary" type="button"
             title="The vertical scale stays fixed while changing assumptions" disabled>Scale locked</button>
-          <a class="research-jump" href="#research-lab">Company research ↓</a>
+          <a class="research-jump" href="#research-lab">Company news ↓</a>
           <span class="chart-badge">Actual results and assumptions appear in chart headings and hovers</span>
         </div>
         <p id="revenue-margin-guidance" class="revenue-margin-guidance" hidden>
@@ -254,75 +255,25 @@
       </section>
     </div>
   </main>
-  <section id="research-lab" class="research-board" aria-label="Company research and risk scenarios">
-    <header class="research-header">
+  <section id="research-lab" class="news-board" aria-label="Recent company news">
+    <header class="news-board-header">
       <div>
-        <p class="research-eyebrow">FINC 560 · Corporate credit research</p>
-        <h2 id="research-company">Company research</h2>
-        <p id="research-sector" class="research-muted">Industry unavailable</p>
+        <p class="news-eyebrow">FINC 560 · Market developments</p>
+        <h2>Company news <span id="news-company-title"></span></h2>
+        <p class="news-description">Recent headlines for the selected equity · Last 30 days.
+          Publisher reporting, not an assessment of financial impact.</p>
       </div>
-      <div class="research-meta">
-        <strong id="research-market-cap">Market cap unavailable</strong>
-        <p id="research-metrics" class="research-muted">Finnhub fundamentals loading…</p>
-        <p id="research-source" class="research-muted">Awaiting reported statements…</p>
-        <a id="research-filing-link" href="https://www.sec.gov/edgar/search/"
-          target="_blank" rel="noopener noreferrer" hidden>View underlying SEC filing ↗</a>
+      <div class="news-board-controls">
+        <span class="news-provider">Finnhub company news</span>
+        <button id="news-refresh" class="secondary" type="button"
+          aria-label="Refresh company news">Refresh news</button>
       </div>
     </header>
-    <p id="research-status" class="research-state" aria-live="polite">Loading research data…</p>
-    <div id="research-columns" class="research-columns" data-visible="0" hidden>
-      <article id="health-panel" class="research-panel card" aria-labelledby="health-title" hidden>
-        <div class="research-panel-heading">
-          <span class="research-number">01</span>
-          <div><h3 id="health-title">Financial resilience</h3>
-            <p>Can reported cash generation support debt servicing?</p></div>
-        </div>
-        <p id="health-kpis" class="research-kpis">Awaiting annual statements…</p>
-        <div id="health-chart" class="research-chart" role="img"
-          aria-label="Reported free cash flow versus interest expense" hidden></div>
-        <p id="health-note" class="research-note">Loading available financial statement fields…</p>
-      </article>
-      <article id="stress-panel" class="research-panel card" aria-labelledby="stress-title" hidden>
-        <div class="research-panel-heading">
-          <span class="research-number">02</span>
-          <div><h3 id="stress-title">Treasury-linked rate stress</h3>
-            <p>What happens if exposed borrowing costs reprice?</p></div>
-        </div>
-        <div class="research-sliders">
-          <label>10Y forecast shock <input id="rate-shock" type="range" min="-300" max="300"
-            step="50" value="0"></label>
-          <label>Assumed credit spread <input id="spread-bps" type="range" min="0" max="800"
-            step="25" value="200"></label>
-          <label>Assumed exposed debt <input id="exposed-pct" type="range" min="0" max="100"
-            step="10" value="40"></label>
-        </div>
-        <p id="scenario-inputs" class="research-muted">Awaiting Treasury baseline…</p>
-        <p id="stress-kpis" class="research-kpis">Awaiting reported interest and debt…</p>
-        <div id="stress-chart" class="research-chart" role="img"
-          aria-label="Illustrative interest coverage by ten-year Treasury shock" hidden></div>
-        <p id="stress-note" class="research-note">No corporate borrowing rates are inferred from Treasury yields.</p>
-      </article>
-      <article id="valuation-panel" class="research-panel card" aria-labelledby="valuation-title" hidden>
-        <div class="research-panel-heading">
-          <span class="research-number">03</span>
-          <div><h3 id="valuation-title">Illustrative cash-flow valuation</h3>
-            <p>How sensitive is implied value to model assumptions?</p></div>
-        </div>
-        <div class="research-sliders">
-          <label>Five-year FCFF growth <input id="fcf-growth" type="range" min="-20" max="25"
-            step="1" value="5"></label>
-          <label>Discount rate <input id="discount-rate" type="range" min="5" max="25"
-            step="1" value="10"></label>
-          <label>Terminal growth <input id="terminal-growth" type="range" min="0" max="4"
-            step="1" value="2"></label>
-        </div>
-        <p id="valuation-inputs" class="research-muted">Awaiting financial statements…</p>
-        <p id="valuation-kpis" class="research-kpis">Awaiting cash flow, net debt and share count…</p>
-        <div id="valuation-chart" class="research-chart" role="img"
-          aria-label="Illustrative equity-value sensitivity to discount and cash-flow growth" hidden></div>
-        <p id="valuation-note" class="research-note">An assumption-driven sensitivity, never a price target.</p>
-      </article>
-    </div>
+    <p id="news-status" class="news-status" role="status" aria-live="polite">
+      Select an equity to load recent coverage.</p>
+    <div id="news-list" class="news-list" aria-label="Recent company article links"></div>
+    <p class="news-disclaimer">Article headlines and summaries are attributed to their publishers.
+      Open original articles for full context. Coverage varies by ticker and Finnhub subscription.</p>
   </section>
 </body>
 </html>
