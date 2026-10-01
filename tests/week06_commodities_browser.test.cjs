@@ -81,7 +81,9 @@ async function slide(page,n,value){
       x:g.data[0].x.slice(),projected:g.data.at(-1).x.slice(),
       range:g.layout.yaxis.range.slice(),pixel:g._fullLayout.yaxis.l2p(g.data[0].y.at(-1)),
       shapeCount:g.layout.shapes.length,annotations:g.layout.annotations,
-      unit:g.layout.meta.unit,mode:g.layout.meta.yScale
+      unit:g.layout.meta.unit,mode:g.layout.meta.yScale,
+      height:g._fullLayout.height,plotSize:g._fullLayout._size,
+      layoutMargin:g._fullLayout.margin
     }));
     assert.equal(initial.x.length,60);
     assert.equal(initial.projected.length,7);
@@ -105,6 +107,8 @@ async function slide(page,n,value){
     const shocked=await page.locator("#commodity-chart").evaluate(g=>({
       reported:g.data[0].y.slice(),range:g.layout.yaxis.range.slice(),
       pixel:g._fullLayout.yaxis.l2p(g.data[0].y.at(-1)),
+      height:g._fullLayout.height,plotSize:g._fullLayout._size,
+      layoutMargin:g._fullLayout.margin,
       names:g.data.filter(t=>t.showlegend!==false).map(t=>t.name),
       projected:g.data.at(-1).y.at(-1),
       x:g.data.at(-1).x.slice(),
@@ -113,7 +117,12 @@ async function slide(page,n,value){
       "A scenario dial cannot change observed spot prices");
     assert.deepEqual(shocked.range,initial.range,
       "A scenario dial must not change the historical y-axis");
-    assert.ok(Math.abs(shocked.pixel-initial.pixel)<.001);
+    assert.ok(Math.abs(shocked.pixel-initial.pixel)<.001,
+      "Fixed-price axis moved unexpectedly "+JSON.stringify({initial:{
+        pixel:initial.pixel,height:initial.height,plotSize:initial.plotSize,
+        layoutMargin:initial.layoutMargin
+      },shocked:{pixel:shocked.pixel,height:shocked.height,
+        plotSize:shocked.plotSize,layoutMargin:shocked.layoutMargin}}));
     assert.ok(shocked.names.includes("Unadjusted baseline (dotted)"));
     assert.ok(shocked.names.includes("Volatility guide (dotted)"));
     assert.ok(shocked.names.includes("Conditional scenario (dashed)"));
