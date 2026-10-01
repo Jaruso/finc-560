@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "status": "ready",
+  "refresh_mode": "curated",
+  "ticker": "AAPL",
+  "cik": "0000320193",
+  "company": "Apple Inc.",
+  "retrieved_utc": "2026-09-30",
+  "currency": "USD",
+  "unit": "USD millions",
+  "form": "Annual issuer reports / SEC 10-K",
+  "data_source": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/aapl-20250927.htm",
+  "as_reported_note": "Annual consolidated revenue, operating income, net income from Apple FY2023/FY2025 SEC 10-Ks.",
+  "annual": [
+    {
+      "fiscal_end": "2021-09-25",
+      "revenue_musd": 365817,
+      "operating_income_musd": 108949,
+      "net_income_musd": 94680,
+      "filings": {
+        "revenue": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019323000106/aapl-20230930.htm"
+        },
+        "operating": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019323000106/aapl-20230930.htm"
+        },
+        "net": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019323000106/aapl-20230930.htm"
+        }
+      },
+      "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019323000106/aapl-20230930.htm"
+    },
+    {
+      "fiscal_end": "2022-09-24",
+      "revenue_musd": 394328,
+      "operating_income_musd": 119437,
+      "net_income_musd": 99803,
+      "filings": {
+        "revenue": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019323000106/aapl-20230930.htm"
+        },
+        "operating": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019323000106/aapl-20230930.htm"
+        },
+        "net": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019323000106/aapl-20230930.htm"
+        }
+      },
+      "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019323000106/aapl-20230930.htm"
+    },
+    {
+      "fiscal_end": "2023-09-30",
+      "revenue_musd": 383285,
+      "operating_income_musd": 114301,
+      "net_income_musd": 96995,
+      "filings": {
+        "revenue": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019323000106/aapl-20230930.htm"
+        },
+        "operating": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019323000106/aapl-20230930.htm"
+        },
+        "net": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019323000106/aapl-20230930.htm"
+        }
+      },
+      "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019323000106/aapl-20230930.htm"
+    },
+    {
+      "fiscal_end": "2024-09-28",
+      "revenue_musd": 391035,
+      "operating_income_musd": 123216,
+      "net_income_musd": 93736,
+      "filings": {
+        "revenue": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/aapl-20250927.htm"
+        },
+        "operating": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/aapl-20250927.htm"
+        },
+        "net": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/aapl-20250927.htm"
+        }
+      },
+      "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/aapl-20250927.htm"
+    },
+    {
+      "fiscal_end": "2025-09-27",
+      "revenue_musd": 416161,
+      "operating_income_musd": 133050,
+      "net_income_musd": 112010,
+      "filings": {
+        "revenue": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/aapl-20250927.htm"
+        },
+        "operating": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/aapl-20250927.htm"
+        },
+        "net": {
+          "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/aapl-20250927.htm"
+        }
+      },
+      "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/aapl-20250927.htm"
+    }
+  ]
+}

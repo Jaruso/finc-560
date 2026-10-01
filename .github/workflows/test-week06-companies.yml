@@ -1,0 +1,53 @@
+name: Week 6 company dashboard browser checks
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "docs/week-06/**"
+      - "tests/week06_companies*"
+      - "tests/week06_company_fixture.cjs"
+      - ".github/workflows/test-week06-companies.yml"
+  push:
+    branches:
+      - main
+      - feature/week06-corporate-forecasting
+    paths:
+      - "docs/week-06/**"
+      - "tests/week06_companies*"
+      - "tests/week06_company_fixture.cjs"
+      - ".github/workflows/test-week06-companies.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  company-dashboard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify SEC normalization and browser models
+        run: |
+          python -m unittest discover -s tests -p 'test_week_06_companies.py'
+          python -m unittest discover -s tests -p 'test_week06_featured_snapshots.py'
+          node --test tests/week06_companies_model.test.cjs
+      - name: Install isolated browser test tools
+        run: |
+          npm install --no-save playwright@1.55.1 plotly.js-dist-min@2.32.0
+          npx playwright install --with-deps chromium
+      - name: Exercise both Week 6 dashboards
+        run: node tests/week06_companies_browser.test.cjs
+      - name: Attach screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: week06-company-views
+          path: test-artifacts/
+          if-no-files-found: ignore

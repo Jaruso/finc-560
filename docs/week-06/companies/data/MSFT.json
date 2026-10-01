@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "status": "ready",
+  "refresh_mode": "curated",
+  "ticker": "MSFT",
+  "cik": "0000789019",
+  "company": "Microsoft Corporation",
+  "retrieved_utc": "2026-09-30",
+  "currency": "USD",
+  "unit": "USD millions",
+  "form": "Annual issuer reports / SEC 10-K",
+  "data_source": "https://www.microsoft.com/en-us/investor/earnings/fy-2026-q4/press-release-webcast",
+  "as_reported_note": "Fiscal 2026 and 2025 source: issuer FY2026 annual earnings release (FY2026 unaudited); earlier years: Microsoft Annual Report FY2024/FY2023.",
+  "annual": [
+    {
+      "fiscal_end": "2021-06-30",
+      "revenue_musd": 168088,
+      "operating_income_musd": 69916,
+      "net_income_musd": 61271,
+      "filings": {
+        "revenue": {
+          "source_url": "https://www.microsoft.com/investor/reports/ar23/index.html"
+        },
+        "operating": {
+          "source_url": "https://www.microsoft.com/investor/reports/ar23/index.html"
+        },
+        "net": {
+          "source_url": "https://www.microsoft.com/investor/reports/ar23/index.html"
+        }
+      },
+      "source_url": "https://www.microsoft.com/investor/reports/ar23/index.html"
+    },
+    {
+      "fiscal_end": "2022-06-30",
+      "revenue_musd": 198270,
+      "operating_income_musd": 83383,
+      "net_income_musd": 72738,
+      "filings": {
+        "revenue": {
+          "source_url": "https://www.microsoft.com/investor/reports/ar23/index.html"
+        },
+        "operating": {
+          "source_url": "https://www.microsoft.com/investor/reports/ar23/index.html"
+        },
+        "net": {
+          "source_url": "https://www.microsoft.com/investor/reports/ar23/index.html"
+        }
+      },
+      "source_url": "https://www.microsoft.com/investor/reports/ar23/index.html"
+    },
+    {
+      "fiscal_end": "2023-06-30",
+      "revenue_musd": 211915,
+      "operating_income_musd": 88523,
+      "net_income_musd": 72361,
+      "filings": {
+        "revenue": {
+          "source_url": "https://www.microsoft.com/investor/reports/ar23/index.html"
+        },
+        "operating": {
+          "source_url": "https://www.microsoft.com/investor/reports/ar23/index.html"
+        },
+        "net": {
+          "source_url": "https://www.microsoft.com/investor/reports/ar23/index.html"
+        }
+      },
+      "source_url": "https://www.microsoft.com/investor/reports/ar23/index.html"
+    },
+    {
+      "fiscal_end": "2024-06-30",
+      "revenue_musd": 245122,
+      "operating_income_musd": 109433,
+      "net_income_musd": 88136,
+      "filings": {
+        "revenue": {
+          "source_url": "https://www.microsoft.com/investor/reports/ar24/index.html"
+        },
+        "operating": {
+          "source_url": "https://www.microsoft.com/investor/reports/ar24/index.html"
+        },
+        "net": {
+          "source_url": "https://www.microsoft.com/investor/reports/ar24/index.html"
+        }
+      },
+      "source_url": "https://www.microsoft.com/investor/reports/ar24/index.html"
+    },
+    {
+      "fiscal_end": "2025-06-30",
+      "revenue_musd": 281724,
+      "operating_income_musd": 128528,
+      "net_income_musd": 101832,
+      "filings": {
+        "revenue": {
+          "source_url": "https://www.microsoft.com/en-us/investor/earnings/fy-2026-q4/press-release-webcast"
+        },
+        "operating": {
+          "source_url": "https://www.microsoft.com/en-us/investor/earnings/fy-2026-q4/press-release-webcast"
+        },
+        "net": {
+          "source_url": "https://www.microsoft.com/en-us/investor/earnings/fy-2026-q4/press-release-webcast"
+        }
+      },
+      "source_url": "https://www.microsoft.com/en-us/investor/earnings/fy-2026-q4/press-release-webcast"
+    },
+    {
+      "fiscal_end": "2026-06-30",
+      "revenue_musd": 331839,
+      "operating_income_musd": 155237,
+      "net_income_musd": 133749,
+      "filings": {
+        "revenue": {
+          "source_url": "https://www.microsoft.com/en-us/investor/earnings/fy-2026-q4/press-release-webcast"
+        },
+        "operating": {
+          "source_url": "https://www.microsoft.com/en-us/investor/earnings/fy-2026-q4/press-release-webcast"
+        },
+        "net": {
+          "source_url": "https://www.microsoft.com/en-us/investor/earnings/fy-2026-q4/press-release-webcast"
+        }
+      },
+      "source_url": "https://www.microsoft.com/en-us/investor/earnings/fy-2026-q4/press-release-webcast"
+    }
+  ]
+}

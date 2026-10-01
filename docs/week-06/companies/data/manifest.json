@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "status": "ready",
+  "refresh_mode": "curated",
+  "retrieved_utc": "2026-09-30",
+  "source": "Public issuer annual reports and SEC 10-K consolidated earnings tables; see each year source_url",
+  "refresh_note": "Scheduled SEC ingestion paused pending GitHub runner access (HTTP 403); these verified source-linked snapshots remain available.",
+  "companies": [
+    {
+      "ticker": "MSFT",
+      "company": "Microsoft Corporation",
+      "file": "data/MSFT.json",
+      "latest_fiscal_end": "2026-06-30"
+    },
+    {
+      "ticker": "AAPL",
+      "company": "Apple Inc.",
+      "file": "data/AAPL.json",
+      "latest_fiscal_end": "2025-09-27"
+    },
+    {
+      "ticker": "HD",
+      "company": "The Home Depot, Inc.",
+      "file": "data/HD.json",
+      "latest_fiscal_end": "2026-02-01"
+    }
+  ]
+}

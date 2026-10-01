@@ -8,7 +8,7 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="../assets/styles.css?v=20260906-week3-redesign">
   <link rel="stylesheet" href="../assets/site-transitions.css?v=20261001">
-  <link rel="stylesheet" href="./dashboard.css?v=dns-engine">
+  <link rel="stylesheet" href="./dashboard.css?v=20261003-workspaces">
   <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
   
   <script defer src="./forecast_model.js?v=dns-engine"></script>
@@ -20,14 +20,13 @@
       <span class="back-arrow" aria-hidden="true">←</span>
       <span class="lab-shared-title">Financial Visualization Lab</span>
     </a>
+    <nav class="workspaces" aria-label="Week 6 dashboards"><a href="./" aria-current="page">Macro</a><a href="companies/">Companies</a></nav>
     <div class="course-side"><span class="course course-mark">FINC 560</span><span class="week-mark">/ WEEK 06</span></div>
   </header>
   <main class="dashboard">
     <header class="hero">
       <div>
-        <p class="eyebrow">Interactive financial decision support</p>
-        <h1>Treasury Yield Curve <span>Forecast Lab</span></h1>
-        <p class="subtitle">Model-calibrated Treasury forecasts and separately labeled conditional Fed-rate scenarios.</p>
+        <h1>Treasury yields</h1>
       </div>
       <div class="source-stamp" aria-live="polite">
         <span class="stamp-label">Historical data</span>
@@ -59,7 +58,7 @@
           <input id="delta" type="range" min="-100" max="100" value="0" step="25">
           <span class="endpoints"><span>−100 bps</span><span>0</span><span>+100 bps</span></span>
         </label>
-        <p class="policy-note">This is a <strong>deviation from the statistical baseline</strong>, not a market-implied rate decision. Conditional response is estimated from historical co-movement, not identified causal effects.</p>
+        <p class="policy-note">Conditional rate shock, not a Fed prediction. <a href="#model-method" onclick="document.getElementById('model-method').open=true">Method</a></p>
         <label class="control band-toggle">
           <span>Historical-error ranges</span>
           <span class="band-inline"><input type="checkbox" id="show-bands" checked>10th–90th percentiles</span>
@@ -71,8 +70,8 @@
         <div class="scenario-impact-spread"><span>Forecast spread</span><strong id="preview-spread">—</strong></div>
         <p id="scenario-status" class="scenario-status" aria-live="polite">Loading fitted baseline…</p>
       </div>
-      <p class="control-note" id="fit-message">Baseline forecasts are fitted from Treasury data. Conditional policy adjustments are observational what-if changes, not causal predictions.</p>
-      <details class="fit-disclosure" open>
+      <p class="control-note" id="fit-message">Fitted Treasury model · conditional scenarios</p>
+      <details class="fit-disclosure">
         <summary>Out-of-sample forecast accuracy</summary>
         <p class="validation-note">Expanding-window rolling backtest RMSE in basis points. Compare with unchanged-yield forecasts; lower is better.</p>
         <div class="validation-scroll"><table class="validation-table" aria-label="Out-of-sample forecast accuracy">
@@ -80,7 +79,7 @@
           <tbody id="backtest-table"><tr><td colspan="4">Loading validation…</td></tr></tbody>
         </table></div>
       </details>
-      <details class="methods card">
+      <details id="model-method" class="methods card">
         <summary>Model methodology &amp; limitations</summary>
         <div class="methods-body">
           <p><strong>Observations:</strong> Eight FRED Treasury constant maturities (1, 2, 3, 5, 7, 10, 20 and 30 years) and the <a href="https://fred.stlouisfed.org/series/DFF">effective federal funds rate</a>. Each monthly yield cross-section is selected from a single common trading date. The latest month may be incomplete.</p>
@@ -121,7 +120,7 @@
         <button id="focus-projection" type="button" class="secondary focus-button" aria-pressed="false">Focus projection</button>
         <span class="chart-badge">Continuous calendar scale • One chart</span>
       </div>
-      <p id="axis-explanation" class="axis-explanation" aria-live="polite">Ten years of observed data followed by the fitted model horizon on a continuous calendar axis.</p>
+      <p id="axis-explanation" class="axis-explanation" aria-live="polite">Historical → projected</p>
       <div class="chart-grid" id="chart-stage" aria-label="Continuous historical and projected time-series charts">
         <article class="chart-card card">
           <header class="chart-heading">
