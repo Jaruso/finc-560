@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="FINC-560 interactive Treasury yield curve and hypothetical rate adjustment dashboard">
+  <title>Week 6 | Treasury Yield Curve Scenario Lab</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./dashboard.css">
+  <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+  <script defer src="./model.js"></script>
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="back-link" href="../#week-05">&larr; Financial Visualization Lab</a>
+    <span class="eyebrow">FINC-560 &nbsp;/&nbsp; Week 06</span>
+  </header>
+  <main class="dashboard">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Interactive financial decision support</p>
+        <h1>Treasury Yield Curve <span>Scenario Lab</span></h1>
+        <p class="subtitle">Explore historical 5-year and 10-year Treasury yields, then test how different <em>hypothetical</em> policy paths and maturity-specific responses change the 10Y–5Y spread.</p>
+      </div>
+      <div class="source-stamp" aria-live="polite">
+        <span class="stamp-label">Historical data</span>
+        <strong id="data-date">Loading FRED…</strong>
+        <span id="data-refresh">Federal Reserve / FRED</span>
+      </div>
+    </header>
+
+    <div id="data-error" class="error" role="alert" hidden></div>
+
+    <section class="controls card" aria-labelledby="controls-heading">
+      <div class="section-line">
+        <div>
+          <p class="eyebrow">Explore assumptions</p>
+          <h2 id="controls-heading">Scenario controls</h2>
+        </div>
+        <button id="reset" type="button" class="secondary">Reset scenario</button>
+      </div>
+      <div class="control-grid">
+        <label class="control">
+          <span>History and fit window <small>Updates the historical charts and OLS diagnostic</small></span>
+          <select id="history-window">
+            <option value="5">Last 5 years</option>
+            <option value="10" selected>Last 10 years</option>
+            <option value="15">Last 15 years</option>
+            <option value="all">All available history</option>
+          </select>
+        </label>
+        <label class="control">
+          <span>Illustrative adjustment horizon <small>Linear path, not a timing prediction</small></span>
+          <select id="horizon">
+            <option value="6">6 months</option>
+            <option value="12" selected>12 months</option>
+            <option value="24">24 months</option>
+          </select>
+        </label>
+        <label class="control slider-control">
+          <span>Cumulative policy-rate adjustment <output id="delta-value" for="delta">−50 bps</output></span>
+          <input id="delta" type="range" min="-200" max="200" value="-50" step="25">
+          <span class="endpoints"><span>−200 bps</span><span>0</span><span>+200 bps</span></span>
+        </label>
+        <label class="control slider-control">
+          <span>5Y yield response per 1 pp of policy change <output id="beta5-value" for="beta5">0.65×</output></span>
+          <input id="beta5" type="range" min="-1" max="2" value="0.65" step="0.05">
+          <span class="endpoints"><span>−1.0×</span><span>0×</span><span>2.0×</span></span>
+        </label>
+        <label class="control slider-control">
+          <span>10Y yield response per 1 pp of policy change <output id="beta10-value" for="beta10">0.30×</output></span>
+          <input id="beta10" type="range" min="-1" max="2" value="0.30" step="0.05">
+          <span class="endpoints"><span>−1.0×</span><span>0×</span><span>2.0×</span></span>
+        </label>
+        <label class="control slider-control">
+          <span>Illustrative spread uncertainty <output id="corridor-value" for="corridor">25 bps</output></span>
+          <input id="corridor" type="range" min="0" max="100" value="25" step="5">
+          <span class="endpoints"><span>0 bps</span><span>50 bps</span><span>100 bps</span></span>
+        </label>
+      </div>
+      <div class="fit-panel">
+        <div>
+          <p class="fit-head">Observed historical co-movement <span class="info">Not a causal Fed-policy estimate</span></p>
+          <p id="fit-summary">Calculating from historical FRED observations…</p>
+        </div>
+        <button type="button" id="apply-fit" class="secondary" disabled>Use fitted response assumptions</button>
+      </div>
+      <p class="control-note" id="fit-message" aria-live="polite">Response factors are editable scenario assumptions. They do not predict market reactions.</p>
+    </section>
+
+    <section aria-label="Scenario summary" class="kpis">
+      <div class="kpi card"><span>Observed 5Y yield</span><strong id="kpi-5">—</strong><small>Latest available historical month</small></div>
+      <div class="kpi card"><span>Observed 10Y yield</span><strong id="kpi-10">—</strong><small>Latest available historical month</small></div>
+      <div class="kpi card"><span>Observed 10Y − 5Y spread</span><strong id="kpi-base-spread">—</strong><small>Below 0 = inverted</small></div>
+      <div class="kpi card prominent"><span>Terminal scenario spread</span><strong id="kpi-terminal">—</strong><small id="kpi-crossing">Requires historical data</small></div>
+    </section>
+
+    <div class="chart-grid" aria-label="Four related interactive visualizations">
+      <article class="chart-card card">
+        <header class="chart-heading"><p class="eyebrow">01 / Historical context</p><h2>5Y vs 10Y Treasury yields</h2><p>Compare rates over the selected historical window before changing assumptions.</p></header>
+        <div id="chart-historical-yields" class="plot" role="img" aria-label="Historical 5-year and 10-year Treasury yields in percent"></div>
+      </article>
+      <article class="chart-card card">
+        <header class="chart-heading"><p class="eyebrow">02 / Historical inversion</p><h2>10Y − 5Y spread</h2><p>Periods below zero indicate an inverted curve at these maturities.</p></header>
+        <div id="chart-historical-spread" class="plot" role="img" aria-label="Historical 10-year minus 5-year Treasury spread, percent"></div>
+      </article>
+      <article class="chart-card card">
+        <header class="chart-heading"><p class="eyebrow">03 / Hypothetical yield path</p><h2>Scenario: yields by maturity</h2><p>Move the policy slider or adjust each maturity's assumed response.</p></header>
+        <div id="chart-projected-yields" class="plot" role="img" aria-label="Illustrative paths for five-year and ten-year yields"></div>
+      </article>
+      <article class="chart-card card">
+        <header class="chart-heading"><p class="eyebrow">04 / Hypothetical inversion</p><h2>Scenario: inversion threshold</h2><p>Illustrative spread path and editable sensitivity corridor, not a confidence interval.</p></header>
+        <div id="chart-projected-spread" class="plot" role="img" aria-label="Illustrative 10-year minus 5-year spread with zero threshold and assumption corridor"></div>
+      </article>
+    </div>
+    <details class="methods card">
+      <summary>Methodology, limitations &amp; data sources</summary>
+      <div class="methods-body">
+        <p><strong>Audience and decision:</strong> Fixed-income analysts evaluating how assumptions about policy-rate changes and maturity-specific responses affect the shape of the Treasury curve. This is a what-if tool, not an investment recommendation.</p>
+        <p><strong>Observed data:</strong> FRED <a href="https://fred.stlouisfed.org/series/DGS5">DGS5</a>, <a href="https://fred.stlouisfed.org/series/DGS10">DGS10</a>, and <a href="https://fred.stlouisfed.org/series/DFF">DFF</a>. Each month uses the latest available reading for each series; the current month may be incomplete. Figures are annualized yield percentages; spreads are shown in percentage points or basis points as labeled.</p>
+        <p><strong>Historical fit:</strong> For the selected lookback period, ordinary least squares calculates the contemporaneous relationship between monthly changes in DFF and monthly changes in each Treasury yield. This is not an identified causal response; markets anticipate policy, and term premia and other factors matter. Clicking “Use fitted response assumptions” rounds the diagnostics to the nearest 0.05×.</p>
+        <p><strong>Scenario math:</strong> A user-selected cumulative rate shift is phased in linearly over the selected horizon. Each Treasury yield moves by its separate, editable response factor times the cumulative shift. The spread equals projected 10Y minus projected 5Y. A negative modeled spread is a hypothetical inversion, not a recession forecast. Estimated crossing time follows solely from this assumed linear path.</p>
+        <p><strong>Corridor:</strong> The shaded ± basis-point spread corridor widens linearly to the user-selected terminal width. It is a sensitivity illustration, NOT a statistical confidence interval, probability of inversion, or prediction. This simplified model omits forward guidance, term-premium shocks, market expectations and macroeconomic feedback.</p>
+        <p><strong>Reproducibility:</strong> The <a href="https://github.com/jaruso/finc-560/blob/main/src/assignments/week_06.py">Python source</a> retrieves the FRED series using the repository's existing cache/provider and publishes this site's JSON snapshot with a GitHub Actions refresh. No FRED API key or proprietary data is required.</p>
+      </div>
+    </details>
+    <footer>FINC-560 • Interactive Financial Dashboard • Historical observations and hypothetical scenarios are labeled separately.</footer>
+  </main>
+</body>
+</html>

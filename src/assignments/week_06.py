@@ -1,115 +1,70 @@
-import dash
-from dash import dcc, html, Input, Output
-import plotly.express as px
+"""Week 6 Treasury scenario dashboard: reproducible FRED data preparation.
+
+Scenario projections run client-side, separate from historical observations.
+This file NEVER manufactures yield forecasts or claims the simple OLS fit is causal.
+"""
+from __future__ import annotations
+
+from datetime import datetime, timezone
+
 import pandas as pd
-import numpy as np
 
-# Load or generate sample data here
-# For the assignment, you'll want to use real financial data
-df = pd.DataFrame({
-    'Date': pd.date_range(start='1/1/2025', periods=100),
-    'Stock A': np.random.randn(100).cumsum() + 100,
-    'Stock B': np.random.randn(100).cumsum() + 100,
-    'Sector': np.random.choice(['Tech', 'Finance', 'Energy'], 100)
-})
+from src.data.providers.fred import fetch_fred_series
 
-# Initialize the Dash app
-app = dash.Dash(__name__, title="Financial Dashboard")
+SERIES = ("DGS5", "DGS10", "DFF")
+HISTORY_START = "2006-01-01"
 
-# Define the layout of the dashboard
-app.layout = html.Div(
-    style={'fontFamily': 'Arial, sans-serif', 'padding': '20px'},
-    children=[
-        html.H1("Interactive Financial Dashboard", style={'textAlign': 'center'}),
-        
-        # Interactive Feature 1: Filter
-        html.Div([
-            html.Label("Select Sector:"),
-            dcc.Dropdown(
-                id='sector-filter',
-                options=[{'label': s, 'value': s} for s in df['Sector'].unique()],
-                value='Tech',
-                clearable=False
-            )
-        ], style={'width': '30%', 'display': 'inline-block', 'marginBottom': '20px'}),
-        
-        # Interactive Feature 2: Date Range Picker (or another parameter)
-        html.Div([
-            html.Label("Select Date Range:"),
-            dcc.DatePickerRange(
-                id='date-picker',
-                min_date_allowed=df['Date'].min(),
-                max_date_allowed=df['Date'].max(),
-                start_date=df['Date'].min(),
-                end_date=df['Date'].max()
-            )
-        ], style={'width': '50%', 'display': 'inline-block', 'marginLeft': '5%'}),
 
-        # Layout for Visualizations (Minimum 4 required)
-        html.Div([
-            # Visualization 1
-            html.Div([
-                dcc.Graph(id='viz-1')
-            ], style={'width': '48%', 'display': 'inline-block'}),
-            
-            # Visualization 2
-            html.Div([
-                dcc.Graph(id='viz-2')
-            ], style={'width': '48%', 'display': 'inline-block', 'float': 'right'}),
-        ]),
-        
-        html.Div([
-            # Visualization 3
-            html.Div([
-                dcc.Graph(id='viz-3')
-            ], style={'width': '48%', 'display': 'inline-block'}),
-            
-            # Visualization 4
-            html.Div([
-                dcc.Graph(id='viz-4')
-            ], style={'width': '48%', 'display': 'inline-block', 'float': 'right'}),
-        ])
-    ]
-)
+def monthly_observations(daily: pd.DataFrame) -> list[dict]:
+    """Take each month's latest available observation for each daily FRED series.
 
-# Callback to update visualizations based on interactive features
-@app.callback(
-    [Output('viz-1', 'figure'),
-     Output('viz-2', 'figure'),
-     Output('viz-3', 'figure'),
-     Output('viz-4', 'figure')],
-    [Input('sector-filter', 'value'),
-     Input('date-picker', 'start_date'),
-     Input('date-picker', 'end_date')]
-)
-def update_graphs(selected_sector, start_date, end_date):
-    # Filter data based on inputs
-    filtered_df = df[(df['Sector'] == selected_sector) & 
-                     (df['Date'] >= start_date) & 
-                     (df['Date'] <= end_date)]
-    
-    # Visualization 1: Line Chart (e.g., Stock Performance)
-    fig1 = px.line(filtered_df, x='Date', y=['Stock A', 'Stock B'], 
-                   title=f'Stock Performance in {selected_sector} Sector')
-    
-    # Visualization 2: Bar Chart (placeholder)
-    fig2 = px.bar(filtered_df.head(10), x='Date', y='Stock A', 
-                  title='Volume or Metric 2')
-    
-    # Visualization 3: Scatter Plot (placeholder)
-    fig3 = px.scatter(filtered_df, x='Stock A', y='Stock B', 
-                      title='Correlation Analysis')
-    
-    # Visualization 4: Histogram (placeholder)
-    fig4 = px.histogram(filtered_df, x='Stock A', 
-                        title='Distribution of Returns')
-    
-    # Ensure consistent styling across figures
-    for fig in [fig1, fig2, fig3, fig4]:
-        fig.update_layout(template='plotly_white')
-        
-    return fig1, fig2, fig3, fig4
+    Dates in the JSON designate reporting months, NOT an invented exact common
+    observation timestamp. Values are percent per annum (not basis points).
+    """
+    missing = set(SERIES) - set(daily.columns)
+    if missing:
+        raise ValueError("Missing required FRED series: " + ", ".join(sorted(missing)))
+    data = daily.loc[:, list(SERIES)].copy()
+    data.index = pd.to_datetime(data.index)
+    data = data.sort_index()
+    for col in SERIES:
+        data[col] = pd.to_numeric(data[col], errors="coerce")
+    monthly = data.resample("MS").last().dropna(how="any")
+    rows = []
+    for date, row in monthly.iterrows():
+        rows.append({
+            "date": date.strftime("%Y-%m-%d"),
+            "dgs5": round(float(row["DGS5"]), 4),
+            "dgs10": round(float(row["DGS10"]), 4),
+            "policy": round(float(row["DFF"]), 4),
+        })
+    return rows
 
-if __name__ == '__main__':
-    # Run the application
-    app.run_server(debug=True)
+
+def build_snapshot(daily: pd.DataFrame | None = None) -> dict:
+    if daily is None:
+        daily = fetch_fred_series(list(SERIES), HISTORY_START, max_age_hours=0)
+    observations = monthly_observations(daily)
+    if len(observations) < 36:
+        raise ValueError("Insufficient aligned historical observations (<36 months).")
+    # The last synchronized daily row may be older than the end of the month;
+    # separately expose its real calendar date for transparent provenance.
+    synced = daily.loc[:, list(SERIES)].apply(pd.to_numeric, errors="coerce").dropna()
+    if synced.empty:
+        raise ValueError("No synchronized Treasury and policy observations.")
+    last_date = pd.Timestamp(synced.index.max())
+    return {
+        "schema_version": 1,
+        "status": "ready",
+        "source": "FRED / Federal Reserve: DGS5, DGS10, DFF",
+        "source_urls": {
+            "5y": "https://fred.stlouisfed.org/series/DGS5",
+            "10y": "https://fred.stlouisfed.org/series/DGS10",
+            "policy": "https://fred.stlouisfed.org/series/DFF"
+        },
+        "retrieved_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "latest_synchronized_daily_observation": last_date.strftime("%Y-%m-%d"),
+        "frequency": "Monthly latest available observations; latest month may be partial.",
+        "unit": "Percent per annum",
+        "observations": observations,
+    }
