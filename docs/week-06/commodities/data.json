@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "ready",
-  "retrieved_utc": "2026-10-01T14:21:31.827449+00:00",
+  "retrieved_utc": "2026-10-01T14:47:07.309112+00:00",
   "method": "complete monthly average of reported daily EIA spot prices",
   "commodities": [
     {
