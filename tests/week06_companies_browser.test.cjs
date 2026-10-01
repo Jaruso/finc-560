@@ -327,6 +327,10 @@ async function selectPrimary(page,ticker){
       assert.equal(actual.end,"2025-06-30",id+" must end at reported fiscal date");
     }
     assert.equal(await page.locator("#method").isHidden(),true);
+    assert.equal(await page.locator('[data-chart="equity-revenue"] h2').textContent(),
+      "Revenue history");
+    assert.equal(await page.locator('[data-chart="equity-operating"] h2').textContent(),
+      "Operating-income history");
     assert.equal(await page.locator(".company-preview").isHidden(),true);
     assert.equal(await page.locator("#revenue-margin-guidance").isHidden(),true);
     await page.locator("#projections-enabled").check();
