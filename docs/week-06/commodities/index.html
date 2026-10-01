@@ -9,13 +9,13 @@
 <link rel="stylesheet" href="../../assets/styles.css?v=20260906-week3-redesign">
 <link rel="stylesheet" href="../../assets/site-transitions.css?v=20261001">
 <link rel="stylesheet" href="../dashboard.css?v=header-stack-20261001">
-<link rel="stylesheet" href="./commodities.css?v=comparison-layout-20261001">
+<link rel="stylesheet" href="./commodities.css?v=shock-half-life-20261001">
 <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 <script defer src="./model.js?v=commodity-catalog-20261001"></script>
 <script defer src="./comparison.js?v=single-multi-picker-20261001"></script>
 <script defer src="../chart-canvas.js?v=20261001"></script>
 <script defer src="../mobile-controls.js?v=20261001"></script>
-<script defer src="./app.js?v=comparison-layout-20261001"></script>
+<script defer src="./app.js?v=shock-half-life-20261001"></script>
 </head>
 <body>
 <header class="site-header week-06-header commodity-header">
@@ -87,12 +87,15 @@
             <input id="shock" type="range" min="-30" max="30" step="5" value="0">
             <span class="endpoints"><span>−30%</span><span>0</span><span>+30%</span></span>
           </label>
-          <label class="control"><span>Shock half-life</span>
-            <select id="half-life">
+          <label class="control half-life-control"><span>Shock half-life</span>
+            <select id="half-life" aria-label="Shock half-life"
+              aria-describedby="half-life-impact" disabled>
               <option value="3">3 months</option>
               <option value="6" selected>6 months</option>
               <option value="12">12 months</option>
             </select>
+            <small id="half-life-impact" class="half-life-impact" role="status"
+              aria-live="polite">Set a nonzero price shock to enable decay.</small>
           </label>
           <label class="control"><span>Volatility corridor</span>
             <select id="vol">

@@ -57,6 +57,9 @@ async function slide(page,n,value){
       "Commodities");
     assert.equal(await page.locator("#controls-heading").textContent(),"Controls");
     assert.equal(await page.locator("#reset").textContent(),"Reset");
+    assert.equal(await page.locator("#half-life").isDisabled(),true,
+      "Half-life has no effect with the default zero shock");
+    assert.match(await page.locator("#half-life-impact").textContent(),/nonzero/);
     assert.equal(await page.locator("#commodity-options input").count(),3);
     assert.equal(await page.locator("#commodity-summary").textContent(),"WTI crude oil");
     assert.equal(await page.locator("#commodity-selection-count").textContent(),"1 of 4");
@@ -106,6 +109,8 @@ async function slide(page,n,value){
     },initial.forecast.at(-1));
     assert.equal(await picker.locator('input[value="commodity-shock"]').isDisabled(),false,
       "A nonzero conditional shock enables its own sensitivity chart");
+    assert.equal(await page.locator("#half-life").isDisabled(),false,
+      "A nonzero shock unlocks half-life selection");
     const shocked=await page.locator("#commodity-chart").evaluate(g=>({
       reported:g.data[0].y.slice(),range:g.layout.yaxis.range.slice(),
       pixel:g._fullLayout.yaxis.l2p(g.data[0].y.at(-1)),
@@ -128,10 +133,21 @@ async function slide(page,n,value){
     assert.ok(shocked.names.includes("Unadjusted baseline (dotted)"));
     assert.ok(shocked.names.includes("Volatility guide (dotted)"));
     assert.ok(shocked.names.includes("Conditional scenario (dashed)"));
-    const terminal=await page.locator("#preview-scenario").textContent();
+    await page.selectOption("#half-life","3");
+    await page.waitForFunction(prior=>document.querySelector("#commodity-chart")
+      ?.data?.at(-1)?.y.at(-1)<prior,shocked.projected);
+    const short=await page.locator("#commodity-chart").evaluate(g=>g.data.at(-1).y.at(-1));
+    assert.equal(await page.locator("#half-life-impact").textContent(),
+      "At month 6: +6.3% shock remains.");
+    assert.match(await page.locator("#scenario-status").textContent(),/3-month half-life/);
     await page.selectOption("#half-life","12");
-    await page.waitForFunction(prior=>document.querySelector("#preview-scenario")
-      ?.textContent!==prior,terminal);
+    await page.waitForFunction(prior=>document.querySelector("#commodity-chart")
+      ?.data?.at(-1)?.y.at(-1)>prior,shocked.projected);
+    const long=await page.locator("#commodity-chart").evaluate(g=>g.data.at(-1).y.at(-1));
+    assert.ok(short<shocked.projected&&shocked.projected<long,
+      "Changing half-life must visibly change projected terminal prices");
+    assert.equal(await page.locator("#half-life-impact").textContent(),
+      "At month 6: +15.0% shock remains.");
     assert.deepEqual(await page.locator("#commodity-chart").evaluate(
       g=>g.layout.yaxis.range.slice()),initial.range);
     await page.selectOption("#horizon","12");
@@ -192,6 +208,8 @@ async function slide(page,n,value){
     assert.equal(await picker.locator("input:checked").count(),4);
     assert.equal(await picker.locator('input[value="commodity-shock"]').isDisabled(),true,
       "Zero-shock sensitivity must never create a useless chart");
+    assert.equal(await page.locator("#half-life").isDisabled(),true);
+    assert.match(await page.locator("#half-life-impact").textContent(),/nonzero/);
     await picker.locator("summary").click();
     assert.equal(await page.locator("#data-error").isVisible(),false);
     await page.setViewportSize({width:390,height:844});

@@ -232,7 +232,9 @@ async function switchMode(page,id,mode){
      node.dispatchEvent(new Event("change",{bubbles:true}));
    });
    await page.waitForFunction(()=>document.querySelector("#commodity-chart")
-     ?.data?.some(t=>t.name==="Gold forecast"&&t.line.dash==="dash"));
+     ?.data?.some(t=>t.name==="Gold baseline")&&
+     document.querySelector("#commodity-chart")?.data?.some(
+       t=>t.name==="Gold forecast"&&t.line.dash==="dash"));
    const nominalShock=await page.locator("#commodity-chart").evaluate(g=>({
      history:g.data[0].y.slice(),ranges:[g.layout.yaxis.range.slice(),
        g.layout.yaxis2.range.slice(),g.layout.yaxis3.range.slice()],
@@ -241,6 +243,41 @@ async function switchMode(page,id,mode){
    assert.equal(nominalShock.mode,"nominal");
    assert.deepEqual(nominalShock.history,nominal.history);
    assert.deepEqual(nominalShock.ranges,nominal.ranges);
+   const terminalPrices=()=>page.locator("#commodity-chart").evaluate(g=>
+     Object.fromEntries(g.data.filter(t=>t.name.endsWith(" forecast"))
+       .map(t=>[t.meta.commodity,t.y.at(-1)])));
+   const six=await terminalPrices();
+   assert.equal(await page.locator("#half-life").isDisabled(),false);
+   await page.selectOption("#half-life","3");
+   await page.waitForFunction(prior=>{
+     const lines=document.querySelector("#commodity-chart")?.data
+       ?.filter(t=>t.name.endsWith(" forecast"));
+     return lines?.length===4&&lines.every(t=>t.y.at(-1)<prior[t.meta.commodity]);
+   },six);
+   const short=await terminalPrices();
+   assert.equal(await page.locator("#half-life-impact").textContent(),
+     "At month 6: +6.3% shock remains.");
+   await page.selectOption("#half-life","12");
+   await page.waitForFunction(prior=>{
+     const lines=document.querySelector("#commodity-chart")?.data
+       ?.filter(t=>t.name.endsWith(" forecast"));
+     return lines?.length===4&&lines.every(t=>t.y.at(-1)>prior[t.meta.commodity]);
+   },six);
+   const long=await terminalPrices();
+   assert.equal(await page.locator("#half-life-impact").textContent(),
+     "At month 6: +15.0% shock remains.");
+   assert.match(await page.locator("#scenario-status").textContent(),
+     /12-month half-life/);
+   for(const id of Object.keys(six)){
+     assert.ok(short[id]<six[id]&&six[id]<long[id],
+       "Half-life must change "+id+" independently");
+   }
+   assert.deepEqual(await page.locator("#commodity-chart").evaluate(g=>
+     g.data[0].y.slice()),nominalShock.history);
+   assert.deepEqual(await page.locator("#commodity-chart").evaluate(g=>[
+     g.layout.yaxis.range.slice(),g.layout.yaxis2.range.slice(),
+     g.layout.yaxis3.range.slice()]),nominalShock.ranges);
+   await page.selectOption("#half-life","6");
    await switchMode(page,"commodity-chart","indexed");
    const restored=await page.locator("#commodity-chart").evaluate(g=>({
      actual:g.data[0].y.slice(),range:g.layout.yaxis.range.slice(),

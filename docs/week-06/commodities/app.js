@@ -85,7 +85,21 @@ async function paint(){
   }catch(ex){error(ex);}
   finally{state.painting=false;}
 }
+/* Half-life only affects a nonzero shock. Keep the selector honest and make
+   its endpoint effect visible even when curves share a locked y-axis. */
+function syncHalfLife(){
+  const opt=input(),picker=el("half-life"),hint=el("half-life-impact");
+  picker.disabled=opt.shock===0;
+  if(!opt.shock){
+    hint.textContent="Set a nonzero price shock to enable decay.";
+    return;
+  }
+  const remaining=opt.shock*Math.pow(.5,(opt.horizon-1)/opt.halfLife);
+  hint.textContent="At month "+opt.horizon+": "+(remaining>0?"+":"")+
+    remaining.toFixed(1)+"% shock remains.";
+}
 function draw(){
+  syncHalfLife();
   const c=state.commodity;if(!c)return;
   syncModes();
   if(state.selectedIds.length>1||needsUnifiedSingle()){
@@ -140,7 +154,8 @@ function draw(){
       (forecast-base).toFixed(3);
     el("scenario-status").textContent=(opt.shock===0?"Fitted baseline":
       "Conditional "+(opt.shock>0?"+":"")+opt.shock+"% shock")+
-      " · "+opt.horizon+"-month horizon · "+
+      " · "+opt.horizon+"-month horizon"+
+      (opt.shock?" · "+opt.halfLife+"-month half-life":"")+" · "+
       (opt.vol?opt.vol+"× historical volatility":"bounds off");
     el("source-period").textContent="Through "+last.date.slice(0,7);
     el("data-refresh").textContent="Verified snapshot · "+state.snapshot.retrieved_utc.slice(0,10);
@@ -577,7 +592,8 @@ function drawComparison(){
     el("scenario-status").textContent=frames.length+
       " verified benchmark"+(frames.length===1?"":"s")+
       " · Shared "+opt.horizon+"-month model and "+
-      (opt.shock?"conditional "+(opt.shock>0?"+":"")+opt.shock+"% shock":"zero shock")+".";
+      (opt.shock?"conditional "+(opt.shock>0?"+":"")+opt.shock+
+        "% shock · "+opt.halfLife+"-month half-life":"zero shock")+".";
     const preview=el("comparison-preview");preview.hidden=!comparing;preview.replaceChildren();
     if(comparing){
       const previewHeading=document.createElement("p");
