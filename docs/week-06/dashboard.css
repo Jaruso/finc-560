@@ -196,3 +196,12 @@ input[type="range"] { display: block; width: 100%; height: 19px; margin: 0;
   .chart-grid { min-height: 410px; }
   .chart-card { padding: 10px; }
 }
+
+/* Split historical/scenario chart controls */
+.chart-context select { width: 126px; }
+.axis-explanation { flex: 0 0 auto; margin: -2px 5px 0; font-size: .65rem;
+  color: var(--muted); line-height: 1.25; }
+.chart-heading h2 { margin: 1px 0 2px; }
+.chart-heading p:last-child { white-space: normal; }
+@media(max-width:1300px) { .chart-context select { width: 110px; } }
+@media(max-width:800px) { .axis-explanation { margin: 0 3px; } }

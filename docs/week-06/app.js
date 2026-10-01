@@ -1,82 +1,26 @@
-/* All values are loaded from the versioned FRED snapshot, never fabricated. */
+/* FINC-560 Week 6: observed history and illustrative scenarios never share provenance. */
 (() => {
   "use strict";
   const M = window.YieldModel;
   const byId = id => document.getElementById(id);
-  const BRAND = { five: "#365977", ten: "#14877c", red: "#b54856", muted: "#60707d" };
-  const DEFAULTS = { delta: -50, beta5: 0.65, beta10: 0.30, corridor: 25, horizon: 12, history: "10" };
-  const ids = { delta: "delta", beta5: "beta5", beta10: "beta10", corridor: "corridor", horizon: "horizon", history: "history-window" };
-  let snapshot = null, fitted = null;
-  // Keep Plotly redraws sequential per chart when a slider is dragged quickly.
-  // Otherwise overlapping Plotly.react promises can render stale assumptions.
-  const pendingPlots = new Map();
-  // Retain the data for four charts, but render only currently visible graphs.
-  const latestPlots = new Map();
-  const CHART_IDS = [
-    "chart-historical-yields", "chart-historical-spread",
-    "chart-projected-yields", "chart-projected-spread"
-  ];
-  function isChartVisible(id) {
-    const card = byId(id)?.closest(".chart-card");
-    return Boolean(card && !card.classList.contains("is-view-hidden"));
-  }
-  function showChartView() {
-    const primary = byId("chart-primary").value;
-    const compare = byId("mode-compare").getAttribute("aria-pressed") === "true";
-    let secondary = byId("chart-secondary").value;
-    if (compare && secondary === primary) {
-      secondary = CHART_IDS.find(id => id !== primary);
-      byId("chart-secondary").value = secondary;
-    }
-    byId("compare-choice").hidden = !compare;
-    byId("primary-chart-label").textContent = compare ? "Left" : "Chart";
-    const selected = compare ? [primary, secondary] : [primary];
-    const stage = byId("chart-stage");
-    stage.classList.toggle("is-compare", compare);
-    CHART_IDS.forEach(id => {
-      const card = byId(id).closest(".chart-card");
-      const visible = selected.includes(id);
-      card.classList.toggle("is-view-hidden", !visible);
-      card.setAttribute("aria-hidden", String(!visible));
-    });
-    selected.slice().reverse().forEach(id => stage.prepend(byId(id).closest(".chart-card")));
-    window.requestAnimationFrame(() => {
-      selected.forEach(id => {
-        const cached = latestPlots.get(id);
-        if (cached) plot(id, cached.traces, cached.yLabel, cached.options);
-      });
-    });
-  }
-  function initChartSwitcher() {
-    byId("mode-single").addEventListener("click", () => {
-      byId("mode-single").setAttribute("aria-pressed", "true");
-      byId("mode-compare").setAttribute("aria-pressed", "false");
-      byId("mode-single").classList.add("is-active");
-      byId("mode-compare").classList.remove("is-active");
-      showChartView();
-    });
-    byId("mode-compare").addEventListener("click", () => {
-      byId("mode-compare").setAttribute("aria-pressed", "true");
-      byId("mode-single").setAttribute("aria-pressed", "false");
-      byId("mode-compare").classList.add("is-active");
-      byId("mode-single").classList.remove("is-active");
-      showChartView();
-    });
-    byId("chart-primary").addEventListener("change", showChartView);
-    byId("chart-secondary").addEventListener("change", showChartView);
-    window.addEventListener("resize", () => {
-      clearTimeout(initChartSwitcher.resizeTimer);
-      initChartSwitcher.resizeTimer = setTimeout(() => {
-        CHART_IDS.filter(isChartVisible).forEach(id => {
-          const cached = latestPlots.get(id);
-          if (cached) plot(id, cached.traces, cached.yLabel, cached.options);
-        });
-      }, 140);
-    });
-    showChartView();
-  }
-  const drawing = new Set();
-  let scenarioFrame = null;
+  const COLOR = { historical: "#314b5c", central: "#0b7f73", bound: "#798d9b", warning: "#b84253" };
+  const DEFAULT = { delta: -50, beta5: 0.65, beta10: 0.30, corridor: 25, horizon: 12, history: "10", chartMonths: 24 };
+  const CONTROL = { delta: "delta", beta5: "beta5", beta10: "beta10", corridor: "corridor", horizon: "horizon" };
+  const CHART_IDS = ["chart-five", "chart-ten", "chart-spread"];
+  const latestPlots = new Map(), pendingPlots = new Map(), drawing = new Set();
+  let snapshot = null, fitted = null, scenarioFrame = null;
+
+  const nice = (n, digits = 2) => Number(n).toFixed(digits);
+  const percent = n => nice(n) + "%";
+  const basisPoints = n => (n < 0 ? "−" : "+") + nice(Math.abs(n * 100), 0) + " bps";
+  const current = () => snapshot.observations[snapshot.observations.length - 1];
+  const input = key => Number(byId(CONTROL[key]).value);
+  const assumptions = () => ({
+    delta: input("delta"), beta5: input("beta5"), beta10: input("beta10"),
+    corridor: input("corridor"), horizon: input("horizon")
+  });
+  const visible = id => !byId(id).closest(".chart-card").classList.contains("is-view-hidden");
+
   async function flushPlot(id) {
     if (drawing.has(id)) return;
     drawing.add(id);
@@ -84,235 +28,265 @@
       while (pendingPlots.has(id)) {
         const next = pendingPlots.get(id);
         pendingPlots.delete(id);
-        await window.Plotly.react(id, next.traces, next.layout, next.config);
+        await window.Plotly.react(id, next.traces, next.layout, {
+          responsive: true, displayModeBar: false, displaylogo: false, scrollZoom: false
+        });
       }
-    } catch (err) {
-      const errorArea = byId("data-error");
-      errorArea.hidden = false;
-      errorArea.textContent = "Unable to update chart: " + String(err.message || err);
+    } catch (error) {
+      byId("data-error").hidden = false;
+      byId("data-error").textContent = "Unable to update chart: " + (error.message || String(error));
     } finally {
       drawing.delete(id);
     }
   }
-  const lastRow = () => snapshot.observations[snapshot.observations.length - 1];
-  const nice = (n, digits = 2) => n.toFixed(digits);
-  const bp = n => (n >= 0 ? "+" : "−") + nice(Math.abs(n * 100), 0) + " bps";
-  const percent = n => nice(n, 2) + "%";
-  const val = name => Number(byId(ids[name]).value);
-  const describeDate = iso => new Date(iso + "T00:00:00Z").toLocaleDateString(
-    "en-US", { month: "short", year: "numeric", timeZone: "UTC" }
-  );
-  const period = rows => M.lastYears(rows, byId(ids.history).value);
 
-  function setControls(values = DEFAULTS) {
-    ["delta", "beta5", "beta10", "corridor", "horizon"].forEach(name => {
-      byId(ids[name]).value = values[name];
-    });
-    byId(ids.history).value = values.history;
-  }
-  function readControls() {
-    return { delta: val("delta"), beta5: val("beta5"), beta10: val("beta10"),
-      corridor: val("corridor"), horizon: val("horizon") };
-  }
-
-  function plot(id, traces, yLabel, options = {}) {
-    latestPlots.set(id, { traces, yLabel, options });
-    if (!isChartVisible(id)) return;
+  // Two independent date axes with equal VISUAL space. A 24-month observed
+  // period is NOT presented as the same time scale as a 12-month scenario.
+  function plotCombined(id, historical, path, label, isSpread) {
+    const historyX = historical.map(r => r.date);
+    const historyY = historical.map(r => isSpread ? r.dgs10 - r.dgs5
+      : id === "chart-five" ? r.dgs5 : r.dgs10);
+    const metric = isSpread ? "spread" : id === "chart-five" ? "dgs5" : "dgs10";
+    const bands = M.scenarioBands(path, metric);
+    const dates = bands.map(r => r.date);
+    const unit = isSpread ? "pp" : "%";
+    const zeroOrBound = isSpread ? [...historyY, ...bands.flatMap(r => [r.low, r.high]), 0]
+      : [...historyY, ...bands.flatMap(r => [r.low, r.high])];
+    const ymin = Math.min(...zeroOrBound), ymax = Math.max(...zeroOrBound);
+    const pad = Math.max((ymax - ymin) * 0.11, isSpread ? 0.065 : 0.14);
+    const traces = [
+      { x: historyX, y: historyY, type: "scatter", mode: "lines", name: "Observed",
+        line: { color: COLOR.historical, width: 2.2 },
+        hovertemplate: "%{x|%b %Y}: %{y:.2f} " + unit + "<extra>FRED observed</extra>" },
+      { x: dates, y: bands.map(r => r.low), xaxis: "x2", type: "scatter", mode: "lines",
+        name: "Lower scenario", line: { color: COLOR.bound, width: 1.3, dash: "dot" },
+        hovertemplate: "%{x|%b %Y}: %{y:.2f} " + unit + "<extra>Lower (illustrative)</extra>" },
+      { x: dates, y: bands.map(r => r.high), xaxis: "x2", type: "scatter", mode: "lines",
+        name: "Upper scenario", fill: "tonexty", fillcolor: "rgba(11,127,115,0.09)",
+        line: { color: COLOR.bound, width: 1.3, dash: "dot" },
+        hovertemplate: "%{x|%b %Y}: %{y:.2f} " + unit + "<extra>Upper (illustrative)</extra>" },
+      { x: dates, y: bands.map(r => r.center), xaxis: "x2", type: "scatter", mode: "lines",
+        name: "Central assumption", line: { color: COLOR.central, width: 2.7 },
+        hovertemplate: "%{x|%b %Y}: %{y:.2f} " + unit + "<extra>Central (hypothetical)</extra>" }
+    ];
     const layout = {
-      autosize: true, height: byId(id).clientHeight || 340,
-      margin: { l: 57, r: 15, t: 20, b: 53 },
+      autosize: true, height: byId(id).clientHeight || 350,
+      margin: { l: 55, r: 17, t: 67, b: 44 },
       paper_bgcolor: "#fff", plot_bgcolor: "#fff",
-      font: { family: "Inter, system-ui, sans-serif", size: 11, color: "#344755" },
-      hovermode: "x unified", showlegend: true,
-      legend: { orientation: "h", x: 0.5, xanchor: "center", y: 1.15 },
-      xaxis: { showgrid: false, linecolor: "#dce4e7", tickfont: { size: 10 }, automargin: true },
-      yaxis: { title: { text: yLabel, font: { size: 11 } },
-        gridcolor: "#edf0f1", zeroline: false, automargin: true },
-      ...options
+      font: { family: "Inter, system-ui, sans-serif", size: 11, color: "#465865" },
+      hovermode: "closest", showlegend: true,
+      legend: { orientation: "h", x: .5, xanchor: "center", y: 1.11,
+        font: { size: 10 }, itemwidth: 35 },
+      xaxis: {
+        type: "date", domain: [0, .475], anchor: "y", showgrid: false,
+        tickformat: "%b '%y", nticks: 5, linecolor: "#dfe3e6", automargin: true,
+        tickfont: { size: 10 }
+      },
+      xaxis2: {
+        type: "date", domain: [.525, 1], anchor: "y", showgrid: false,
+        tickformat: "%b '%y", nticks: 5, linecolor: "#dfe3e6", automargin: true,
+        tickfont: { size: 10 }
+      },
+      yaxis: { title: { text: label, font: { size: 11 } },
+        range: [ymin - pad, ymax + pad], zeroline: false, automargin: true,
+        gridcolor: "#edf1f2" },
+      annotations: [
+        { x: .2375, xref: "paper", y: 1.02, yref: "paper", showarrow: false,
+          text: "<b>OBSERVED</b> · " + historical.length + " months", font: { size: 10, color: COLOR.historical } },
+        { x: .7625, xref: "paper", y: 1.02, yref: "paper", showarrow: false,
+          text: "<b>HYPOTHETICAL</b> · " + (path.length - 1) + " months", font: { size: 10, color: COLOR.central } }
+      ],
+      shapes: [
+        { type: "rect", xref: "paper", yref: "paper", x0: .525, x1: 1, y0: 0, y1: 1,
+          fillcolor: "rgba(11,127,115,.023)", line: { width: 0 }, layer: "below" },
+        { type: "line", xref: "paper", yref: "paper", x0: .5, x1: .5, y0: 0, y1: 1,
+          line: { color: "#aab8bb", width: 1.2, dash: "dash" } },
+        // Make the common starting value visually legible across the time-axis break.
+        { type: "line", xref: "paper", yref: "y", x0: .475, x1: .525,
+          y0: historyY[historyY.length - 1], y1: historyY[historyY.length - 1],
+          line: { color: COLOR.historical, width: 1.2, dash: "dot" } }
+      ]
     };
-    pendingPlots.set(id, {
-      traces,
-      layout,
-      config: { responsive: true, displayModeBar: false, displaylogo: false, scrollZoom: false }
+    if (isSpread) layout.shapes.push({
+      type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 0, y1: 0,
+      line: { color: COLOR.warning, width: 1.4, dash: "dash" }
     });
-    void flushPlot(id);
+    latestPlots.set(id, { traces, layout });
+    if (visible(id)) {
+      pendingPlots.set(id, { traces, layout });
+      void flushPlot(id);
+    }
   }
 
-  function renderHistory(rows) {
-    const x = rows.map(r => r.date), y5 = rows.map(r => r.dgs5), y10 = rows.map(r => r.dgs10);
-    const spread = rows.map(r => r.dgs10 - r.dgs5);
-    const markerDates = rows.filter(r => r.dgs10 - r.dgs5 < 0).map(r => r.date);
-    const negative = rows.filter(r => r.dgs10 - r.dgs5 < 0).map(r => r.dgs10 - r.dgs5);
-    plot("chart-historical-yields", [
-      { x, y: y5, type: "scatter", mode: "lines", name: "5Y Treasury",
-        line: { color: BRAND.five, width: 2.3 }, hovertemplate: "%{y:.2f}%<extra>5Y</extra>" },
-      { x, y: y10, type: "scatter", mode: "lines", name: "10Y Treasury",
-        line: { color: BRAND.ten, width: 2.3 }, hovertemplate: "%{y:.2f}%<extra>10Y</extra>" }
-    ], "Yield (%)");
-    plot("chart-historical-spread", [
-      { x, y: spread, type: "scatter", mode: "lines", name: "10Y − 5Y",
-        line: { color: BRAND.five, width: 2.2 }, hovertemplate: "%{y:.2f} pp<extra>Spread</extra>" },
-      { x: markerDates, y: negative, type: "scatter", mode: "markers", name: "Inverted",
-        marker: { color: BRAND.red, size: 5 }, hovertemplate: "%{y:.2f} pp<extra>Inverted</extra>" }
-    ], "Spread (pp)", {
-      shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: 0, y1: 0,
-        line: { color: BRAND.red, width: 1.4, dash: "dot" } }]
-    });
+  function renderCharts() {
+    if (!snapshot || !window.Plotly) return;
+    const months = Number(byId("chart-context").value);
+    const historical = snapshot.observations.slice(-months);
+    const state = assumptions();
+    const result = M.project(current(), state.delta, state.beta5, state.beta10, state.horizon, state.corridor);
+    plotCombined("chart-five", historical, result.path, "Yield (%)", false);
+    plotCombined("chart-ten", historical, result.path, "Yield (%)", false);
+    plotCombined("chart-spread", historical, result.path, "Spread (pp)", true);
   }
 
-  function renderScenario(state) {
-    const base = lastRow();
-    const result = M.project(base, state.delta, state.beta5, state.beta10, state.horizon, state.corridor);
-    const p = result.path, dates = p.map(r => r.date);
-    byId("kpi-5").textContent = percent(base.dgs5);
-    byId("kpi-10").textContent = percent(base.dgs10);
-    byId("kpi-base-spread").textContent = bp(base.dgs10 - base.dgs5);
-    byId("kpi-terminal").textContent = bp(result.terminal.spread);
-    // Preview sits beside the controls, so an interaction has immediately
-    // visible consequences even when projected charts are below the fold.
-    byId("preview-five").textContent = percent(result.terminal.y5);
-    byId("preview-ten").textContent = percent(result.terminal.y10);
-    byId("preview-spread").textContent = bp(result.terminal.spread);
-    byId("preview-spread").classList.toggle("is-inverted", result.terminal.spread < 0);
-    const policyText = state.delta < 0
-      ? Math.abs(state.delta) + "-bp cumulative cut"
-      : state.delta > 0 ? state.delta + "-bp cumulative increase" : "unchanged policy rate";
-    const spreadChange = result.terminal.spread - (base.dgs10 - base.dgs5);
-    byId("scenario-status").textContent = "Modeled outcome: " + policyText +
-      " over " + state.horizon + " months changes the 10Y–5Y spread by " +
-      (spreadChange >= 0 ? "+" : "−") + nice(Math.abs(spreadChange * 100), 0) +
-      " bps. Historical observations remain unchanged.";
-    const responseGap = state.beta10 - state.beta5;
-    const flatShockBp = Math.abs(responseGap) < 1e-9 ? null :
-      -(base.dgs10 - base.dgs5) * 100 / responseGap;
-    const required = flatShockBp === null
-      ? " Parallel responses cannot change the spread."
-      : " Flattening would require approximately " +
-        (flatShockBp < 0 ? "−" : "+") + Math.round(Math.abs(flatShockBp)) +
-        " bps under the selected assumptions.";
-    const msg = !result.crossing ? "No central-path inversion." + required
-      : result.crossing.kind === "already" ? "Curve is already inverted at the baseline."
-      : "Illustrative zero crossing: month " + nice(result.crossing.month, 1) + " of " + state.horizon + ".";
-    byId("kpi-crossing").textContent = msg;
-    byId("kpi-crossing").title = msg;
-    plot("chart-projected-yields", [
-      { x: dates, y: p.map(r => r.y5), type: "scatter", mode: "lines", name: "5Y scenario",
-        line: { color: BRAND.five, width: 2.4 }, marker: { size: 4 },
-        hovertemplate: "%{y:.2f}%<extra>5Y (hypothetical)</extra>" },
-      { x: dates, y: p.map(r => r.y10), type: "scatter", mode: "lines", name: "10Y scenario",
-        line: { color: BRAND.ten, width: 2.4 }, marker: { size: 4 },
-        hovertemplate: "%{y:.2f}%<extra>10Y (hypothetical)</extra>" }
-    ], "Illustrative yield (%)", { xaxis: { tickformat: "%b %Y", type: "date", showgrid: false } });
-    plot("chart-projected-spread", [
-      { x: dates, y: p.map(r => r.lower), type: "scatter", mode: "lines",
-        name: "Sensitivity range", line: { width: 0 }, hoverinfo: "skip", showlegend: false },
-      { x: dates, y: p.map(r => r.upper), type: "scatter", mode: "lines",
-        name: "Illustrative ± corridor", fill: "tonexty", fillcolor: "rgba(54,89,119,0.12)",
-        line: { width: 0 }, hoverinfo: "skip" },
-      { x: dates, y: p.map(r => r.spread), type: "scatter", mode: "lines",
-        name: "Central assumed path", line: { width: 2.5, color: BRAND.ten },
-        marker: { size: 4 }, hovertemplate: "%{y:.2f} pp<extra>Hypothetical spread</extra>" }
-    ], "10Y − 5Y (pp)", {
-      xaxis: { tickformat: "%b %Y", type: "date", showgrid: false },
-      shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: 0, y1: 0,
-        line: { color: BRAND.red, width: 1.4, dash: "dash" } }]
-    });
-  }
-
-  function updateSliderLabels() {
-    const state = readControls();
+  function updateSummary() {
+    const state = assumptions();
     byId("delta-value").textContent = (state.delta < 0 ? "−" : state.delta > 0 ? "+" : "") +
       Math.abs(state.delta) + " bps";
     byId("beta5-value").textContent = nice(state.beta5) + "×";
     byId("beta10-value").textContent = nice(state.beta10) + "×";
     byId("corridor-value").textContent = state.corridor + " bps";
+    if (!snapshot) return;
+    const base = current();
+    const result = M.project(base, state.delta, state.beta5, state.beta10, state.horizon, state.corridor);
+    byId("kpi-5").textContent = percent(base.dgs5);
+    byId("kpi-10").textContent = percent(base.dgs10);
+    byId("kpi-base-spread").textContent = basisPoints(base.dgs10 - base.dgs5);
+    byId("kpi-terminal").textContent = basisPoints(result.terminal.spread);
+    byId("preview-five").textContent = percent(result.terminal.y5);
+    byId("preview-ten").textContent = percent(result.terminal.y10);
+    byId("preview-spread").textContent = basisPoints(result.terminal.spread);
+    byId("preview-spread").classList.toggle("is-inverted", result.terminal.spread < 0);
+    const change = result.terminal.spread - (base.dgs10 - base.dgs5);
+    const direction = state.delta < 0 ? Math.abs(state.delta) + "-bp cumulative cut" :
+      state.delta > 0 ? state.delta + "-bp cumulative increase" : "unchanged policy rate";
+    byId("scenario-status").textContent = "Modeled " + direction + " over " + state.horizon +
+      " months changes the central spread by " + basisPoints(change) +
+      ". Dotted bounds are manual sensitivity settings, not probabilities.";
+    const gap = state.beta10 - state.beta5;
+    const flat = Math.abs(gap) < 1e-9 ? null : -(base.dgs10 - base.dgs5) * 100 / gap;
+    const explanation = result.crossing?.kind === "already" ? "Already inverted at the baseline." :
+      result.crossing?.kind === "crossing"
+        ? "Illustrative central-path zero crossing: month " + nice(result.crossing.month, 1) + "." :
+        flat === null ? "Parallel responses cannot change the spread." :
+        "No central-path inversion. Zero would require " +
+        (flat < 0 ? "−" : "+") + Math.round(Math.abs(flat)) + " bps under these assumptions.";
+    byId("kpi-crossing").textContent = explanation;
+    byId("kpi-crossing").title = explanation;
   }
 
-  function renderHistoryAndFit() {
-    if (!snapshot || !window.Plotly) return;
-    const selected = period(snapshot.observations);
-    fitted = M.fitSensitivities(selected);
-    byId("fit-summary").textContent = fitted
-      ? "Selected history: " + fitted.samples + " consecutive month-to-month changes · 5Y " +
-        nice(fitted.beta5) + "× · 10Y " + nice(fitted.beta10) + "×."
-      : "Insufficient month-to-month policy-rate variation for an informative OLS estimate.";
+  function renderFit() {
+    if (!snapshot) return;
+    fitted = M.fitSensitivities(M.lastYears(snapshot.observations, byId("history-window").value));
+    byId("fit-summary").textContent = fitted ?
+      fitted.samples + " consecutive monthly differences · 5Y " + nice(fitted.beta5) +
+      "× · 10Y " + nice(fitted.beta10) + "×." :
+      "Too little month-to-month policy variation for this OLS estimate.";
     byId("apply-fit").disabled = !fitted;
-    renderHistory(selected);
-  }
-
-  function renderScenarioFromInputs() {
-    if (!snapshot || !window.Plotly) return;
-    updateSliderLabels();
-    renderScenario(readControls());
   }
 
   function scheduleScenarioRender() {
-    // Show the number next to the dial without waiting for Plotly.
-    updateSliderLabels();
+    updateSummary(); // immediate, even when charts are asynchronously drawing
     if (scenarioFrame !== null) return;
     scenarioFrame = window.requestAnimationFrame(() => {
       scenarioFrame = null;
-      renderScenarioFromInputs();
+      renderCharts();
     });
   }
 
-  function render() {
-    if (!snapshot || !window.Plotly) return;
-    renderHistoryAndFit();
-    renderScenarioFromInputs();
+  function showChartView() {
+    const primary = byId("chart-primary").value;
+    const comparing = byId("mode-compare").getAttribute("aria-pressed") === "true";
+    let secondary = byId("chart-secondary").value;
+    if (comparing && primary === secondary) {
+      secondary = CHART_IDS.find(id => id !== primary);
+      byId("chart-secondary").value = secondary;
+    }
+    const selected = comparing ? [primary, secondary] : [primary];
+    byId("compare-choice").hidden = !comparing;
+    byId("primary-chart-label").textContent = comparing ? "Left" : "Chart";
+    byId("chart-stage").classList.toggle("is-compare", comparing);
+    CHART_IDS.forEach(id => {
+      const card = byId(id).closest(".chart-card");
+      card.classList.toggle("is-view-hidden", !selected.includes(id));
+      card.setAttribute("aria-hidden", String(!selected.includes(id)));
+    });
+    selected.slice().reverse().forEach(id => byId("chart-stage").prepend(byId(id).closest(".chart-card")));
+    window.requestAnimationFrame(() => selected.forEach(id => {
+      const cached = latestPlots.get(id);
+      if (!cached) return;
+      const fresh = { ...cached.layout, height: byId(id).clientHeight || 340 };
+      pendingPlots.set(id, { traces: cached.traces, layout: fresh });
+      void flushPlot(id);
+    }));
   }
 
-  function initControls() {
-    ["delta", "beta5", "beta10", "corridor", "horizon"].forEach(name => {
-      const input = byId(ids[name]);
-      input.addEventListener("input", scheduleScenarioRender);
-      input.addEventListener("change", scheduleScenarioRender);
+  function initChartSwitcher() {
+    ["single", "compare"].forEach(mode => byId("mode-" + mode).addEventListener("click", () => {
+      ["single", "compare"].forEach(m => {
+        const active = m === mode;
+        byId("mode-" + m).setAttribute("aria-pressed", String(active));
+        byId("mode-" + m).classList.toggle("is-active", active);
+      });
+      showChartView();
+    }));
+    byId("chart-primary").addEventListener("change", showChartView);
+    byId("chart-secondary").addEventListener("change", showChartView);
+    byId("chart-context").addEventListener("change", renderCharts);
+    let resizeTimer;
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        CHART_IDS.filter(visible).forEach(id => {
+          const cached = latestPlots.get(id);
+          if (!cached) return;
+          pendingPlots.set(id, { ...cached, layout: { ...cached.layout, height: byId(id).clientHeight || 340 } });
+          void flushPlot(id);
+        });
+      }, 130);
     });
-    // History selection changes the observations and regression, not the
-    // hypothetical assumptions until the user explicitly applies the fit.
-    byId("history-window").addEventListener("change", renderHistoryAndFit);
+    showChartView();
+  }
+
+  function setControls() {
+    Object.entries(DEFAULT).forEach(([key, value]) => {
+      const id = CONTROL[key] || (key === "history" ? "history-window" : key === "chartMonths" ? "chart-context" : null);
+      if (id) byId(id).value = String(value);
+    });
+  }
+
+  async function init() {
+    setControls();
+    initChartSwitcher();
+    Object.values(CONTROL).forEach(id => {
+      byId(id).addEventListener("input", scheduleScenarioRender);
+      byId(id).addEventListener("change", scheduleScenarioRender);
+    });
+    byId("history-window").addEventListener("change", renderFit);
     byId("reset").addEventListener("click", () => {
       setControls();
-      byId("fit-message").textContent = "Manual scenario assumptions reset; historical fit remains informational.";
-      render();
+      byId("fit-message").textContent = "Manual assumptions restored.";
+      renderFit(); updateSummary(); renderCharts();
     });
     byId("apply-fit").addEventListener("click", () => {
       if (!fitted) return;
       if ([fitted.beta5, fitted.beta10].some(n => n < -1 || n > 2)) {
-        byId("fit-message").textContent = "Historical fitted values exceed the slider range. Keep manual assumptions or select a different history window.";
+        byId("fit-message").textContent = "Fitted response exceeds slider limits; retain manual assumptions.";
         return;
       }
-      byId("beta5").value = (Math.round(fitted.beta5 / 0.05) * 0.05).toFixed(2);
-      byId("beta10").value = (Math.round(fitted.beta10 / 0.05) * 0.05).toFixed(2);
-      byId("fit-message").textContent = "Loaded rounded historical co-movement estimates. These are still assumptions, not causal forecasts.";
-      renderScenarioFromInputs();
+      byId("beta5").value = (Math.round(fitted.beta5 / .05) * .05).toFixed(2);
+      byId("beta10").value = (Math.round(fitted.beta10 / .05) * .05).toFixed(2);
+      byId("fit-message").textContent = "Historical co-movement loaded. Still not a causal Fed-policy estimate.";
+      updateSummary(); renderCharts();
     });
-    setControls();
-  }
-
-  async function init() {
-    initControls();
-    initChartSwitcher();
     try {
-      if (!window.Plotly || !M) throw new Error("Chart library unavailable. Reload with an internet connection.");
+      if (!window.Plotly || !M) throw new Error("Plotly or scenario model unavailable.");
       const response = await fetch("./data.json", { cache: "no-store" });
-      if (!response.ok) throw new Error("FRED snapshot missing. Run python scripts/export_week_06.py.");
+      if (!response.ok) throw new Error("FRED data unavailable. Run python scripts/export_week_06.py.");
       const data = await response.json();
-      const rows = data.observations;
-      if (data.status !== "ready" || !Array.isArray(rows) || rows.length < 36 ||
-          rows.some(r => ![r.dgs5, r.dgs10, r.policy].every(Number.isFinite))) {
-        throw new Error("Historical data have not been refreshed or failed validation.");
+      if (data.status !== "ready" || !Array.isArray(data.observations) || data.observations.length < 36 ||
+          data.observations.some(r => ![r.dgs5, r.dgs10, r.policy].every(Number.isFinite))) {
+        throw new Error("FRED snapshot failed validation.");
       }
       snapshot = data;
       byId("data-date").textContent = data.latest_synchronized_daily_observation;
       byId("data-refresh").textContent = "FRED snapshot retrieved " + data.retrieved_utc.slice(0, 10) + " (UTC)";
-      render();
+      renderFit(); updateSummary(); renderCharts();
     } catch (error) {
       byId("data-date").textContent = "Unavailable";
       byId("data-error").hidden = false;
       byId("data-error").textContent = String(error.message || error) +
-        " Scenarios are disabled instead of substituting invented observations.";
-      byId("fit-summary").textContent = "Awaiting verified historical data.";
+        " No synthetic historical rates have been substituted.";
     }
   }
   init();

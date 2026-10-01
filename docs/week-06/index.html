@@ -8,10 +8,10 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="../assets/styles.css?v=20260906-week3-redesign">
   <link rel="stylesheet" href="../assets/site-transitions.css?v=20261001">
-  <link rel="stylesheet" href="./dashboard.css?v=20261001-workspace">
+  <link rel="stylesheet" href="./dashboard.css?v=20261001-splitpath">
   <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
-  <script defer src="./model.js"></script>
-  <script defer src="./app.js"></script>
+  <script defer src="./model.js?v=splitpath"></script>
+  <script defer src="./app.js?v=splitpath"></script>
 </head>
 <body>
   <header class="site-header week-06-header">
@@ -49,7 +49,7 @@
       </div>
       <div class="control-grid">
         <label class="control">
-          <span>History and fit window <small>Also sets the fitted sensitivity window</small></span>
+          <span>Sensitivity fit window <small>Historical regression sample; chart view has its own control</small></span>
           <select id="history-window">
             <option value="5">Last 5 years</option>
             <option value="10" selected>Last 10 years</option>
@@ -81,7 +81,7 @@
           <span class="endpoints"><span>−1.0×</span><span>0×</span><span>2.0×</span></span>
         </label>
         <label class="control slider-control">
-          <span>Spread corridor <output id="corridor-value" for="corridor">25 bps</output></span>
+          <span>Sensitivity width <output id="corridor-value" for="corridor">25 bps</output></span>
           <input id="corridor" type="range" min="0" max="100" value="25" step="5">
           <span class="endpoints"><span>0 bps</span><span>50 bps</span><span>100 bps</span></span>
         </label>
@@ -102,7 +102,7 @@
         <button type="button" id="apply-fit" class="secondary" disabled>Use fitted response assumptions</button>
       </div>
       </details>
-      <p class="control-note" id="fit-message" aria-live="polite">Response factors are editable scenario assumptions. They do not predict market reactions.</p>
+      <p class="control-note" id="fit-message" aria-live="polite">Upper/lower yield bounds use half the selected width; spread bounds use its full width. All are hypothetical sensitivity ranges, not standard deviations or probabilities.</p>
     <details class="methods card">
       <summary>Methodology, limitations &amp; data sources</summary>
       <div class="methods-body">
@@ -130,41 +130,48 @@
         </div>
         <label class="chart-choice"><span id="primary-chart-label">Chart</span>
           <select id="chart-primary">
-                <option value="chart-historical-yields" selected>Historical yields</option>
-                <option value="chart-historical-spread">Historical spread</option>
-                <option value="chart-projected-yields">Scenario yields</option>
-                <option value="chart-projected-spread">Scenario inversion</option>
+            <option value="chart-five" selected>5-year yield</option>
+            <option value="chart-ten">10-year yield</option>
+            <option value="chart-spread">10Y–5Y spread</option>
           </select>
         </label>
         <label class="chart-choice chart-secondary" id="compare-choice" hidden><span>Compare with</span>
           <select id="chart-secondary">
-                <option value="chart-historical-yields">Historical yields</option>
-                <option value="chart-historical-spread" selected>Historical spread</option>
-                <option value="chart-projected-yields">Scenario yields</option>
-                <option value="chart-projected-spread">Scenario inversion</option>
+            <option value="chart-five">5-year yield</option>
+            <option value="chart-ten">10-year yield</option>
+            <option value="chart-spread" selected>10Y–5Y spread</option>
           </select>
         </label>
-        <span class="chart-badge">FRED observed • Scenario hypothetical</span>
+        <label class="chart-choice chart-context"><span>History shown</span>
+          <select id="chart-context" aria-label="Historical months shown on the chart">
+            <option value="12">12 months</option>
+            <option value="24" selected>24 months</option>
+            <option value="36">36 months</option>
+            <option value="60">60 months</option>
+          </select>
+        </label>
       </div>
-
-    <div class="chart-grid" id="chart-stage" aria-label="Selected financial visualizations">
-      <article class="chart-card card">
-        <header class="chart-heading"><p class="eyebrow">01 / Historical context</p><h2>5Y vs 10Y Treasury yields</h2><p>Compare rates over the selected historical window before changing assumptions.</p></header>
-        <div id="chart-historical-yields" class="plot" role="img" aria-label="Historical 5-year and 10-year Treasury yields in percent"></div>
-      </article>
-      <article class="chart-card card is-view-hidden" aria-hidden="true">
-        <header class="chart-heading"><p class="eyebrow">02 / Historical inversion</p><h2>10Y − 5Y spread</h2><p>Periods below zero indicate an inverted curve at these maturities.</p></header>
-        <div id="chart-historical-spread" class="plot" role="img" aria-label="Historical 10-year minus 5-year Treasury spread, percent"></div>
-      </article>
-      <article class="chart-card card is-view-hidden" aria-hidden="true">
-        <header class="chart-heading"><p class="eyebrow">03 / Hypothetical yield path</p><h2>Scenario: yields by maturity</h2><p>Move the policy slider or adjust each maturity's assumed response.</p></header>
-        <div id="chart-projected-yields" class="plot" role="img" aria-label="Illustrative paths for five-year and ten-year yields"></div>
-      </article>
-      <article class="chart-card card is-view-hidden" aria-hidden="true">
-        <header class="chart-heading"><p class="eyebrow">04 / Hypothetical inversion</p><h2>Scenario: inversion threshold</h2><p>Illustrative spread path and editable sensitivity corridor, not a confidence interval.</p></header>
-        <div id="chart-projected-spread" class="plot" role="img" aria-label="Illustrative 10-year minus 5-year spread with zero threshold and assumption corridor"></div>
-      </article>
-    </div>
+      <p class="axis-explanation">Left: observed historical period · Right: hypothetical forward scenario · Equal visual width; independent time scales · Shaded bounds are manually set, not forecast probabilities.</p>
+      <div class="chart-grid" id="chart-stage" aria-label="Historical and hypothetical side-by-side plots">
+        <article class="chart-card card">
+          <header class="chart-heading">
+            <h2>5-year Treasury yield</h2><p>Historical yield alongside a central hypothetical path and upper/lower sensitivity bounds.</p>
+          </header>
+          <div id="chart-five" class="plot" role="img" aria-label="5-year Treasury observed history on left and hypothetical future with central, upper and lower bounds on right"></div>
+        </article>
+        <article class="chart-card card is-view-hidden" aria-hidden="true">
+          <header class="chart-heading">
+            <h2>10-year Treasury yield</h2><p>Compare long-maturity history with alternative responses to the same rate assumption.</p>
+          </header>
+          <div id="chart-ten" class="plot" role="img" aria-label="10-year Treasury observed history on left and hypothetical future with central, upper and lower bounds on right"></div>
+        </article>
+        <article class="chart-card card is-view-hidden" aria-hidden="true">
+          <header class="chart-heading">
+            <h2>10Y − 5Y spread</h2><p>Watch the projected curve approach or cross the zero-inversion threshold.</p>
+          </header>
+          <div id="chart-spread" class="plot" role="img" aria-label="Observed 10Y minus 5Y spread on left and hypothetical central, upper, and lower scenarios on right"></div>
+        </article>
+      </div>
       </section>
     </div>
     <footer>FINC-560 • Interactive Financial Dashboard • Historical observations and hypothetical scenarios are labeled separately.</footer>
