@@ -73,6 +73,24 @@ test('identical public requests reuse edge cache', async () => {
   assert.equal(calls.length, 1);
 });
 
+test('edge-cache hits bypass gateway rate limiting without bypassing secret validation', async () => {
+  let counter = 0;
+  const limited = { ...env, FINNHUB_RATE_LIMITER: { limit: async () => {
+    counter++;
+    return { success: counter === 1 };
+  } } };
+  const first = await worker.fetch(req('/quote?symbol=AAPL'), limited, ctx());
+  await Promise.all(wait);
+  const second = await worker.fetch(req('/quote?symbol=AAPL'), limited, ctx());
+  assert.equal(first.status, 200);
+  assert.equal(second.status, 200);
+  assert.equal(second.headers.get('X-Cache'), 'HIT');
+  assert.equal(counter, 1, 'Only upstream cache misses count toward provider request budget');
+  assert.equal(calls.length, 1);
+  assert.equal((await worker.fetch(req('/quote?symbol=AAPL'),
+    { ...limited, FINNHUB_TOKEN: undefined }, ctx())).status, 503);
+});
+
 test('rejects extra params, invalid symbols and arbitrary endpoints', async () => {
   for (const path of ['/quote?symbol=aapl&token=stolen', '/quote?symbol=https://evil.test', '/finnhub?symbol=AAPL', '/financials?symbol=AAPL&freq=invalid', '/financials?symbol=AAPL&from=2026-02-30', '/quote?symbol=AAPL&symbol=MSFT']) {
     assert.ok([400, 404].includes((await worker.fetch(req(path, withHeaders()), env, ctx())).status), path);
@@ -100,13 +118,28 @@ test('browser CORS is restricted to dashboard origin', async () => {
 
 test('rate-limit rejection and upstream errors never expose secrets or cache failures', async () => {
   const denied = { ...env, FINNHUB_RATE_LIMITER: { limit: async () => ({ success: false }) } };
-  assert.equal((await worker.fetch(req('/quote?symbol=AAPL', withHeaders()), denied, ctx())).status, 429);
+  const blocked = await worker.fetch(req('/quote?symbol=AAPL', withHeaders()), denied, ctx());
+  assert.equal(blocked.status, 429);
+  assert.deepEqual(await blocked.json(), { error: 'Too many requests', source: 'gateway' });
   assert.equal(calls.length, 0);
   globalThis.fetch = async () => new Response('private upstream details', { status: 401 });
   const response = await worker.fetch(req('/quote?symbol=AAPL', withHeaders()), env, ctx());
   assert.equal(response.status, 502);
   assert.ok(!(await response.text()).includes('private upstream details'));
   assert.equal(entries.size, 0);
+});
+
+
+test('distinguishes provider quota from gateway throttling', async () => {
+  globalThis.fetch = async () => new Response('Upstream sensitive response', {
+    status: 429, headers: { 'Retry-After': '30' },
+  });
+  const r = await worker.fetch(req('/financials?symbol=NVDA'), env, ctx());
+  assert.equal(r.status, 429);
+  assert.deepEqual(await r.json(), { error: 'Finnhub rejected the request',
+    source: 'provider', upstreamStatus: 429 });
+  assert.equal(r.headers.get('Retry-After'), '30');
+  assert.equal(entries.size, 0, 'Do not cache upstream quota failures');
 });
 
 test('POST is not allowed', async () => {

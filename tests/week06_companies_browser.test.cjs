@@ -39,6 +39,7 @@ async function slide(page,id,value){
     const symbols=["MSFT","AAPL","HD","CAT"];
     const marketCalls=[];
     let marketUnavailable=false;
+    let limitNvdaFinancialsOnce=true;
     await page.route("https://finc-560-finnhub.joseph-caruso-pc.workers.dev/quote?*",route=>{
       const request=route.request();
       const parsed=new URL(request.url());
@@ -76,6 +77,12 @@ async function slide(page,id,value){
         json:{metric:{beta:1.15,peBasicExclExtraTTM:22.5,currentRatioAnnual:1.42}}}));
     await page.route("https://finc-560-finnhub.joseph-caruso-pc.workers.dev/financials?*",route=>{
       const ticker=new URL(route.request().url()).searchParams.get("symbol");
+      if(ticker==="NVDA"&&limitNvdaFinancialsOnce){
+        limitNvdaFinancialsOnce=false;
+        return route.fulfill({status:429,
+          headers:{"access-control-allow-origin":"*","Retry-After":"60"},
+          json:{error:"Too many requests",source:"gateway"}});
+      }
       if(ticker!=="NVDA")return route.fulfill({
         headers:{"access-control-allow-origin":"*"},
         json:{symbol:ticker,cik:ticker==="MTMCF"?"":1234567,data:[]}
@@ -434,6 +441,13 @@ async function slide(page,id,value){
     assert.equal(await page.locator("#company-chart").isHidden(),false);
     // Arbitrary ticker with complete as-reported filings exercises all three panels.
     await page.locator("#custom-ticker").fill("NVDA");
+    await page.locator("#symbol-form button").click();
+    await page.waitForFunction(()=>document.querySelector("#company-empty-message")
+      ?.textContent.includes("rate limit reached"));
+    assert.match(await page.locator("#company-empty-message").textContent(),
+      /request failure, not proof/);
+    assert.match(await page.locator("#research-status").textContent(),/HTTP 429/);
+    // Once a rate-limit window ends, retry should load the actual statements.
     await page.locator("#symbol-form button").click();
     await page.waitForFunction(()=>document.querySelector("#source-period")
       ?.textContent==="FY ending 2025-06-30");

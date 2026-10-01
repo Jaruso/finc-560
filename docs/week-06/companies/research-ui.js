@@ -172,7 +172,19 @@
     const response=await fetch(API+"/"+path+"?symbol="+encodeURIComponent(symbol),{
       method:"GET",mode:"cors",cache:"no-store",signal
     });
-    if(!response.ok)throw Error(path+" returned HTTP "+response.status);
+    if(!response.ok){
+      const body=await response.json().catch(()=>({}));
+      const source=body?.source==="gateway"?"Cloudflare proxy":
+        body?.source==="provider"?"Finnhub":"API";
+      const message=response.status===429
+        ?source+" rate limit reached (HTTP 429). Retry after the quota window."
+        :response.status===403
+          ?source+" refused "+path+" (HTTP 403); verify Finnhub plan access."
+          :response.status===503
+            ?"Cloudflare proxy is missing a runtime binding (HTTP 503)."
+            :source+" returned HTTP "+response.status+" for "+path+".";
+      throw Error(message);
+    }
     return response.json();
   }
   function macro(){
@@ -210,12 +222,13 @@
     const years=current.normalized?.annual.length||0;
     if(!curated&&years<5&&typeof onUnavailable==="function"){
       onUnavailable({ticker,profile:current.profile,years,
-        failed:reported.status==="rejected"});
+        failed:reported.status==="rejected",
+        reason:reported.status==="rejected"?reported.reason?.message:null});
     }
     const issues=[
       profile.status==="rejected"?"profile unavailable":null,
       metrics.status==="rejected"?"basic metrics unavailable":null,
-      reported.status==="rejected"?"as-reported statements unavailable":null,
+      reported.status==="rejected"?reported.reason?.message||"as-reported statements unavailable":null,
       current.normalized?.warning||null,
       !current.macro?"Treasury source unavailable":null
     ].filter(Boolean);
