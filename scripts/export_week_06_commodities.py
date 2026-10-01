@@ -68,38 +68,64 @@ def normalized(dataframe, today: datetime):
     }
 
 
-def uranium_series(now: datetime) -> dict:
-    """Monthly IMF uranium benchmark via FRED (source attribution required)."""
+# Physical, monthly IMF commodity benchmarks missing or stale in the WB file.
+# Wool's FRED units are US cents/kg; normalize to USD/kg (divide by 100).
+IMF_BENCHMARKS = (
+    ("uranium", "Uranium", "PURANUSDM", "USD/lb", "Critical minerals", 1.0),
+    ("barley", "Barley", "PBARLUSDM", "USD/metric ton", "Grains", 1.0),
+    ("wool-fine", "Wool (fine)", "PWOOLFUSDM", "USD/kg", "Soft commodities", 0.01),
+    ("wool-coarse", "Wool (coarse)", "PWOOLCUSDM", "USD/kg", "Soft commodities", 0.01),
+)
+
+
+def imf_benchmarks(now: datetime, frame=None) -> tuple[list[dict], list[dict]]:
+    """Return all verified IMF monthly benchmarks, reporting individual gaps."""
     import math
     import pandas as pd
     from scripts.world_bank_pink_sheet import next_month
-    sid = "PURANUSDM"
-    series = fetch_fred_series([sid], "1980-01-01", max_age_hours=0)[sid].dropna()
-    series = series[series.index < pd.Timestamp(now.date().replace(day=1))]
-    observations = [
-        {"date": month.strftime("%Y-%m-01"), "value": round(float(value), 5)}
-        for month, value in series.items()
-        if math.isfinite(float(value)) and float(value) > 0
-    ]
-    if len(observations) < 60 or (now.date().replace(day=1) -
-                                 datetime.fromisoformat(observations[-1]["date"]).date()).days > 125:
-        raise ValueError("IMF uranium series is too sparse or stale")
-    recent = observations[-60:]
-    if any(next_month(recent[i-1]["date"]) != recent[i]["date"]
-           for i in range(1, 60)):
-        raise ValueError("IMF uranium monthly history has material gaps")
-    return {
-        "id": "uranium", "label": "Uranium", "category": "Critical minerals",
-        "unit": "USD/lb",
-        "source": "International Monetary Fund Primary Commodity Prices via FRED",
-        "source_id": sid,
-        "source_url": "https://fred.stlouisfed.org/series/PURANUSDM",
-        "rights_note": "IMF statistical data: attribution required; educational use",
-        "frequency": "IMF monthly benchmark (not an exchange futures quotation)",
-        "last_observation": observations[-1]["date"],
-        "observations": observations,
-    }
 
+    sources = [x[2] for x in IMF_BENCHMARKS]
+    if frame is None:
+        frame = fetch_fred_series(sources, "1992-01-01", max_age_hours=0)
+    output, missing = [], []
+    for identifier, label, sid, unit, category, factor in IMF_BENCHMARKS:
+        try:
+            if sid not in frame:
+                raise ValueError("monthly benchmark is absent")
+            series = frame[sid].dropna()
+            series = series[series.index < pd.Timestamp(now.date().replace(day=1))]
+            observations = [
+                {"date": month.strftime("%Y-%m-01"),
+                 "value": round(float(value)*factor, 5)}
+                for month, value in series.items()
+                if math.isfinite(float(value)) and float(value) > 0
+            ]
+            if not observations or len(observations) < 60 or (
+                now.date().replace(day=1) -
+                datetime.fromisoformat(observations[-1]["date"]).date()).days > 125:
+                raise ValueError("fewer than 60 months or too stale")
+            recent = observations[-60:]
+            if any(next_month(recent[i-1]["date"]) != recent[i]["date"]
+                   for i in range(1, 60)):
+                raise ValueError("recent monthly history has missing months")
+            output.append({
+                "id": identifier, "label": label, "category": category,
+                "unit": unit,
+                "source": "International Monetary Fund Primary Commodity Prices via FRED",
+                "source_id": sid,
+                "source_url": f"https://fred.stlouisfed.org/series/{sid}",
+                "rights_note": ("IMF statistical data: attribution required; "
+                                + ("published cents/kg converted to USD/kg" if factor != 1
+                                   else "published unit retained")),
+                "frequency": "IMF monthly benchmark (not exchange futures)",
+                "last_observation": observations[-1]["date"],
+                "observations": observations,
+            })
+        except Exception as exc:
+            print("WARNING: IMF benchmark unavailable:", sid, str(exc))
+            missing.append({"name": label, "category": category,
+                            "reason": "IMF benchmark refresh unavailable or stale."})
+    return output, missing
 
 def main():
     now = datetime.now(timezone.utc)
@@ -125,22 +151,27 @@ def main():
          "reason": "Sawnwood, plywood and logs are available; none is an exchange lumber future."},
         {"name": "Milk", "category": "Livestock & food",
          "reason": "Needs a separate USDA regional/farmgate dairy benchmark."},
-        {"name": "Wool", "category": "Soft commodities",
-         "reason": "Specialty wool benchmark is not published in the current catalog."},
+
     ]
+    # Retain other verified providers if the IMF endpoint is temporarily down.
     try:
-        snapshot["commodities"].append(uranium_series(now))
+        international, gaps = imf_benchmarks(now)
+        snapshot["commodities"].extend(international)
+        unavailable.extend(gaps)
     except Exception as exc:
-        unavailable.append({"name": "Uranium", "category": "Critical minerals",
-                            "reason": "IMF benchmark refresh currently unavailable."})
-        print("WARNING: uranium benchmark skipped:", str(exc))
+        print("WARNING: IMF source refresh skipped:", str(exc))
+        unavailable.extend(
+            {"name": item[1], "category": item[4],
+             "reason": "IMF benchmark refresh currently unavailable."}
+            for item in IMF_BENCHMARKS
+        )
 
     snapshot["schema_version"] = 2
-    snapshot["method"] = "Verified EIA/FRED spot means, WB monthly benchmark prices and IMF uranium"
+    snapshot["method"] = "Verified EIA/FRED spot means, WB monthly benchmark prices and attributed IMF minerals and agricultural benchmarks"
     snapshot["source_catalog"] = [
         {"name": "EIA via FRED", "url": "https://fred.stlouisfed.org/"},
         {"name": "World Bank Pink Sheet", "url": url},
-        {"name": "IMF (uranium, when available)",
+        {"name": "IMF Primary Commodity Prices (when available)",
          "url": "https://www.imf.org/en/Research/commodity-prices"},
     ]
     snapshot["unavailable"] = unavailable
@@ -157,7 +188,7 @@ def main():
     from collections import Counter
     print("Categories:", dict(Counter(c["category"] for c in snapshot["commodities"])))
     print("Skipped/stale WB:", [(c["name"], c["reason"]) for c in skipped])
-    print("IMF Uranium available:", any(c["id"] == "uranium" for c in snapshot["commodities"]))
+    print("IMF benchmarks available:", [c["id"] for c in snapshot["commodities"] if c["id"] in {i[0] for i in IMF_BENCHMARKS}])
 
 
 if __name__ == "__main__":
