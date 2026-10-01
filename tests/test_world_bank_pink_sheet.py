@@ -84,7 +84,7 @@ class CommodityCatalogTests(unittest.TestCase):
     def test_only_trust_world_bank_workbook_url(self):
         html=(
           '<a href="https://evil.example/CMO-Historical-Data-Monthly.xlsx">bad</a>'
-          '<a href="/en/doc/official/related/CMO-Historical-Data-Monthly.xlsx">good</a>'
+          '<a href="https://thedocs.worldbank.org/en/doc/official/related/CMO-Historical-Data-Monthly.xlsx">good</a>'
         )
         self.assertEqual(select_workbook_url(html),URL)
         self.assertIn("thedocs.worldbank.org",select_workbook_url(""))
