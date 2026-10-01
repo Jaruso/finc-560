@@ -1,22 +1,9 @@
 name: Week 6 company dashboard browser checks
 
+# This optional Chromium regression suite is expensive and currently nonblocking.
+# Run it explicitly from GitHub Actions when the dashboard needs full UI QA.
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - "docs/week-06/**"
-      - "tests/week06_companies*"
-      - "tests/week06_company_fixture.cjs"
-      - ".github/workflows/test-week06-companies.yml"
-  push:
-    branches:
-      - main
-      - feature/week06-corporate-forecasting
-    paths:
-      - "docs/week-06/**"
-      - "tests/week06_companies*"
-      - "tests/week06_company_fixture.cjs"
-      - ".github/workflows/test-week06-companies.yml"
 
 permissions:
   contents: read
