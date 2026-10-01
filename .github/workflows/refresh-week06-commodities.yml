@@ -6,10 +6,13 @@ on:
     - cron: "17 15 * * 1-5"
   push:
     branches: [main]
+    # Refresh immediately only when retrieval/normalization code changes.
+    # Monthly data snapshots and dashboard edits rely on the weekday schedule.
     paths:
       - "scripts/export_week_06_commodities.py"
-      - "docs/week-06/commodities/**"
-      - ".github/workflows/refresh-week06-commodities.yml"
+      - "scripts/world_bank_pink_sheet.py"
+      - "src/data/providers/fred.py"
+      - "src/data/cache.py"
 
 permissions:
   contents: write
