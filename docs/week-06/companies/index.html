@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="SEC-backed public company performance and browser-side financial forecasting">
+  <title>Week 6 · Companies | Financial Visualization Lab</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="../../assets/styles.css?v=20260906-week3-redesign">
+  <link rel="stylesheet" href="../../assets/site-transitions.css?v=20261001">
+  <link rel="stylesheet" href="../dashboard.css?v=20261003-workspaces">
+  <link rel="stylesheet" href="./company.css?v=1">
+  <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+  <script defer src="./model.js?v=1"></script>
+  <script defer src="./app.js?v=1"></script>
+</head>
+<body>
+  <header class="site-header week-06-header">
+    <a class="lab-home" href="../../#week-05" aria-label="Return to Financial Visualization Lab">
+      <span class="back-arrow" aria-hidden="true">←</span>
+      <span class="lab-shared-title">Financial Visualization Lab</span>
+    </a>
+    <nav class="workspaces" aria-label="Week 6 dashboards">
+      <a href="../">Macro</a><a href="./" aria-current="page">Companies</a>
+    </nav>
+    <div class="course-side"><span class="course course-mark">FINC 560</span><span class="week-mark">/ WEEK 06</span></div>
+  </header>
+  <main class="dashboard">
+    <header class="hero">
+      <div><h1>Company forecasts</h1></div>
+      <div class="source-stamp">
+        <span class="stamp-label">SEC annual filings</span>
+        <strong id="source-period">Loading…</strong>
+        <span id="data-refresh">Featured-company snapshots</span>
+      </div>
+    </header>
+    <div id="data-error" class="error" role="alert" hidden></div>
+    <div class="workspace">
+      <aside class="controls-rail">
+        <section class="controls card" aria-label="Financial forecasting inputs">
+          <div class="section-line">
+            <h2>Company model</h2>
+            <button id="reset" class="secondary" type="button">Reset</button>
+          </div>
+          <label class="control">
+            <span>Company</span>
+            <select id="ticker" aria-label="Choose featured company" disabled>
+              <option>Loading SEC data…</option>
+            </select>
+          </label>
+          <p id="company-name" class="company-name" aria-live="polite"></p>
+          <div class="control-grid">
+            <label class="control">
+              <span>Revenue model</span>
+              <select id="method"><option value="cagr">Historical CAGR</option><option value="linear">Linear trend (OLS)</option></select>
+            </label>
+            <label class="control">
+              <span>Projection</span>
+              <select id="horizon"><option value="1">1 year</option><option value="2">2 years</option><option value="3" selected>3 years</option></select>
+            </label>
+            <label class="control slider-control">
+              <span>Annual growth adjustment <output id="growth-value" for="growth">+0 pp</output></span>
+              <input id="growth" type="range" min="-20" max="20" value="0" step="1">
+              <span class="endpoints"><span>−20 pp</span><span>0</span><span>+20 pp</span></span>
+            </label>
+            <label class="control slider-control">
+              <span>Profit margin adjustment <output id="margin-value" for="margin">+0 pp</output></span>
+              <input id="margin" type="range" min="-10" max="10" value="0" step="1">
+              <span class="endpoints"><span>−10 pp</span><span>0</span><span>+10 pp</span></span>
+            </label>
+          </div>
+          <div class="company-preview" aria-live="polite">
+            <div><span>Projected revenue</span><strong id="preview-revenue">—</strong></div>
+            <div><span>Projected net profit</span><strong id="preview-profit">—</strong></div>
+          </div>
+          <p id="model-note" class="compact-note">Projections calculate in this browser; featured SEC data refreshes on weekdays.</p>
+          <details class="fit-disclosure">
+            <summary>Forecast checks</summary>
+            <p class="validation-note">One-year expanding walk-forward revenue RMSE versus unchanged revenue. Small samples need caution.</p>
+            <p id="backtest" class="compact-note">Awaiting SEC financials…</p>
+          </details>
+          <details class="methods card">
+            <summary>Data and methods</summary>
+            <div class="methods-body">
+              <p>Historical revenue, operating income and net income come from the SEC's annual <a href="https://www.sec.gov/edgar/search/">EDGAR</a> Company Facts US-GAAP data, without interpolated quarters. Individual filing concepts and accession numbers are included in each published company snapshot.</p>
+              <p>Revenue forecasts use an OLS trend or a CAGR fitted to recent annual revenue. Operating and net margins use three-year recency-weighted historical averages. Growth adjustments compound relative to the selected baseline, while the margin adjustment changes both derived projected profit margins by the stated percentage points. This is a driver-based <em>conditional</em> projection, not a probability distribution or a complete integrated financial-statement model.</p>
+              <p>SEC filing dates, amendments, fiscal calendars and taxonomy changes can affect year-to-year comparability. Featured-company snapshots update when scheduled GitHub Actions successfully refreshes all companies. No API keys or simulated financials are included in the public site.</p>
+              <p><a id="sec-link" href="https://www.sec.gov/edgar/search/" target="_blank" rel="noopener noreferrer">View source financial statements</a></p>
+            </div>
+          </details>
+        </section>
+      </aside>
+      <section class="analysis-pane" aria-label="Company financial performance and projection">
+        <section class="kpis" aria-label="Financial indicators">
+          <div class="kpi card"><span>Reported revenue</span><strong id="kpi-revenue">—</strong></div>
+          <div class="kpi card"><span>Reported net income</span><strong id="kpi-profit">—</strong></div>
+          <div class="kpi card"><span>Projected revenue</span><strong id="kpi-forecast-revenue">—</strong></div>
+          <div class="kpi card prominent"><span>Projected net income</span><strong id="kpi-forecast-profit">—</strong></div>
+        </section>
+        <div class="chart-toolbar card">
+          <label class="chart-choice"><span>Measure</span>
+            <select id="metric">
+              <option value="revenue">Revenue</option>
+              <option value="operating">Operating income</option>
+              <option value="net">Net income</option>
+            </select>
+          </label>
+          <label class="chart-choice chart-context"><span>History</span>
+            <select id="history">
+              <option value="4">4 years</option>
+              <option value="5" selected>5 years</option>
+              <option value="6">6 years</option>
+              <option value="all">All available</option>
+            </select>
+          </label>
+          <span class="chart-badge">Reported → browser-modeled</span>
+        </div>
+        <div class="company-chart-pair" id="company-charts" aria-label="Aligned historical and projected annual financial charts">
+          <article class="chart-card card historical-chart">
+            <header class="chart-heading"><h2>Historical</h2><p>Actual annual SEC 10-K values</p></header>
+            <div id="history-chart" class="plot" role="img" aria-label="Reported historical financial statements"></div>
+          </article>
+          <article class="chart-card card projection-chart">
+            <header class="chart-heading"><h2>Projection</h2><p>Baseline vs adjusted scenario</p></header>
+            <div id="projection-chart" class="plot" role="img" aria-label="Browser-generated financial forecast versus selected scenario"></div>
+          </article>
+        </div>
+        <p id="chart-footnote" class="chart-footnote">Both charts share a financial scale. Projected values start at the final reported year.</p>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
