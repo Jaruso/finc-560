@@ -5,6 +5,7 @@ const ROUTES = Object.freeze({
   profile: { path: '/stock/profile2', ttl: 86400 },
   metrics: { path: '/stock/metric', ttl: 3600 },
   financials: { path: '/stock/financials-reported', ttl: 86400 },
+  news: { path: '/company-news', ttl: 900 },
 });
 
 function json(payload, status = 200, extraHeaders = {}) {
@@ -29,7 +30,9 @@ function isValidDate(date) {
 function parseParams(url, route) {
   const allowed = route === 'financials'
     ? new Set(['symbol', 'freq', 'from', 'to'])
-    : new Set(['symbol']);
+    : route === 'news'
+      ? new Set(['symbol', 'from', 'to'])
+      : new Set(['symbol']);
   for (const key of url.searchParams.keys()) {
     if (!allowed.has(key) || url.searchParams.getAll(key).length !== 1) return null;
   }
@@ -37,6 +40,18 @@ function parseParams(url, route) {
   if (!/^[A-Z0-9.^_-]{1,15}$/.test(symbol)) return null;
   const params = new URLSearchParams({ symbol });
   if (route === 'metrics') params.set('metric', 'all');
+  if (route === 'news') {
+    const from = url.searchParams.get('from');
+    const to = url.searchParams.get('to');
+    if (!isValidDate(from) || !isValidDate(to) || from > to) return null;
+    const days = (Date.parse(to + 'T00:00:00.000Z') -
+      Date.parse(from + 'T00:00:00.000Z')) / 86400000;
+    // News is deliberately a recent-feed operation, not an unbounded
+    // arbitrary-history proxy that can drain a free academic allowance.
+    if (days > 31) return null;
+    params.set('from', from);
+    params.set('to', to);
+  }
   if (route === 'financials') {
     const freq = url.searchParams.get('freq') || 'annual';
     if (!['annual', 'quarterly'].includes(freq)) return null;
@@ -142,7 +157,26 @@ export default {
     try {
       payload = await upstream.text();
       if (payload.length > 5_000_000) throw new Error('Oversized payload');
-      JSON.parse(payload);
+      const parsed = JSON.parse(payload);
+      if (route === 'news') {
+        // Finnhub returns an array. Do not cache a 200 OK body containing
+        // an upstream "error" object, and publish only fields we display.
+        if (!Array.isArray(parsed)) throw new Error('Invalid news payload');
+        payload = JSON.stringify(parsed.filter(article=>
+          article && typeof article.headline === 'string' &&
+          typeof article.url === 'string' && /^https:\/\//i.test(article.url) &&
+          Number.isFinite(Number(article.datetime)) &&
+          Number(article.datetime) >= Date.parse(params.get('from') + 'T00:00:00Z') / 1000 &&
+          Number(article.datetime) < Date.parse(params.get('to') + 'T00:00:00Z') / 1000 + 86400
+        ).map(article=>({
+          id: String(article.id ?? ''),
+          headline: article.headline.slice(0, 280),
+          summary: typeof article.summary === 'string'?article.summary.slice(0, 450):'',
+          source: typeof article.source === 'string'?article.source.slice(0, 100):'',
+          url: article.url,
+          datetime: Number(article.datetime),
+        })).sort((a,b)=>b.datetime-a.datetime).slice(0, 60));
+      }
     } catch {
       return json({ error: 'Invalid Finnhub response' }, 502, cors);
     }

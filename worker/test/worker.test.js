@@ -104,6 +104,61 @@ test('financials passes only normalized supported arguments', async () => {
   assert.equal(calls[0].url, 'https://finnhub.io/api/v1/stock/financials-reported?symbol=MSFT&freq=annual&from=2020-01-01&to=2025-01-01');
 });
 
+
+test('news permits only 31-day valid ranges and never exposes the token to clients', async () => {
+  const invalid = [
+    '/news?symbol=MSFT',
+    '/news?symbol=MSFT&from=2026-09-01',
+    '/news?symbol=MSFT&from=2026-09-01&to=2026-10-03',
+    '/news?symbol=MSFT&from=2026-02-30&to=2026-03-01',
+    '/news?symbol=MSFT&from=2026-09-30&to=2026-09-01',
+    '/news?symbol=MSFT&from=2026-09-01&to=2026-09-30&category=crypto',
+    '/news?symbol=MSFT&from=2026-09-01&from=2026-09-02&to=2026-09-30',
+  ];
+  for(const path of invalid){
+    const r=await worker.fetch(req(path),env,ctx());
+    assert.equal(r.status,400,path);
+  }
+  assert.equal(calls.length,0);
+  globalThis.fetch = async(url,options)=>{
+    calls.push({url,options});
+    return new Response(JSON.stringify([
+      {id:2,headline:'Later earnings update',source:'Publisher A',
+        summary:'Profit and cash-flow update.',url:'https://news.example/item2',
+        datetime:1790784000,image:'https://tracker.example/track',sensitive:'do not send'},
+      {id:1,headline:'Earlier company coverage',source:'Publisher B',summary:'',
+        url:'https://news.example/item1',datetime:1790697600},
+      {headline:'Dangerous link',source:'Publisher',url:'javascript:alert(1)',datetime:1790784000},
+    ]),{status:200});
+  };
+  const result=await worker.fetch(req('/news?symbol=msft&from=2026-09-01&to=2026-09-30'),env,ctx());
+  assert.equal(result.status,200);
+  assert.equal(calls[0].url,
+    'https://finnhub.io/api/v1/company-news?symbol=MSFT&from=2026-09-01&to=2026-09-30');
+  assert.equal(calls[0].options.headers['X-Finnhub-Token'],'private-finnhub-value');
+  assert.ok(!calls[0].url.includes('private-finnhub-value'));
+  const items=await result.json();
+  assert.equal(items.length,2);
+  assert.equal(items[0].headline,'Later earnings update');
+  assert.equal(items[0].image,undefined);
+  assert.equal(items[0].sensitive,undefined);
+  assert.ok(!(JSON.stringify(items)).includes('private-finnhub-value'));
+  await Promise.all(wait);
+  const cacheValues=[...entries.values()];
+  assert.equal(cacheValues[0].headers.get('Cache-Control'),'public, max-age=900');
+  const repeat=await worker.fetch(req('/news?symbol=MSFT&from=2026-09-01&to=2026-09-30'),env,ctx());
+  assert.equal(repeat.headers.get('X-Cache'),'HIT');
+  assert.equal(calls.length,1);
+});
+
+test('news fails closed on unexpected Finnhub responses, including 200 error objects', async()=>{
+  globalThis.fetch=async()=>new Response(JSON.stringify({error:'Not permitted'}),{status:200});
+  const r=await worker.fetch(req('/news?symbol=AAPL&from=2026-09-01&to=2026-09-30'),env,ctx());
+  assert.equal(r.status,502);
+  assert.equal(entries.size,0);
+  assert.equal((await r.json()).error,'Invalid Finnhub response');
+});
+
 test('browser CORS is restricted to dashboard origin', async () => {
   const foreign = await worker.fetch(req('/quote?symbol=AAPL', withHeaders({ Origin: 'https://example.org' })), env, ctx());
   assert.equal(foreign.status, 403);

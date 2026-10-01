@@ -34,55 +34,11 @@
 .market-change.is-down{color:#b84253}
 .market-quote-status{font-size:.62rem;line-height:1.35;color:var(--muted);margin:3px 0 0}
 
-/* Research panels scroll below the original single-viewport forecast. */
-body:has(.research-board){overflow:auto!important}
-.research-board{width:min(1740px,100%);margin:0 auto 30px;padding:16px clamp(10px,1.5vw,28px);
-  font-variant-numeric:tabular-nums}
-.research-header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
-  padding:10px 14px 14px;border-bottom:2px solid #b4dbd5}
-.research-eyebrow{font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;color:var(--teal);font-weight:800;margin:0 0 4px}
-.research-header h2{font-size:1.45rem;letter-spacing:-.03em;margin:0}
-.research-muted{color:var(--muted);font-size:.71rem;line-height:1.4;margin:4px 0}
-.research-meta{text-align:right;max-width:48%}
-.research-meta strong{font-size:.82rem}
-.research-meta a{font-size:.72rem;font-weight:700}
-.research-state{margin:8px 4px 12px;padding:8px 10px;background:#eaf5f2;border:1px solid #b9d8d1;
-  border-radius:7px;color:#315d60;font-size:.71rem;line-height:1.4}
-.research-columns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.research-columns[data-visible="2"]{grid-template-columns:repeat(2,minmax(0,1fr))}
-.research-columns[data-visible="1"]{grid-template-columns:minmax(0,1fr);max-width:1020px}
-.research-columns[hidden],.research-panel[hidden]{display:none!important}
-.research-panel{padding:14px 15px;min-width:0;display:flex;flex-direction:column;gap:9px}
-.research-panel-heading{display:flex;gap:9px;align-items:flex-start}
-.research-panel-heading h3{margin:0;font-size:1rem;letter-spacing:-.012em}
-.research-panel-heading p{margin:3px 0 0;font-size:.7rem;color:var(--muted)}
-.research-number{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;
-  background:var(--soft);color:#146d63;border:1px solid #b3d6cf;border-radius:6px;font-size:.7rem;font-weight:850}
-.research-kpis{font-size:.78rem;line-height:1.65;font-weight:750;color:#203a42;background:#f3f8f7;
-  border-left:3px solid var(--teal);padding:8px;margin:0;min-height:66px}
-.research-chart{width:100%;min-height:285px}
-.research-note{font-size:.68rem;line-height:1.5;color:var(--muted);margin:0}
-.research-sliders{display:grid;grid-template-columns:1fr;gap:5px}
-.research-sliders label{display:flex;gap:8px;justify-content:space-between;align-items:center;
-  font-size:.68rem;font-weight:750;color:#36505b}
-.research-sliders input[type=range]{max-width:48%;min-width:86px}
-.ticker-entry{margin:1px 0 8px}
-.ticker-entry>label{display:block;color:var(--muted);font-size:.66rem;font-weight:700;margin-bottom:4px}
-.ticker-entry-row{display:flex;gap:5px}
-.ticker-entry-row input{min-width:0;width:100%;padding:5px 7px;font-size:.76rem;border:1px solid #ccd8da;border-radius:6px}
-.ticker-input-status{font-size:.63rem;color:#a64c50;margin:2px 0;line-height:1.2}
-@media(max-width:1100px){
-  .research-columns,.research-columns[data-visible="2"],.research-columns[data-visible="1"]{
-    grid-template-columns:minmax(0,1fr);max-width:none
-  }
-}
-@media(max-width:650px){.research-header{align-items:flex-start;flex-direction:column}
-  .research-meta{text-align:left;max-width:100%}}
-
 .research-jump{font-size:.69rem;font-weight:850;color:#126c64;text-decoration:none;white-space:nowrap;
   background:#eaf5f2;border:1px solid #b9d8d1;border-radius:6px;padding:7px 9px}
 .research-jump:hover,.research-jump:focus-visible{text-decoration:underline;background:#d7eee8}
 #research-lab{scroll-margin-top:70px}
+
 
 /* Provide a deliberate, useful state for symbols without full filings. */
 .company-empty{flex:1 1 auto;min-height:230px;display:flex;flex-direction:column;
@@ -146,3 +102,59 @@ body:has(.research-board){overflow:auto!important}
   #chart-stage{flex:none}
   #chart-stage>.chart-card{min-height:310px}
 }
+
+/* Recent, attributed publisher coverage; the four-chart canvas stays above. */
+body:has(.news-board){overflow:auto!important}
+.news-board{width:min(1740px,100%);margin:0 auto 28px;
+  padding:16px clamp(10px,1.5vw,28px);font-variant-numeric:tabular-nums}
+.news-board-header{display:flex;justify-content:space-between;align-items:flex-end;
+  gap:16px;border-bottom:2px solid #b4dbd5;padding:9px 4px 14px}
+.news-eyebrow{font-size:.67rem;letter-spacing:.08em;text-transform:uppercase;
+  color:#17776e;font-weight:800;margin:0 0 4px}
+.news-board-header h2{font-size:1.3rem;letter-spacing:-.025em;margin:0;color:#1b303b}
+#news-company-title{color:#52706e;font-weight:650}
+.news-description{color:#52646d;font-size:.75rem;line-height:1.45;margin:5px 0 0}
+.news-board-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.news-provider{font-size:.68rem;color:#63757d;white-space:nowrap}
+#news-refresh{padding:7px 12px;border-radius:7px;white-space:nowrap;
+  border:1px solid #b5d1cb;background:#f3faf8;color:#185d55;
+  cursor:pointer;font-weight:800;font-size:.72rem}
+#news-refresh:hover{background:#e3f2ee}
+#news-refresh:disabled{cursor:wait;opacity:.6}
+.news-status{padding:9px 11px;margin:12px 0;color:#36575c;background:#eef8f5;
+  border:1px solid #c3dcd6;border-radius:7px;font-size:.73rem;line-height:1.4}
+.news-status[data-state="error"]{background:#fff5e9;color:#89502e;border-color:#edd0ae}
+.news-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:11px;align-items:stretch}
+.news-list:empty{display:none}
+.news-item{padding:14px 15px;display:flex;flex-direction:column;gap:7px;
+  background:#fff;border:1px solid #dce4e7;border-radius:10px;
+  min-width:0;box-shadow:0 1px 3px #23364208}
+.news-item-meta{display:flex;justify-content:space-between;gap:8px;
+  align-items:center;color:#607279;font-size:.66rem;line-height:1.3;margin:0}
+.news-item-meta>span{font-weight:800;color:#276c64}
+.news-item-meta time{text-align:right}
+.news-item-title{font-size:.94rem;line-height:1.35;margin:0;letter-spacing:-.01em}
+.news-item-title a{color:#193d48;text-decoration:none}
+.news-item-title a:hover,.news-item-title a:focus-visible{
+  color:#087c6d;text-decoration:underline}
+.news-item-summary{font-size:.76rem;line-height:1.5;margin:0;color:#53656b;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+.news-read-more{font-size:.7rem;font-weight:800;color:#0b796c;text-decoration:none;margin-top:auto}
+.news-read-more:hover{text-decoration:underline}
+.news-disclaimer{font-size:.66rem;color:#708088;margin:12px 3px 0;line-height:1.5}
+@media(max-width:830px){
+  .news-list{grid-template-columns:minmax(0,1fr)}
+  .news-board-header{align-items:flex-start;flex-direction:column}
+  .news-board-controls{justify-content:flex-start}
+}
+
+/* The arbitrary-ticker control remains in the Equities sidebar even though
+   the lower research panels were replaced with company news. */
+.ticker-entry{margin:1px 0 8px}
+.ticker-entry>label{display:block;color:var(--muted);font-size:.66rem;
+  font-weight:700;margin-bottom:4px}
+.ticker-entry-row{display:flex;gap:5px}
+.ticker-entry-row input{min-width:0;width:100%;padding:5px 7px;
+  font-size:.76rem;border:1px solid #ccd8da;border-radius:6px}
+.ticker-input-status{font-size:.63rem;color:#a64c50;margin:2px 0;line-height:1.2}

@@ -567,7 +567,7 @@
       :details.failed
         ?(details.reason||"Finnhub's financial statement request failed.")+
         " This is a request failure, not proof the company's filings are missing. "+
-        "Market quotes and company profile can still work."
+        "Quotes and recent company news may still be available."
         :details.validationWarning||
           ("Finnhub returned "+details.years+
           " usable fiscal years. Historical forecasts require at least five comparable annual reports.");
