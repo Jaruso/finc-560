@@ -175,7 +175,16 @@ test("projections can be hidden without altering historical or indexed compariso
 });
 
 test("historical-only cashflow studies remain unchanged by the projections switch",()=>{
-  const selected=frames();
+  // Curated issuer snapshots may omit cash-flow details; explicitly populate
+  // verified-like fixture observations to exercise disclosure-eligible charts.
+  const a=structuredClone(microsoft),b=structuredClone(apple);
+  for(const item of [a,b]){
+    item.annual.forEach(row=>{
+      row.cfo_musd=row.revenue_musd*.2;
+      row.capex_musd=row.revenue_musd*.04;
+    });
+  }
+  const selected=C.prepare([a,b],options,5);
   const original=C.study(selected,"equity-cashflows","net","nominal",options);
   const disabled=C.study(selected,"equity-cashflows","net","nominal",
     {...options,projectionsEnabled:false});
