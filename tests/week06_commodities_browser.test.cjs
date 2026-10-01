@@ -55,7 +55,7 @@ async function slide(page,n,value){
       ["Bonds","Equities","Commodities"]);
     assert.equal(await page.locator(".workspaces [aria-current=page]").textContent(),
       "Commodities");
-    assert.equal(await page.locator("#controls-heading").textContent(),"Forecast controls");
+    assert.equal(await page.locator("#controls-heading").textContent(),"Controls");
     assert.equal(await page.locator("#reset").textContent(),"Reset");
     assert.equal(await page.locator("#commodity-options input").count(),3);
     assert.equal(await page.locator("#commodity-summary").textContent(),"WTI crude oil");
