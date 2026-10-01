@@ -1,4 +1,4 @@
-/* Verified EIA/FRED monthly spot prices; scenarios calculate in this browser. */
+/* Verified multi-source monthly commodity benchmarks; browser scenario models. */
 (()=>{
 "use strict";
 const M=window.CommodityForecast,el=id=>document.getElementById(id);
@@ -15,8 +15,14 @@ function chartHeight(id){
   return Math.max(180,Math.floor(card.clientHeight-header.offsetHeight-
     (parseFloat(style.paddingTop)||0)-(parseFloat(style.paddingBottom)||0)-3));
 }
-const dollars=v=>Number.isFinite(v)?"$"+v.toLocaleString("en-US",
-  {minimumFractionDigits:2,maximumFractionDigits:3}):"—";
+const dollars=v=>Number.isFinite(v)?
+  (state.commodity?.unit==="cents/sheet"?"":"$")+
+  v.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:3})+
+  (state.commodity?.unit==="cents/sheet"?"¢":""):"—";
+const CATEGORIES=["Energy","Precious metals","Industrial metals","Critical minerals",
+  "Forest products","Grains","Oilseeds & oils","Soft commodities",
+  "Livestock & food","Fertilizers","Other commodities"];
+const categoryOf=c=>c.category||"Energy";
 const input=()=>({model:el("model").value,horizon:+el("horizon").value,
   shock:+el("shock").value,halfLife:+el("half-life").value,vol:+el("vol").value});
 function height(){
@@ -92,23 +98,28 @@ function draw(){
       " · "+opt.horizon+"-month horizon · "+
       (opt.vol?opt.vol+"× historical volatility":"bounds off");
     el("source-period").textContent="Through "+last.date.slice(0,7);
-    el("data-refresh").textContent="FRED snapshot · "+state.snapshot.retrieved_utc.slice(0,10);
-    el("market-description").textContent=c.label+" · "+c.unit+" · "+c.source;
+    el("data-refresh").textContent="Verified snapshot · "+state.snapshot.retrieved_utc.slice(0,10);
+    el("market-description").textContent=c.label+" · "+c.unit+" · "+c.source+
+      " · Last verified month "+c.last_observation.slice(0,7);
     el("chart-heading").textContent=c.label;
     el("chart-subtitle").textContent="Observed "+dollars(actual)+" · "+
       (oneYearBack?"12-month "+safeNumber((actual/oneYearBack.value-1)*100)+"% · ":"")+
       opt.horizon+"-month modeled "+dollars(forecast)+" · "+c.unit;
     el("commodity-source").href=c.source_url;
-    el("commodity-source").textContent="FRED: "+c.source_id;
+    el("commodity-source").textContent=c.source+" · "+c.source_id;
     const series=(rows,name,line,rank,extra={})=>({
       x:rows.map(r=>r.date),y:rows.map(r=>r.price),
       type:"scatter",mode:"lines",name,legendrank:rank,line,
-      hovertemplate:"%{x|%b %Y}: $%{y:,.2f}<extra>"+name+"</extra>",...extra
+      hovertemplate:"%{x|%b %Y}: "+(c.unit==="cents/sheet"?"":"$")+
+        "%{y:,.2f}"+(c.unit==="cents/sheet"?"¢":"")+
+        "<extra>"+name+"</extra>",...extra
     });
     const traces=[{x:history.map(p=>p.date),y:observed,type:"scatter",
       mode:"lines",name:"Reported (solid)",legendrank:10,
       line:{color:"#314b5c",width:2.6},
-      hovertemplate:"%{x|%b %Y}: $%{y:,.2f}<extra>Observed spot average</extra>"}];
+      hovertemplate:"%{x|%b %Y}: "+(c.unit==="cents/sheet"?"":"$")+
+        "%{y:,.2f}"+(c.unit==="cents/sheet"?"¢":"")+
+        "<extra>Observed physical benchmark</extra>"}];
     if(showBase)traces.push(series(f.baseline,"Unadjusted baseline (dotted)",
       {color:"#91a2ab",width:1.65,dash:"dot"},20));
     if(opt.vol){
@@ -130,7 +141,9 @@ function draw(){
         font:{size:10},autoexpand:false},
       xaxis:{type:"date",range:[first,end],dtick:history.length>36?"M12":"M3",
         tickformat:"%b %Y",showgrid:false,linecolor:"#dfe3e6",automargin:true},
-      yaxis:{title:{text:c.unit,font:{size:11}},tickprefix:"$",
+      yaxis:{title:{text:c.unit,font:{size:11}},
+        tickprefix:c.unit==="cents/sheet"?"":"$",
+        ticksuffix:c.unit==="cents/sheet"?"¢":"",
         gridcolor:"#edf1f2",range:range.slice(),zeroline:false,automargin:true},
       shapes:[
         {type:"rect",xref:"x",yref:"paper",x0:last.date,x1:end,
@@ -175,8 +188,8 @@ function renderExtras(c,history,f,opt){
   const chosen=new Set(state.canvas.selected());
   const observations=c.observations,last=history.at(-1);
   const color={main:"#0b7f73",navy:"#314b5c",secondary:"#aa7840",muted:"#8799a4"};
-  const fmt=c.unit,short=fmt.startsWith("USD/")?fmt:"USD";
-  const currency=n=>"$"+safeNumber(n,2);
+  const fmt=c.unit,short=fmt;
+  const currency=n=>dollars(n);
   function context(id,message){el(id+"-context").textContent=message;}
   function layout(id,{percent=false,category=false,bars=false,zero=false,horizon=false}={}){
     const cfg={
@@ -189,7 +202,8 @@ function renderExtras(c,history,f,opt){
       xaxis:{type:category?"category":"date",showgrid:false,
         linecolor:"#dfe3e6",automargin:true},
       yaxis:{title:percent?"Change (%)":fmt,
-        ticksuffix:percent?"%":"",tickprefix:percent?"":"$",
+        ticksuffix:percent?"%":fmt==="cents/sheet"?"¢":"",
+        tickprefix:percent||fmt==="cents/sheet"?"":"$",
         gridcolor:"#edf1f2",automargin:true},
       shapes:[],annotations:[],meta:{commodity:c.id,metric:id,
         source:c.source_url,modeled:horizon}
@@ -345,8 +359,65 @@ function reset(){
   state.plotHeight=null;state.canvas.reset();schedule();
 }
 function choose(){
-  state.commodity=state.snapshot.commodities.find(c=>c.id===el("commodity").value);
+  const selected=state.snapshot.commodities.find(c=>c.id===el("commodity").value);
+  if(!selected)return;
+  state.commodity=selected;
   state.context=null;state.range=null;draw();
+}
+function renderChoices(preferred){
+  if(!state.snapshot)return;
+  const category=el("commodity-category").value;
+  const term=el("commodity-search").value.trim().toLowerCase();
+  const eligible=state.snapshot.commodities
+    .filter(c=>(category==="all"||categoryOf(c)===category)&&
+      (!term||[c.label,categoryOf(c),c.source].join(" ").toLowerCase().includes(term)))
+    .sort((a,b)=>CATEGORIES.indexOf(categoryOf(a))-
+                   CATEGORIES.indexOf(categoryOf(b))||a.label.localeCompare(b.label));
+  const select=el("commodity"),previous=preferred||select.value;
+  select.replaceChildren();
+  let lastGroup=null,group=null;
+  for(const item of eligible){
+    const label=categoryOf(item);
+    if(label!==lastGroup){
+      group=document.createElement("optgroup");group.label=label;
+      select.append(group);lastGroup=label;
+    }
+    const op=document.createElement("option");op.value=item.id;
+    op.textContent=item.label;group.append(op);
+  }
+  select.disabled=eligible.length===0;
+  el("commodity-count").textContent=eligible.length+" verified benchmark"+
+    (eligible.length===1?"":"s")+
+    (category==="all"?" across "+new Set(eligible.map(categoryOf)).size+" categories":"")+
+    (eligible.length===0?" · Clear the search or change category.":"");
+  if(!eligible.length)return;
+  select.value=eligible.some(c=>c.id===previous)?previous:eligible[0].id;
+  choose();
+}
+function buildCatalog(snapshot){
+  const picker=el("commodity-category");
+  const categories=[...new Set(snapshot.commodities.map(categoryOf))]
+    .sort((a,b)=>CATEGORIES.indexOf(a)-CATEGORIES.indexOf(b));
+  picker.replaceChildren();
+  const all=document.createElement("option");all.value="all";
+  all.textContent="All categories ("+snapshot.commodities.length+")";picker.append(all);
+  for(const category of categories){
+    const op=document.createElement("option");
+    op.value=category;op.textContent=category+" ("+
+      snapshot.commodities.filter(c=>categoryOf(c)===category).length+")";
+    picker.append(op);
+  }
+  picker.value="all";picker.disabled=false;
+  el("commodity-search").disabled=false;
+  const gaps=snapshot.unavailable||[];
+  el("catalog-gaps").hidden=gaps.length===0;
+  el("gap-count").textContent=gaps.length?"("+gaps.length+")":"";
+  const list=el("catalog-gap-list");list.replaceChildren();
+  for(const item of gaps){
+    const li=document.createElement("li");
+    li.textContent=item.name+": "+item.reason;
+    list.append(li);
+  }
 }
 async function init(){
   try{
@@ -357,8 +428,10 @@ async function init(){
         state.plotHeight=null;schedule();
       }
     });
-    state.canvas.setAvailable([]); // Hide all studies until a verified FRED snapshot loads.
+    state.canvas.setAvailable([]); // No chart before a verified multi-source snapshot loads.
     el("commodity").addEventListener("change",choose);
+    el("commodity-category").addEventListener("change",()=>renderChoices());
+    el("commodity-search").addEventListener("input",()=>renderChoices());
     for(const id of ["model","horizon","half-life","vol","history"])
       el(id).addEventListener("change",schedule);
     el("shock").addEventListener("input",schedule);
@@ -380,24 +453,19 @@ async function init(){
       timer=setTimeout(()=>{state.plotHeight=null;schedule();},120);
     });
     const response=await fetch("./data.json",{cache:"no-cache"});
-    if(!response.ok)throw Error("FRED commodity snapshot unavailable.");
+    if(!response.ok)throw Error("Verified commodity catalog is unavailable.");
     const data=await response.json();
     if(data.status==="pending"){
       el("source-period").textContent="Refresh pending";
-      el("data-refresh").textContent="Awaiting verified FRED series";
+      el("data-refresh").textContent="Awaiting verified multi-source series";
       el("commodity-empty").hidden=false;
       return;
     }
     M.verify(data);state.snapshot=data;
-    el("commodity").replaceChildren();
-    for(const c of data.commodities){
-      const op=document.createElement("option");
-      op.value=c.id;op.textContent=c.label;el("commodity").append(op);
-    }
-    el("commodity").disabled=false;el("commodity-empty").hidden=true;
+    el("commodity-empty").hidden=true;
+    buildCatalog(data);
     const requested=new URLSearchParams(location.search).get("asset");
-    el("commodity").value=data.commodities.some(c=>c.id===requested)?requested:"wti";
-    choose();
+    renderChoices(data.commodities.some(c=>c.id===requested)?requested:"wti");
   }catch(ex){
     el("source-period").textContent="Unavailable";
     el("commodity-empty").hidden=false;error(ex);

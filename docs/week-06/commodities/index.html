@@ -9,11 +9,11 @@
 <link rel="stylesheet" href="../../assets/styles.css?v=20260906-week3-redesign">
 <link rel="stylesheet" href="../../assets/site-transitions.css?v=20261001">
 <link rel="stylesheet" href="../dashboard.css?v=multi-chart-commodities-20261001">
-<link rel="stylesheet" href="./commodities.css?v=multi-chart-20261001">
+<link rel="stylesheet" href="./commodities.css?v=commodity-catalog-20261001">
 <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
-<script defer src="./model.js?v=20261001"></script>
+<script defer src="./model.js?v=commodity-catalog-20261001"></script>
 <script defer src="../chart-canvas.js?v=20261001"></script>
-<script defer src="./app.js?v=multi-chart-20261001"></script>
+<script defer src="./app.js?v=commodity-catalog-20261001"></script>
 </head>
 <body>
 <header class="site-header week-06-header commodity-header">
@@ -41,10 +41,17 @@
           <button id="reset" class="secondary" type="button">Reset</button>
         </div>
         <div class="control-grid">
+          <label class="control"><span>Category</span>
+            <select id="commodity-category" disabled aria-label="Commodity category">
+              <option>Loading categories…</option>
+            </select>
+          </label>
           <label class="control"><span>Commodity</span>
+            <input id="commodity-search" type="search" autocomplete="off" placeholder="Find a commodity…" aria-label="Search commodity benchmarks" disabled>
             <select id="commodity" disabled><option>Loading verified prices…</option></select>
           </label>
-          <p id="market-description" class="commodity-description">Monthly spot prices, not exchange futures quotes.</p>
+          <p id="commodity-count" class="commodity-count" role="status" aria-live="polite"></p>
+          <p id="market-description" class="commodity-description">Verified monthly benchmarks, not exchange futures quotes.</p>
           <label class="control"><span>Price model</span>
             <select id="model">
               <option value="mean">Mean reversion (log AR1)</option>
@@ -85,10 +92,15 @@
           <div><span>Difference</span><strong id="preview-difference">—</strong></div>
           <p id="scenario-status" class="scenario-status">Historical data loading…</p>
         </div>
+        <details class="fit-disclosure" id="catalog-gaps" hidden>
+          <summary>Other benchmarks requiring specialized sources <span id="gap-count"></span></summary>
+          <p class="commodity-description">We only display verified underlying commodity prices. No ETF, mining-company or price-index substitutes.</p>
+          <ul id="catalog-gap-list"></ul>
+        </details>
         <details class="fit-disclosure">
           <summary>Forecast methodology</summary>
           <div class="methods-body">
-            <p>Real, monthly averaged daily spot prices from EIA through FRED; not real-time futures or live tradable quotes. The current incomplete month is excluded.</p>
+            <p>Verified EIA/FRED monthly spot-price averages, World Bank monthly nominal physical benchmarks, and an IMF uranium monthly reference when available. Sources are identified for each commodity. These are not real-time futures or live tradable quotes; the current incomplete month is excluded.</p>
             <p><strong>Mean reversion:</strong> A bounded log-price AR(1) fitted to up to 60 historical months. <strong>Trend:</strong> Recent 36-month log-linear OLS trend with a ±3.5% monthly slope cap. <strong>Unchanged:</strong> The latest observed monthly average.</p>
             <p><strong>Scenario:</strong> The price shock is a hypothetical immediate percentage adjustment. It decays by half over the selected number of months. This is a sensitivity calculation, not a supply-demand forecast.</p>
             <p><strong>Corridor:</strong> Trailing monthly realized log-return volatility multiplied by the square root of the forecast horizon. Displayed bounds are illustrative, not a calibrated confidence interval or empirically validated forecast errors.</p>
