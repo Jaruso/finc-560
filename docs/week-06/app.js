@@ -416,6 +416,29 @@
     if(frame!==null)return;
     frame=window.requestAnimationFrame(()=>{frame=null;render();});
   }
+  function renderYieldCards(){
+    // Latest observed constant-maturity yields, never inferred spot prices
+    // or fitted model values. Older snapshots only contain 5Y and 10Y.
+    const latest=data.observations.at(-1);
+    const observed=data.latest_treasury_yields||{};
+    const cards=[
+      ["DGS1","yield-one",null],
+      ["DGS2","yield-two",null],
+      ["DGS5","yield-five",latest.dgs5],
+      ["DGS10","yield-ten",latest.dgs10]
+    ];
+    for(const [series,id,legacy] of cards){
+      const value=observed[series]??legacy;
+      el(id).textContent=Number.isFinite(value)?pct(value):"—";
+      el(id).closest(".treasury-quote").setAttribute("aria-label",
+        series.slice(3)+"-year Treasury yield: "+
+        (Number.isFinite(value)?pct(value):"awaiting verified data"));
+    }
+    el("yield-quote-status").textContent="Federal Reserve / FRED · "+
+      data.latest_synchronized_daily_observation+
+      (cards.some(([series,,legacy])=>!Number.isFinite(observed[series]??legacy))?
+        " · 1Y/2Y pending verified refresh":" · Synchronized observed yields");
+  }
   function fillValidation(){
     const body=el("backtest-table");body.replaceChildren();
     for(const row of data.backtest.metrics){
@@ -477,6 +500,7 @@
         (data.latest_month_is_partial?" (partial month)":"");
       el("data-refresh").textContent="FRED model refreshed "+data.retrieved_utc.slice(0,16).replace("T"," ")+" UTC";
       fillValidation();
+      renderYieldCards();
       render();
     }catch(e){
       el("data-date").textContent="Unavailable";
@@ -484,6 +508,7 @@
       el("data-error").textContent=String(e.message||e)+
         " The dashboard will not substitute illustrative projections for missing fitted model data.";
       el("model-status").textContent="Awaiting verified fitted-model snapshot.";
+      el("yield-quote-status").textContent="Verified Treasury yields unavailable.";
     }
   }
   initialize();

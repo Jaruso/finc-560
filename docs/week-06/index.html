@@ -8,12 +8,12 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="../assets/styles.css?v=20260906-week3-redesign">
   <link rel="stylesheet" href="../assets/site-transitions.css?v=20261001">
-  <link rel="stylesheet" href="./dashboard.css?v=header-stack-20261001">
+  <link rel="stylesheet" href="./dashboard.css?v=treasury-quote-cards-20261001">
   <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
   
   <script defer src="./forecast_model.js?v=dns-engine"></script>
   <script defer src="./mobile-controls.js?v=20261001"></script>
-  <script defer src="./app.js?v=macro-four-chart-canvas-20261001"></script>
+  <script defer src="./app.js?v=treasury-quote-cards-20261001"></script>
 </head>
 <body>
   <header class="site-header week-06-header">
@@ -39,7 +39,38 @@
         <h2 id="controls-heading">Controls</h2>
         <button id="reset" type="button" class="secondary">Reset</button>
       </div>
-      <p class="model-status" id="model-status">Loading fitted Treasury forecast…</p>
+      <div class="treasury-quote-grid" role="group" aria-label="Latest observed Treasury yields">
+        <div class="treasury-quote">
+          <span>1Y Treasury</span><strong id="yield-one">—</strong>
+        </div>
+        <div class="treasury-quote">
+          <span>2Y Treasury</span><strong id="yield-two">—</strong>
+        </div>
+        <div class="treasury-quote">
+          <span>5Y Treasury</span><strong id="yield-five">—</strong>
+        </div>
+        <div class="treasury-quote">
+          <span>10Y Treasury</span><strong id="yield-ten">—</strong>
+        </div>
+      </div>
+      <p id="yield-quote-status" class="yield-quote-status" role="status" aria-live="polite">Loading verified Treasury yields…</p>
+      <div class="control sidebar-model-control">
+        <div class="model-method-heading">
+          <label for="treasury-model">Projection model</label>
+          <details class="model-help">
+            <summary aria-label="Explain the Diebold–Li Treasury projection model" title="How the Treasury model works">i</summary>
+            <div class="model-help-panel" role="note" aria-label="Treasury projection model explained">
+              <strong class="model-help-title">Diebold–Li (fixed model)</strong>
+              <p>The dashboard fits a fixed-decay Nelson–Siegel curve to eight synchronized Treasury maturities each month, producing level, slope, and curvature factors. Separate historical AR(1) regressions project these factors into future Treasury yields. This is a simplified two-stage Diebold–Li-style model; no alternative bond forecasting model is implemented.</p>
+              <p>The Fed-rate deviation applies a <em>conditional</em> scenario using an observed historical association between monthly policy-rate and yield-factor changes, not a causal estimate of a Fed decision. The historical-error ranges and rolling backtests characterize past forecast performance, not guaranteed future outcomes.</p>
+            </div>
+          </details>
+        </div>
+        <select id="treasury-model" disabled aria-describedby="model-status" aria-label="Projection model: Diebold–Li, fixed">
+          <option selected>Diebold–Li</option>
+        </select>
+        <p class="model-status treasury-model-status" id="model-status">Loading fitted Treasury forecast…</p>
+      </div>
       <div class="control-grid">
         <label class="control">
           <span>Forecast horizon</span>
