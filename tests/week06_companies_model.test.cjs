@@ -47,3 +47,15 @@ test("replay never uses future observations and reports naive comparator",()=>{
   assert.deepEqual(M.history(d,4),d.annual.slice(-4));
   assert.equal(firstHist.length,d.annual.length-1);
 });
+
+test("margin-only inputs change projected profits, not revenue or reported financials",()=>{
+  const d=fixture(),base=M.forecast(d,{method:"cagr",horizon:3});
+  const altered=M.forecast(d,{method:"cagr",horizon:3,margin:3});
+  assert.deepEqual(altered.historical,base.historical);
+  assert.deepEqual(altered.projected.map(row=>row.revenue_musd),
+    base.projected.map(row=>row.revenue_musd));
+  assert.equal(altered.projected[0].net_income_musd,base.projected[0].net_income_musd);
+  assert.ok(altered.projected.at(-1).net_income_musd>base.projected.at(-1).net_income_musd);
+  assert.ok(altered.projected.at(-1).operating_income_musd>base.projected.at(-1).operating_income_musd);
+  assert.equal(altered.baseline.at(-1).net_income_musd,base.projected.at(-1).net_income_musd);
+});

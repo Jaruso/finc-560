@@ -9,12 +9,12 @@
   <link rel="stylesheet" href="../../assets/styles.css?v=20260906-week3-redesign">
   <link rel="stylesheet" href="../../assets/site-transitions.css?v=20261001">
   <link rel="stylesheet" href="../dashboard.css?v=sidebar-titles-202610">
-  <link rel="stylesheet" href="./company.css?v=international-feedback-20261001">
+  <link rel="stylesheet" href="./company.css?v=profit-impact-20261001">
   <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
   <script defer src="./model.js?v=1"></script>
   <script defer src="./research.js?v=20261001"></script>
   <script defer src="./research-ui.js?v=international-feedback-20261001"></script>
-  <script defer src="./app.js?v=international-feedback-20261001"></script>
+  <script defer src="./app.js?v=profit-impact-20261001"></script>
 </head>
 <body>
   <header class="site-header week-06-header company-header">
@@ -121,7 +121,7 @@
             <select id="metric">
               <option value="revenue">Revenue</option>
               <option value="operating">Operating income</option>
-              <option value="net">Net income</option>
+              <option value="net" selected>Net income</option>
             </select>
           </label>
           <label class="chart-choice chart-context"><span>History</span>
@@ -137,9 +137,13 @@
           <a class="research-jump" href="#research-lab">Company research ↓</a>
           <span class="chart-badge">Reported → browser-modeled</span>
         </div>
+        <p id="revenue-margin-guidance" class="revenue-margin-guidance" hidden>
+          Profit-margin adjustments change projected earnings, not revenue.
+          <button id="view-profit-impact" class="secondary" type="button">View net income</button>
+        </p>
         <article class="chart-card card company-timeline" aria-label="Unified historical and projected annual financial chart">
           <header class="chart-heading">
-            <h2 id="chart-heading">Revenue</h2>
+            <h2 id="chart-heading">Net income</h2>
             <p>Annual financial performance and projected scenarios</p>
           </header>
           <div id="company-chart" class="plot" role="img" aria-label="Continuous historical company financials and browser-model forecast on one chronological axis"></div>
