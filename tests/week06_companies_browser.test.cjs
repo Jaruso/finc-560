@@ -61,8 +61,13 @@ async function slide(page,id,value){
       const ticker=new URL(route.request().url()).searchParams.get("symbol");
       assert.equal(route.request().headers().authorization,undefined);
       return route.fulfill({headers:{"access-control-allow-origin":"*"},json:{
-        name:ticker==="NVDA"?"Research Example Corporation":ticker,
-        ticker,currency:"USD",finnhubIndustry:"Technology",
+        name:ticker==="NVDA"?"Research Example Corporation":
+          ticker==="MTMCF"?"International Research Example":ticker,
+        ticker:ticker==="MTMCF"?"MTM.AX":ticker,
+        country:ticker==="MTMCF"?"AU":"US",
+        exchange:ticker==="MTMCF"?"ASX":"NASDAQ",
+        currency:ticker==="MTMCF"?"AUD":"USD",
+        finnhubIndustry:ticker==="MTMCF"?"Metals and mining":"Technology",
         shareOutstanding:15000,marketCapitalization:2000000
       }});
     });
@@ -72,7 +77,8 @@ async function slide(page,id,value){
     await page.route("https://finc-560-finnhub.joseph-caruso-pc.workers.dev/financials?*",route=>{
       const ticker=new URL(route.request().url()).searchParams.get("symbol");
       if(ticker!=="NVDA")return route.fulfill({
-        headers:{"access-control-allow-origin":"*"},json:{symbol:ticker,cik:1234567,data:[]}
+        headers:{"access-control-allow-origin":"*"},
+        json:{symbol:ticker,cik:ticker==="MTMCF"?"":1234567,data:[]}
       });
       const d=fixture("NVDA");
       const data=d.annual.map((r,i)=>({
@@ -405,6 +411,27 @@ async function slide(page,id,value){
     assert.ok(await page.locator("#company-chart").evaluate(g=>g.data?.length>=2),
       "Market-quote failure may not break the SEC-backed financial forecast");
     marketUnavailable=false;
+    // Real-world case: an international issuer has a valid market quote and
+    // company profile but the US SEC as-reported endpoint returns no CIK/data.
+    await page.locator("#custom-ticker").fill("MTMCF");
+    await page.locator("#symbol-form button").click();
+    await page.waitForFunction(()=>document.querySelector("#company-empty-title")
+      ?.textContent.includes("International company"));
+    assert.equal(await page.locator("#ticker").inputValue(),"MTMCF",
+      "Custom ticker should remain selected instead of displaying a blank dropdown");
+    assert.match(await page.locator("#company-empty-message").textContent(),/AUD/);
+    assert.match(await page.locator("#company-empty-message").textContent(),/premium access/);
+    assert.match(await page.locator("#research-company").textContent(),/International Research Example/);
+    assert.match(await page.locator("#research-sector").textContent(),/Metals/);
+    assert.match(await page.locator("#research-metrics").textContent(),/1\.15/);
+    assert.equal(await page.locator("#company-chart").isHidden(),true);
+    assert.equal(await page.locator("#company-empty").isHidden(),false);
+    assert.equal(await page.locator("#data-error").isVisible(),false);
+    // Users can immediately return to a featured issuer with verified charts.
+    await page.locator('[data-research-example="AAPL"]').click();
+    await page.waitForFunction(()=>document.querySelector("#company-chart")?.data?.length===2);
+    assert.equal(await page.locator("#company-empty").isHidden(),true);
+    assert.equal(await page.locator("#company-chart").isHidden(),false);
     // Arbitrary ticker with complete as-reported filings exercises all three panels.
     await page.locator("#custom-ticker").fill("NVDA");
     await page.locator("#symbol-form button").click();
