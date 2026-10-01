@@ -17,6 +17,7 @@ No visitor password, user login or browser authorization header is needed. Only 
 - `/profile?symbol=AAPL`: company profile, 24-hour edge TTL.
 - `/metrics?symbol=AAPL`: financial metrics, 1-hour edge TTL.
 - `/financials?symbol=AAPL&freq=annual&from=2015-01-01`: as-reported financials, 24-hour edge TTL; `freq=annual|quarterly` and ISO `from/to` dates optional.
+- `/news?symbol=AAPL&from=2026-09-01&to=2026-09-30`: recent Finnhub company news, 15-minute edge TTL. Both ISO UTC dates required; maximum 31 days. Returns at most 60 recent entries, with only article ID, headline, summary, publisher, HTTPS source URL, and publication timestamp. News is separate from financial filings: absence or access denial does not affect forecasts. Client displays up to 15 stories, with publisher attribution and direct source links. Entitlements and availability depend on the Finnhub subscription.
 
 All input parameters and paths are allowlisted. Finnhub authentication happens only inside the Worker using `FINNHUB_TOKEN` as a request header. Finnhub errors are returned in sanitized form without upstream body or credentials. Only successful JSON responses are cached on Cloudflare's edge. Cloudflare rate-limit binding caps approximately 20 calls/minute per location (not a global guarantee).
 
