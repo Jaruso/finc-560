@@ -9,10 +9,10 @@
   <link rel="stylesheet" href="../../assets/styles.css?v=20260906-week3-redesign">
   <link rel="stylesheet" href="../../assets/site-transitions.css?v=20261001">
   <link rel="stylesheet" href="../dashboard.css?v=20261003-workspaces">
-  <link rel="stylesheet" href="./company.css?v=1">
+  <link rel="stylesheet" href="./company.css?v=single-timeline">
   <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
   <script defer src="./model.js?v=1"></script>
-  <script defer src="./app.js?v=1"></script>
+  <script defer src="./app.js?v=single-timeline"></script>
 </head>
 <body>
   <header class="site-header week-06-header">
@@ -73,7 +73,7 @@
             <div><span>Projected revenue</span><strong id="preview-revenue">—</strong></div>
             <div><span>Projected net profit</span><strong id="preview-profit">—</strong></div>
           </div>
-          <p id="model-note" class="compact-note">Projections calculate in this browser; featured SEC data refreshes on weekdays.</p>
+          <p id="model-note" class="compact-note">Projections run in your browser; financials use dated verified snapshots.</p>
           <details class="fit-disclosure">
             <summary>Forecast checks</summary>
             <p class="validation-note">One-year expanding walk-forward revenue RMSE versus unchanged revenue. Small samples need caution.</p>
@@ -115,17 +115,14 @@
           </label>
           <span class="chart-badge">Reported → browser-modeled</span>
         </div>
-        <div class="company-chart-pair" id="company-charts" aria-label="Aligned historical and projected annual financial charts">
-          <article class="chart-card card historical-chart">
-            <header class="chart-heading"><h2>Historical</h2><p>Actual annual SEC 10-K values</p></header>
-            <div id="history-chart" class="plot" role="img" aria-label="Reported historical financial statements"></div>
-          </article>
-          <article class="chart-card card projection-chart">
-            <header class="chart-heading"><h2>Projection</h2><p>Baseline vs adjusted scenario</p></header>
-            <div id="projection-chart" class="plot" role="img" aria-label="Browser-generated financial forecast versus selected scenario"></div>
-          </article>
-        </div>
-        <p id="chart-footnote" class="chart-footnote">Both charts share a financial scale. Projected values start at the final reported year.</p>
+        <article class="chart-card card company-timeline" aria-label="Unified historical and projected annual financial chart">
+          <header class="chart-heading">
+            <h2 id="chart-heading">Revenue</h2>
+            <p>Annual financial performance and projected scenarios</p>
+          </header>
+          <div id="company-chart" class="plot" role="img" aria-label="Continuous historical company financials and browser-model forecast on one chronological axis"></div>
+        </article>
+        <p id="chart-footnote" class="chart-footnote">Reported performance continues into the browser-model forecast.</p>
       </section>
     </div>
   </main>
