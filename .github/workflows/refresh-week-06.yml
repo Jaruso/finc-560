@@ -5,17 +5,14 @@ on:
   schedule:
     - cron: "47 13 * * 1-5"
   push:
-    branches:
-      - main
-      - feature/week06-live-diebold-li
+    branches: [main]
+    # Never refetch FRED just because HTML, chart tests, or saved data changed.
+    # The scheduled job continues updating published data on weekdays.
     paths:
-      - "src/assignments/week_06.py"
+      - "src/assignments/week_06_forecast.py"
       - "scripts/export_week_06.py"
-      - "docs/week-06/**"
-      - "!docs/week-06/commodities/**"
-      - "!docs/week-06/companies/**"
-      - "tests/**"
-      - ".github/workflows/refresh-week-06.yml"
+      - "src/data/providers/fred.py"
+      - "src/data/cache.py"
 
 permissions:
   contents: write
