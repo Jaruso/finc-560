@@ -300,6 +300,46 @@ input[type="range"] { display: block; width: 100%; height: 19px; margin: 0;
   .dashboard{height:auto;min-height:calc(100dvh - 167px)}
 }
 
+/* Reuse the Equities quote-card rhythm and accessible model explanations. */
+.treasury-quote-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px;margin:0 0 6px}
+.treasury-quote{display:flex;flex-direction:column;gap:5px;min-width:0;
+  padding:10px;border:1px solid #c4ddda;border-radius:8px;background:#f5faf8}
+.treasury-quote>span{font-size:.65rem;font-weight:750;color:#345e62}
+.treasury-quote>strong{color:var(--ink);font-size:1.02rem;letter-spacing:-.025em;
+  font-variant-numeric:tabular-nums}
+.yield-quote-status{font-size:.61rem;color:var(--muted);line-height:1.4;
+  margin:0 0 12px}
+.sidebar-model-control{position:relative;margin-bottom:10px}
+.sidebar-model-control .model-method-heading{display:flex;align-items:center;
+  justify-content:space-between;gap:8px;margin-bottom:4px}
+.sidebar-model-control .model-method-heading>label{font-weight:775;font-size:.75rem}
+.sidebar-model-control select:disabled{opacity:1;color:var(--ink);
+  -webkit-text-fill-color:var(--ink);background-color:#f6f9f8;cursor:default}
+.treasury-model-status{background:none;border:0;padding:0;margin:4px 0 0;
+  color:var(--muted);font-size:.62rem;line-height:1.4}
+.sidebar-model-control .model-help{position:static;flex:0 0 auto}
+.sidebar-model-control .model-help>summary{display:grid;place-items:center;
+  list-style:none;cursor:pointer;width:21px;height:21px;
+  border:1px solid #9bbdb8;border-radius:50%;background:#f2faf8;color:#126b62;
+  font-size:.7rem;line-height:1;font-weight:850}
+.sidebar-model-control .model-help>summary::-webkit-details-marker{display:none}
+.sidebar-model-control .model-help>summary:hover,
+.sidebar-model-control .model-help>summary:focus-visible,
+.sidebar-model-control .model-help[open]>summary{
+  border-color:#237e73;background:#dff2ed;outline-offset:2px}
+.sidebar-model-control .model-help-panel{position:absolute;left:0;right:0;
+  top:calc(100% + 6px);z-index:30;max-height:min(370px,58vh);
+  overflow:auto;overscroll-behavior:contain;padding:12px 13px;
+  border:1px solid #9cbdb8;border-radius:9px;background:#fff;
+  box-shadow:0 8px 22px #123a3833;font-size:.71rem;font-weight:450;
+  line-height:1.5;color:#344e56}
+.sidebar-model-control .model-help-title{display:block;color:#173d45;
+  font-size:.82rem;margin-bottom:7px}
+.sidebar-model-control .model-help-panel p{margin:0 0 10px}
+.sidebar-model-control .model-help-panel p:last-child{margin-bottom:0}
+.sidebar-model-control .model-help-panel p strong{font-weight:800;color:#1a474e}
+
 /* Common forecast sidebar header: keep the utility action on the title row so
    the narrow rail does not spend a second line on a single small button. */
 .controls > .forecast-heading{
