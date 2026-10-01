@@ -135,7 +135,7 @@
       ? ["spread","lowSpread","highSpread"]
       : ["y5","low5","high5","y10","low10","high10"];
     const envelope=[-100,0,100].flatMap(shock=>
-      M.forecast(data,shock,24).flatMap(r=>futureKeys.map(key=>r[key])));
+      Model.forecast(data,shock,24).flatMap(r=>futureKeys.map(key=>r[key])));
     const values=domainY.concat(envelope);
     if(isSpread)values.push(0);
     const lo=Math.min(...values),hi=Math.max(...values);
