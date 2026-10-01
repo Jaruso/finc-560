@@ -24,12 +24,33 @@ test.beforeEach(setup);
 test.afterEach(() => { globalThis.fetch = originalFetch; globalThis.caches = originalCaches; });
 
 test('health and quotes are public; Finnhub secret and rate limiting remain mandatory', async () => {
-  assert.equal((await worker.fetch(req('/health'), env, ctx())).status, 200);
+  const healthy = await worker.fetch(req('/health'), env, ctx());
+  assert.equal(healthy.status, 200);
+  assert.deepEqual(await healthy.json(), { ok: true, checks: {
+    finnhubSecretBound: true, rateLimiterBound: true,
+  } });
   assert.equal((await worker.fetch(req('/quote?symbol=AAPL'), { ...env, FINNHUB_TOKEN: undefined }, ctx())).status, 503);
   assert.equal((await worker.fetch(req('/quote?symbol=AAPL'), { ...env, FINNHUB_RATE_LIMITER: undefined }, ctx())).status, 503);
   assert.equal(calls.length, 0);
   assert.equal((await worker.fetch(req('/quote?symbol=AAPL'), env, ctx())).status, 200);
   assert.equal(calls.length, 1);
+});
+
+test('health identifies only missing binding names and never exposes token values', async () => {
+  const noSecret = await worker.fetch(req('/health'), { ...env, FINNHUB_TOKEN: undefined }, ctx());
+  assert.equal(noSecret.status, 503);
+  assert.deepEqual(await noSecret.json(), { ok: false, checks: {
+    finnhubSecretBound: false, rateLimiterBound: true,
+  } });
+  const noLimiter = await worker.fetch(req('/health'), { ...env, FINNHUB_RATE_LIMITER: undefined }, ctx());
+  assert.equal(noLimiter.status, 503);
+  assert.deepEqual(await noLimiter.json(), { ok: false, checks: {
+    finnhubSecretBound: true, rateLimiterBound: false,
+  } });
+  const empty = await worker.fetch(req('/health'), {}, ctx());
+  assert.equal(empty.status, 503);
+  assert.ok(!(await empty.text()).includes('private-finnhub-value'));
+  assert.equal(calls.length, 0);
 });
 
 test('forwards only quote operation and keeps Finnhub token out of URL and body', async () => {

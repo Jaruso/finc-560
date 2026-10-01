@@ -75,7 +75,16 @@ export default {
       });
     }
     if (request.method !== 'GET') return json({ error: 'Method not allowed' }, 405, { ...cors, Allow: 'GET, OPTIONS' });
-    if (url.pathname === '/health') return json({ ok: true }, 200, cors);
+    // Public, non-sensitive diagnostic: presence only; never echo secret contents.
+    // Return 503 on incomplete configuration so uptime monitors don't report false health.
+    if (url.pathname === '/health') {
+      const checks = {
+        finnhubSecretBound: typeof env.FINNHUB_TOKEN === 'string' && env.FINNHUB_TOKEN.length > 0,
+        rateLimiterBound: typeof env.FINNHUB_RATE_LIMITER?.limit === 'function',
+      };
+      const ok = checks.finnhubSecretBound && checks.rateLimiterBound;
+      return json({ ok, checks }, ok ? 200 : 503, cors);
+    }
 
     const route = url.pathname.slice(1);
     const config = ROUTES[route];
