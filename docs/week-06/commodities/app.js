@@ -70,7 +70,9 @@ function draw(){
     const clipped=state.values.some(v=>v<range[0]||v>range[1]);
     const fit=el("fit-projection");
     fit.textContent=clipped?"Fit projection":state.range?"Restore scale":"Scale locked";
-    fit.disabled=!clipped&&!state.range;
+    fit.hidden=!state.canvas.visible("commodity-chart");
+    fit.disabled=fit.hidden||(!clipped&&!state.range);
+    el("chart-footnote").hidden=fit.hidden;
     const actual=last.value,base=f.baseline.at(-1).price,forecast=f.scenario.at(-1).price;
     const oneYearBack=c.observations.find(p=>p.date===M.shiftMonth(last.date,-12));
     el("shock-value").textContent=(opt.shock>0?"+":"")+opt.shock+"%";

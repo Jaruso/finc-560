@@ -174,6 +174,7 @@ async function slide(page,n,value){
     assert.ok(two[1].y>two[0].y&&two[0].x===two[1].x);
     await picker.locator('input[value="commodity-yoy"]').uncheck();
     assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"1");
+    assert.equal(await page.locator("#fit-projection").isHidden(),false);
     await picker.locator('input[value="commodity-chart"]').click();
     assert.equal(await picker.locator('input[value="commodity-chart"]').isChecked(),true,
       "Cannot deselect the final visible chart");
@@ -187,6 +188,7 @@ async function slide(page,n,value){
     assert.equal(await picker.locator("input:checked").count(),4);
     assert.equal(await picker.locator('input[value="commodity-shock"]').isDisabled(),true,
       "Zero-shock sensitivity must never create a useless chart");
+    await picker.locator("summary").click();
     assert.equal(await page.locator("#data-error").isVisible(),false);
     await page.setViewportSize({width:390,height:844});
     const mobile=await page.evaluate(()=>({

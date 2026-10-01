@@ -477,7 +477,8 @@
       // Revenue and margins are different financial measures. Make the
       // impact discoverable without silently changing the historical graph
       // or y-axis when the user turns a dial.
-      el("revenue-margin-guidance").hidden=el("metric").value!=="revenue";
+      el("revenue-margin-guidance").hidden=
+        !canvas.visible("company-chart")||el("metric").value!=="revenue";
       el("kpi-revenue").textContent=USD(last.revenue_musd);
       el("kpi-profit").textContent=USD(last.net_income_musd);
       el("kpi-forecast-revenue").textContent=USD(finish.revenue_musd);
@@ -497,7 +498,10 @@
       // The selected chart set changes with actual statement coverage. Do not
       // imply debt or interest data exists for curated earnings-only snapshots.
       canvas.setAvailable(availableEquityCharts(history));
-      if(canvas.visible("company-chart"))financialCharts(history,result);
+      const focused=canvas.visible("company-chart");
+      el("fit-company-projection").hidden=!focused;
+      el("chart-footnote").hidden=!focused;
+      if(focused)financialCharts(history,result);
       else el("fit-company-projection").disabled=true;
       renderExtraEquity(history,result,assumptions);
     }catch(error){showError(error);}
