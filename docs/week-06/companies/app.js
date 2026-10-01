@@ -820,7 +820,9 @@
     el("data-error").hidden=true;
     scaleContext=null;manualYRange=null;lastRenderedValues=null;
     const item=manifest.companies.find(row=>row.ticker===ticker);
-    let curated=null;
+    // A former comparison may become primary without repeating its verified
+    // annual-file request or losing its disclosures to a later rate limit.
+    let curated=cache.get(ticker)||null;
     try{
       if(item){
         curated=cache.get(ticker);
