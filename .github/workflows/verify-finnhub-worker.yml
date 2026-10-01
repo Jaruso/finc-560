@@ -1,0 +1,45 @@
+name: Verify published Finnhub Worker
+on:
+  push:
+    branches: [main]
+    paths:
+      - "worker/**"
+      - ".github/workflows/verify-finnhub-worker.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  production-routes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Wait for connected Cloudflare Workers Build and verify news route
+        env:
+          BASE: https://finc-560-finnhub.joseph-caruso-pc.workers.dev
+          EXPECTED_RELEASE: company-news-20261001
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 18); do
+            health_file=$(mktemp)
+            health_status=$(curl -sS --max-time 15 -o "$health_file" -w "%{http_code}" "$BASE/health" || true)
+            release=$(jq -r '.release // ""' "$health_file" 2>/dev/null || true)
+            ok=$(jq -r '.ok // false' "$health_file" 2>/dev/null || true)
+            # This intentionally omits required dates. The deployed *new*
+            # route returns 400 before calling Finnhub, so the probe spends
+            # zero provider quota. An outdated Worker returns 404.
+            news_status=$(curl -sS --max-time 15 -o /dev/null -w "%{http_code}" \
+              "$BASE/news?symbol=MSFT" || true)
+            echo "Attempt $attempt: /health=$health_status release=$release configured=$ok /news-invalid=$news_status"
+            rm -f "$health_file"
+            if [ "$health_status" = 200 ] &&
+               [ "$release" = "$EXPECTED_RELEASE" ] &&
+               [ "$ok" = true ] && [ "$news_status" = 400 ]; then
+              echo "Verified: the production Worker has the /news route and its runtime bindings."
+              exit 0
+            fi
+            if [ "$attempt" -lt 18 ]; then sleep 15; fi
+          done
+          echo "::error::Production Worker is stale or missing required runtime bindings. In Cloudflare > Workers & Pages > finc-560-finnhub > Settings > Builds, verify GitHub Jaruso/finc-560, branch main, root worker, and npx wrangler deploy. Check latest production build and deployment logs. FINNHUB_TOKEN must remain a runtime secret."
+          exit 1

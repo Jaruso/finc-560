@@ -1,5 +1,8 @@
 // FINC-560 Finnhub gateway. Keep all secrets out of GitHub and GitHub Pages.
 const DASHBOARD_ORIGIN = 'https://jaruso.github.io';
+// Public deployment marker: confirms that Cloudflare is serving the same
+// Worker generation as the latest GitHub source, without exposing secrets.
+const RELEASE = 'company-news-20261001';
 const ROUTES = Object.freeze({
   quote: { path: '/quote', ttl: 60 },
   profile: { path: '/stock/profile2', ttl: 86400 },
@@ -98,7 +101,7 @@ export default {
         rateLimiterBound: typeof env.FINNHUB_RATE_LIMITER?.limit === 'function',
       };
       const ok = checks.finnhubSecretBound && checks.rateLimiterBound;
-      return json({ ok, checks }, ok ? 200 : 503, cors);
+      return json({ ok, release: RELEASE, checks }, ok ? 200 : 503, cors);
     }
 
     const route = url.pathname.slice(1);
