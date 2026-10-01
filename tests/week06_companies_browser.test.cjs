@@ -281,6 +281,22 @@ async function selectPrimary(page,ticker){
     assert.equal(await page.locator(".kpis").count(),0);
     assert.equal(await picker.locator('input[value="equity-cashflows"]').isDisabled(),true,
       "Do not imply curated earnings-only filings contain cash-flow disclosures");
+    const headerStack=await page.evaluate(()=>{
+      const header=document.querySelector(".week-06-header");
+      const summary=document.querySelector("#chart-picker summary");
+      summary.scrollIntoView({block:"start"});
+      const headerRect=header.getBoundingClientRect();
+      const summaryRect=summary.getBoundingClientRect();
+      const overlapTop=Math.max(headerRect.top,summaryRect.top);
+      const overlapBottom=Math.min(headerRect.bottom,summaryRect.bottom);
+      const point=[summaryRect.left+10,overlapTop+4];
+      const target=overlapBottom>overlapTop?document.elementFromPoint(...point):null;
+      window.scrollTo(0,0);
+      return {overlap:overlapBottom>overlapTop,headerOnTop:header.contains(target)};
+    });
+    assert.equal(headerStack.overlap,true,"Chart picker should pass behind the sticky header");
+    assert.equal(headerStack.headerOnTop,true,
+      "Sticky header must visually and interactively cover the chart picker");
     await page.waitForFunction(()=>
       document.querySelector("#equity-revenue")?.data?.length===2 &&
       document.querySelector("#equity-operating")?.data?.length===2 &&
