@@ -210,7 +210,7 @@ async function selectPrimary(page,ticker){
     assert.equal(await page.locator(".company-timeline").count(),1);
     assert.equal(await page.locator("#history-chart, #projection-chart").count(),0);
     assert.equal(await page.locator(".workspaces [aria-current=page]").textContent(),"Equities");
-    assert.equal(await page.locator("#controls-heading").textContent(),"Forecast controls");
+    assert.equal(await page.locator("#controls-heading").textContent(),"Controls");
     const help=page.locator(".model-help");
     assert.equal(await help.locator("summary").getAttribute("aria-label"),
       "Explain revenue forecast models");
@@ -307,6 +307,35 @@ async function selectPrimary(page,ticker){
       document.querySelector("#equity-revenue")?.data?.length===2 &&
       document.querySelector("#equity-operating")?.data?.length===2 &&
       document.querySelector("#equity-margins")?.data?.length===4);
+    // The Revenue model switch hides ALL forecast lines, shading and
+    // scenario-only controls; turning it back on restores the same settings.
+    assert.equal(await page.locator("#projections-enabled").isChecked(),true);
+    await page.locator("#projections-enabled").uncheck();
+    await page.waitForFunction(()=>
+      document.querySelector("#company-chart")?.layout?.meta?.projectionsEnabled===false &&
+      document.querySelector("#company-chart")?.data?.length===1);
+    for(const [id,count] of [
+      ["company-chart",1],["equity-revenue",1],
+      ["equity-operating",1],["equity-margins",2]
+    ]){
+      const actual=await page.locator("#"+id).evaluate(node=>({
+        count:node.data.length,shapes:node.layout.shapes||[],
+        end:node.layout.xaxis.range.at(-1)
+      }));
+      assert.equal(actual.count,count,id+" must show reported traces only");
+      assert.equal(actual.shapes.length,0,id+" must remove projection shading");
+      assert.equal(actual.end,"2025-06-30",id+" must end at reported fiscal date");
+    }
+    assert.equal(await page.locator("#method").isHidden(),true);
+    assert.equal(await page.locator(".company-preview").isHidden(),true);
+    assert.equal(await page.locator("#revenue-margin-guidance").isHidden(),true);
+    await page.locator("#projections-enabled").check();
+    await page.waitForFunction(()=>
+      document.querySelector("#company-chart")?.layout?.meta?.projectionsEnabled===true &&
+      document.querySelector("#company-chart")?.data?.length===2);
+    assert.equal(await page.locator("#company-chart").evaluate(g=>g.layout.shapes.length),2);
+    assert.equal(await page.locator("#method").isVisible(),true);
+    assert.match(await page.locator("#company-chart-context").textContent(),/modeled/);
     assert.match(await page.locator("#company-chart-context").textContent(),/Latest reported/);
     assert.match(await page.locator("#equity-revenue-context").textContent(),/Latest reported/);
     const layoutRects=()=>page.locator("#chart-stage").evaluate(stage=>
@@ -766,6 +795,20 @@ async function selectPrimary(page,ticker){
     }));
     assert.deepEqual(comparative.tickers,["MSFT","AAPL"]);
     assert.equal(comparative.primary,"MSFT");
+    await page.locator("#projections-enabled").uncheck();
+    await page.waitForFunction(()=>document.querySelector("#company-chart")?.layout?.meta
+      ?.projectionsEnabled===false&&document.querySelector("#company-chart")?.data?.length===2);
+    for(const [id,count] of [["company-chart",2],["equity-revenue",2],
+      ["equity-operating",2],["equity-margins",4]]){
+      const plot=await page.locator("#"+id).evaluate(g=>({
+        count:g.data.length,shapes:g.layout.shapes.length
+      }));
+      assert.equal(plot.count,count,id+" has only reported comparative lines");
+      assert.equal(plot.shapes,0,id+" omits all projection dividers/fills");
+    }
+    await page.locator("#projections-enabled").check();
+    await page.waitForFunction(()=>document.querySelector("#company-chart")?.layout?.meta
+      ?.projectionsEnabled===true&&document.querySelector("#company-chart")?.data?.length===4);
     assert.equal(await page.locator(".market-quote-heading #company-name").textContent(),
       "Test Corporation","Comparisons must not crowd primary quote-card heading");
     assert.equal(comparative.indexed,true);
