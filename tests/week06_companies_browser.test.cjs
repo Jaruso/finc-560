@@ -673,6 +673,8 @@ async function slide(page,id,value){
     await page.waitForFunction(()=>
       document.querySelector("#news-company-title")?.textContent.includes("CASH") &&
       document.querySelector("#chart-picker input[value='equity-balance']")?.disabled===true);
+    await page.waitForFunction(()=>document.querySelector("#news-status")?.dataset.state==="ready" &&
+      document.querySelectorAll("#news-list .news-item").length>0);
     assert.ok(await page.locator("#news-list .news-item").count()>0);
     assert.equal(await page.locator("#data-error").isVisible(),false);
     assert.deepEqual(errors,[],"No uncaught browser errors during ticker/news loading");
