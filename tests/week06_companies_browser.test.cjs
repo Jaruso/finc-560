@@ -514,7 +514,7 @@ async function slide(page,id,value){
     assert.equal(await firstHeadline.textContent(),'<img src=x onerror=alert(1)> Quarterly update');
     assert.equal(await page.locator("#news-list img").count(),0,
       "Untrusted publisher headlines must be escaped as plain text");
-    assert.match(await firstHeadline.getAttribute("href"),/^https://news.example/AAPL/);
+    assert.ok((await firstHeadline.getAttribute("href")).startsWith("https://news.example/AAPL/"));
     assert.equal(await firstHeadline.getAttribute("rel"),"noopener noreferrer");
     await page.locator("#news-refresh").click();
     await page.waitForFunction(()=>document.querySelector("#news-status")
