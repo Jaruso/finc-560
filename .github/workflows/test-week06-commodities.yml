@@ -35,8 +35,8 @@ jobs:
       - name: Test commodity math and Python snapshot generator
         run: |
           python -m pip install "pandas>=2.2,<3" "pandas-datareader>=0.10,<0.11" "pyarrow>=17,<30" "setuptools>=70"
-          python -m unittest discover -s tests -p 'test_week06_commodities.py'
           python -m pip install "openpyxl>=3.1,<4"
+          python -m unittest discover -s tests -p 'test_week06_commodities.py'
           python -m unittest discover -s tests -p 'test_world_bank_pink_sheet.py'
           node --test tests/week06_commodities_model.test.cjs
       - name: Verify official World Bank, EIA and IMF commodity data
