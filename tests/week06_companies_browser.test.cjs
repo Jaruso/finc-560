@@ -84,7 +84,7 @@ async function slide(page,id,value){
       return {
         actual:{x:g.data[0].x,y:g.data[0].y,name:g.data[0].name},
         forecast:{x:g.data[1].x,y:g.data[1].y,name:g.data[1].name},
-        axes:Object.keys(g.layout).filter(k=>/^xaxis\\d+$|^yaxis\\d+$/.test(k)),
+        axes:Object.keys(g.layout).filter(k=>(k.startsWith("xaxis")&&k!=="xaxis")||(k.startsWith("yaxis")&&k!=="yaxis")),
         xaxis:g.layout.xaxis, yaxis:g.layout.yaxis,
         shapes:g.layout.shapes,annotations:g.layout.annotations,
         meta:g.layout.meta,
