@@ -43,12 +43,6 @@ async function waitGraph(page,id,length){
       contentType:"application/javascript"
     }));
     const symbols=["MSFT","AAPL","HD","CAT"];
-    await page.route("**/week-06/companies/data/manifest.json",route=>route.fulfill({
-      json:{schema_version:1,status:"ready",retrieved_utc:"2026-09-29T00:00:00+00:00",
-        companies:symbols.map(t=>({
-          ticker:t,company:t,file:"data/"+t+".json",latest_fiscal_end:"2025-06-30"
-        }))}
-    }));
     await page.route("**/week-06/companies/data/*.json",route=>{
       const ticker=route.request().url().match(/\/([A-Z]+)\.json$/)?.[1];
       const d=fixture(ticker);
@@ -60,6 +54,12 @@ async function waitGraph(page,id,length){
       }
       return route.fulfill({json:d});
     });
+    await page.route("**/week-06/companies/data/manifest.json",route=>route.fulfill({
+      json:{schema_version:1,status:"ready",retrieved_utc:"2026-09-29T00:00:00+00:00",
+        companies:symbols.map(t=>({
+          ticker:t,company:t,file:"data/"+t+".json",latest_fiscal_end:"2025-06-30"
+        }))}
+    }));
     // Existing Treasury dashboard must remain functional and the page-to-
     // page nav should require no verbose onboarding or extra giant heading.
     await page.goto(base+"/week-06/",{waitUntil:"domcontentloaded"});
@@ -70,7 +70,11 @@ async function waitGraph(page,id,length){
     await page.locator(".workspaces a").nth(1).click();
     await page.waitForURL("**/week-06/companies/");
     onCompany=true;
-    await page.waitForFunction(()=>document.querySelector("#ticker")?.disabled===false);
+    await page.waitForFunction(()=>document.querySelector("#ticker")?.disabled===false)
+      .catch(async error => {
+        throw new Error("Ticker failed to load: "+
+          await page.locator("#data-error").textContent()+"; "+error.message);
+      });
     await page.waitForFunction(()=>document.querySelector("#history-chart")?.data?.[0]?.x?.length===5);
     await page.waitForFunction(()=>document.querySelector("#projection-chart")?.data?.[0]?.x?.length===4);
     assert.equal(await page.locator(".workspaces [aria-current=page]").textContent(),"Companies");
