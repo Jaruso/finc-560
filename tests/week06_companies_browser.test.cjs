@@ -90,6 +90,8 @@ async function slide(page,id,value){
         meta:g.layout.meta,
         yRange:g.layout.yaxis.range.slice(),
         historicalPixel:g._fullLayout.yaxis.l2p(g.data[0].y.at(-1)),
+      plotHeight:g._fullLayout._size.h,
+      plotMargin:g._fullLayout.margin,
       };
     });
     assert.deepEqual(first.axes,[],"One Plotly x-axis and one y-axis only");
@@ -126,7 +128,9 @@ async function slide(page,id,value){
       names:g.data.map(d=>d.name),
       boundary:g.layout.meta.cutoffFraction,
       yRange:g.layout.yaxis.range.slice(),
-      historicalPixel:g._fullLayout.yaxis.l2p(g.data[0].y.at(-1))
+      historicalPixel:g._fullLayout.yaxis.l2p(g.data[0].y.at(-1)),
+      plotHeight:g._fullLayout._size.h,
+      plotMargin:g._fullLayout.margin
     }));
     assert.deepEqual(changed.historical,first.actual.y,
       "Input dials cannot change audited historical observations");
@@ -140,7 +144,9 @@ async function slide(page,id,value){
     assert.deepEqual(changed.yRange,first.yRange,
       "Growth dial must not change the historical financial y-scale");
     assert.ok(Math.abs(changed.historicalPixel-first.historicalPixel)<.001,
-      "Reported observations cannot move vertically as growth assumptions change");
+      "Reported observations cannot move vertically as growth assumptions change; "+
+      JSON.stringify({before:{pixel:first.historicalPixel,height:first.plotHeight,margin:first.plotMargin},
+                      after:{pixel:changed.historicalPixel,height:changed.plotHeight,margin:changed.plotMargin}}));
     assert.equal(await page.locator("#fit-company-projection").textContent(),"Fit projection");
     assert.equal(await page.locator("#fit-company-projection").isEnabled(),true);
 

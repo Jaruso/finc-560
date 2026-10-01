@@ -101,11 +101,11 @@
     const cutoff=(Date.parse(boundary)-Date.parse(xObserved[0]))/total;
     const layout={
       autosize:true,height:fullChartHeight(),
-      margin:{l:66,r:18,t:68,b:47},
+      margin:{l:66,r:18,t:68,b:47,autoexpand:false},
       paper_bgcolor:"#fff",plot_bgcolor:"#fff",
       font:{family:"Inter,system-ui,sans-serif",size:11,color:"#465865"},
       showlegend:true,hovermode:"closest",
-      legend:{orientation:"h",x:.5,xanchor:"center",y:1.14,font:{size:10}},
+      legend:{orientation:"h",x:.5,xanchor:"center",y:1.14,font:{size:10},autoexpand:false},
       xaxis:{
         type:"date",range:[xObserved[0],endDate],
         tickformat:"%Y",dtick:"M12",showgrid:false,
