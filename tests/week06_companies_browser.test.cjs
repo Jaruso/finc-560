@@ -208,10 +208,16 @@ async function slide(page,id,value){
     assert.equal(first.shapes.length,2,"Future shading and one cutoff divider");
     assert.equal(first.shapes[1].x0,first.forecast.x[0]);
     assert.equal(first.shapes[1].x1,first.forecast.x[0]);
-    assert.deepEqual(first.annotations.map(a=>a.text),
-      ["<b>REPORTED</b>","<b>FORECAST</b>"]);
-    assert.equal(first.actual.name,"Reported");
-    assert.equal(first.forecast.name,"Model forecast");
+    assert.deepEqual(first.annotations,[],
+      "Projection shading stays, but remove REPORTED/FORECAST labels above the graph");
+    assert.equal(first.actual.name,"Reported (solid)");
+    assert.equal(first.forecast.name,"Model forecast (dashed)");
+    const standardLegend=await page.locator("#company-chart").evaluate(g=>
+      g.data.filter(t=>t.showlegend!==false).map(t=>({name:t.name,dash:t.line?.dash||"solid"})));
+    assert.deepEqual(standardLegend,[
+      {name:"Reported (solid)",dash:"solid"},
+      {name:"Model forecast (dashed)",dash:"dash"}
+    ]);
     assert.ok(first.forecast.y.at(-1)>first.forecast.y[0]);
     const baseline=first.forecast.y.at(-1);
     const priorProfit=await page.locator("#kpi-forecast-profit").textContent();
@@ -236,8 +242,15 @@ async function slide(page,id,value){
       "Input dials cannot change audited historical observations");
     assert.equal(changed.baseline,baseline,
       "Unadjusted baseline must remain available for comparison");
-    assert.ok(changed.names.includes("Unadjusted baseline"));
-    assert.equal(changed.names[2],"Adjusted scenario");
+    assert.ok(changed.names.includes("Unadjusted baseline (dotted)"));
+    assert.equal(changed.names[2],"Adjusted scenario (dashed)");
+    const adjustedLegend=await page.locator("#company-chart").evaluate(g=>
+      g.data.filter(t=>t.showlegend!==false).map(t=>({name:t.name,dash:t.line?.dash||"solid"})));
+    assert.deepEqual(adjustedLegend,[
+      {name:"Reported (solid)",dash:"solid"},
+      {name:"Unadjusted baseline (dotted)",dash:"dot"},
+      {name:"Adjusted scenario (dashed)",dash:"dash"}
+    ]);
     assert.deepEqual(changed.boundary,first.meta.cutoffFraction,
       "Changing financial assumptions cannot move the historical boundary");
     assert.notEqual(await page.locator("#kpi-forecast-profit").textContent(),priorProfit);

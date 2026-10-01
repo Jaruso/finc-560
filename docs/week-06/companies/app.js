@@ -160,18 +160,19 @@
         "Vertical scale remains fixed while adjusting assumptions";
     const observedTrace={
       x:xObserved,y:actual,type:"scatter",mode:"lines+markers",
-      name:"Reported",line:{color,width:2.7},marker:{color,size:5},
+      name:"Reported (solid)",legendrank:10,line:{color,width:2.7},marker:{color,size:5},
       hovertemplate:"FY ending %{x|%b %Y}<br>$%{y:,.2f}B<extra>Annual reported</extra>"
     };
     const scenarioTrace={
       x:xProjected,y:projected,type:"scatter",mode:"lines+markers",
-      name:displayBaseline?"Adjusted scenario":"Model forecast",
+      name:displayBaseline?"Adjusted scenario (dashed)":"Model forecast (dashed)",
+      legendrank:20,
       line:{color,width:2.65,dash:"dash"},marker:{color,size:5},
       hovertemplate:"FY ending %{x|%b %Y}<br>$%{y:,.2f}B<extra>Browser model</extra>"
     };
     const baselineTrace={
       x:xProjected,y:baseline,type:"scatter",mode:"lines",
-      name:"Unadjusted baseline",
+      name:"Unadjusted baseline (dotted)",legendrank:30,
       line:{color:colors.baseline,width:1.9,dash:"dot"},
       hovertemplate:"FY ending %{x|%b %Y}<br>$%{y:,.2f}B<extra>Unadjusted model</extra>"
     };
@@ -203,15 +204,9 @@
         {type:"line",xref:"x",yref:"paper",x0:boundary,x1:boundary,
           y0:0,y1:1,line:{color:"#92aba7",width:1.35,dash:"dash"}}
       ],
-      annotations:[
-        {xref:"x",yref:"paper",x:boundary,y:1.055,xanchor:"right",
-          xshift:-10,showarrow:false,text:"<b>REPORTED</b>",
-          font:{size:10,color:"#314b5c"}},
-        {xref:"x",yref:"paper",x:boundary,y:1.055,xanchor:"left",
-          xshift:10,showarrow:false,
-          text:displayBaseline?"<b>SCENARIO</b>":"<b>FORECAST</b>",
-          font:{size:10,color:"#0b7f73"}}
-      ],
+      // Projection shading and the style-specific legend replace repeated
+      // labels floating above the observed/projected boundary.
+      annotations:[],
       meta:{singleChart:true,continuousCalendar:true,cutoffFraction:cutoff,
         observedStart:xObserved[0],observedEnd:boundary,
         projectionStart:xProjected[0],projectionEnd:endDate,
