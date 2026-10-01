@@ -36,14 +36,11 @@
         input.checked=chosen.has(input.value);
         input.disabled=!available.has(input.value);
       }
-      // Plotly reacts to window resize but not to CSS grid slot changes.
+      // Both workspaces explicitly recompute Plotly height from each chart
+      // card in onChange. Calling Plotly.Plots.resize here would introduce a
+      // second asynchronous resize that can move historical points between
+      // otherwise identical financial scenarios.
       requestAnimationFrame(()=>{
-        for(const id of selected){
-          const chart=document.getElementById(id);
-          if(chart?.data&&root.Plotly?.Plots?.resize){
-            Promise.resolve(root.Plotly.Plots.resize(chart)).catch(()=>{});
-          }
-        }
         if(typeof onChange==="function")onChange(selected.slice());
       });
     }
