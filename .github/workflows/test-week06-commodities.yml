@@ -41,6 +41,27 @@ jobs:
         run: |
           python scripts/export_week_06_commodities.py
           python -c "import json; s=json.load(open('docs/week-06/commodities/data.json')); assert s['status']=='ready' and len(s['commodities'])==3"
+      - name: Inspect World Bank official monthly commodity headers
+        run: |
+          python -m pip install "openpyxl>=3.1,<4"
+          python - <<'PY'
+          import requests, openpyxl, io
+          from bs4 import BeautifulSoup
+          landing=requests.get("https://www.worldbank.org/en/research/commodity-markets",timeout=30)
+          print("LANDING",landing.status_code)
+          soup=BeautifulSoup(landing.text,"html.parser")
+          urls=[a.get("href") for a in soup.select("a[href]") if "CMO-Historical-Data-Monthly" in a.get("href","")]
+          print("WORKBOOK LINKS",urls[:3])
+          link=urls[0] if urls else "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx"
+          res=requests.get(link,headers={"User-Agent":"Mozilla/5.0"},timeout=50)
+          print("XLSX",res.status_code,len(res.content),res.url)
+          res.raise_for_status()
+          book=openpyxl.load_workbook(io.BytesIO(res.content),read_only=True,data_only=True)
+          print("SHEETS",book.sheetnames)
+          ws=book["Monthly Prices"]
+          for idx,row in enumerate(ws.iter_rows(min_row=1,max_row=11,values_only=True),1):
+              print("HEADER ROW",idx,repr(row[:92]))
+          PY
       - name: Install Chromium and Plotly
         run: |
           npm install --no-save playwright@1.55.1 plotly.js-dist-min@2.32.0
