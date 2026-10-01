@@ -27,7 +27,7 @@ h1 span{color:var(--teal)}h2{letter-spacing:-.015em}
 input[type=range]{width:100%;cursor:pointer;accent-color:var(--teal)}
 .endpoints{display:flex;justify-content:space-between;color:var(--muted);font-size:.73rem;font-weight:500;margin-top:-10px}
 .fit-panel{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:15px 17px;border:1px solid #d9ece7;border-radius:10px;margin-top:25px;background:#f7fbfa}
-.fit-head{margin:0 0:4px;font-size:.86rem;font-weight:800}
+.fit-head{margin:0 0 4px;font-size:.86rem;font-weight:800}
 .info{font-size:.75rem;font-weight:500;color:var(--muted);margin-left:5px}
 #fit-summary{font-size:.82rem;color:var(--muted);margin:0}
 .control-note{margin:9px 0 0;font-size:.74rem;color:var(--muted)}

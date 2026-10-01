@@ -75,7 +75,15 @@
     byId("kpi-10").textContent = percent(base.dgs10);
     byId("kpi-base-spread").textContent = bp(base.dgs10 - base.dgs5);
     byId("kpi-terminal").textContent = bp(result.terminal.spread);
-    const msg = !result.crossing ? "No central-path inversion in this scenario."
+    const responseGap = state.beta10 - state.beta5;
+    const flatShockBp = Math.abs(responseGap) < 1e-9 ? null :
+      -(base.dgs10 - base.dgs5) * 100 / responseGap;
+    const required = flatShockBp === null
+      ? " Parallel responses cannot change the spread."
+      : " Flattening would require approximately " +
+        (flatShockBp < 0 ? "−" : "+") + Math.round(Math.abs(flatShockBp)) +
+        " bps under the selected assumptions.";
+    const msg = !result.crossing ? "No central-path inversion." + required
       : result.crossing.kind === "already" ? "Curve is already inverted at the baseline."
       : "Illustrative zero crossing: month " + nice(result.crossing.month, 1) + " of " + state.horizon + ".";
     byId("kpi-crossing").textContent = msg;

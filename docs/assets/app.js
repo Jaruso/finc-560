@@ -244,7 +244,7 @@ function applyResponsivePlotLayout(frame) {
 }
 
 function attachInteractions(scope = document) {
-  scope.querySelectorAll(".tab").forEach((tab) => {
+  scope.querySelectorAll(".tab[data-tab]").forEach((tab) => {
     tab.addEventListener("click", () => setActiveTab(tab.dataset.tab));
   });
 
