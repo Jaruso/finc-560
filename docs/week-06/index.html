@@ -6,15 +6,20 @@
   <meta name="description" content="FINC-560 interactive Treasury yield curve and hypothetical rate adjustment dashboard">
   <title>Week 6 | Treasury Yield Curve Scenario Lab</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="./dashboard.css">
+  <link rel="stylesheet" href="../assets/styles.css?v=20260906-week3-redesign">
+  <link rel="stylesheet" href="../assets/site-transitions.css?v=20261001">
+  <link rel="stylesheet" href="./dashboard.css?v=20261001">
   <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
   <script defer src="./model.js"></script>
   <script defer src="./app.js"></script>
 </head>
 <body>
-  <header class="topbar">
-    <a class="back-link" href="../#week-05">&larr; Financial Visualization Lab</a>
-    <span class="eyebrow">FINC-560 &nbsp;/&nbsp; Week 06</span>
+  <header class="site-header week-06-header">
+    <a class="lab-home" href="../#week-05" aria-label="Return to Financial Visualization Lab, Week 5">
+      <span class="back-arrow" aria-hidden="true">←</span>
+      <span class="lab-shared-title">Financial Visualization Lab</span>
+    </a>
+    <div class="course-side"><span class="course course-mark">FINC 560</span><span class="week-mark">/ WEEK 06</span></div>
   </header>
   <main class="dashboard">
     <header class="hero">
@@ -78,6 +83,12 @@
           <input id="corridor" type="range" min="0" max="100" value="25" step="5">
           <span class="endpoints"><span>0 bps</span><span>50 bps</span><span>100 bps</span></span>
         </label>
+      </div>
+      <div class="scenario-impact" role="group" aria-label="Live scenario results">
+        <div><span>Modeled terminal 5Y</span><strong id="preview-five">—</strong></div>
+        <div><span>Modeled terminal 10Y</span><strong id="preview-ten">—</strong></div>
+        <div class="scenario-impact-spread"><span>Modeled terminal spread</span><strong id="preview-spread">—</strong></div>
+        <p id="scenario-status" class="scenario-status" aria-live="polite">Loading scenario…</p>
       </div>
       <div class="fit-panel">
         <div>

@@ -7,6 +7,28 @@
   const DEFAULTS = { delta: -50, beta5: 0.65, beta10: 0.30, corridor: 25, horizon: 12, history: "10" };
   const ids = { delta: "delta", beta5: "beta5", beta10: "beta10", corridor: "corridor", horizon: "horizon", history: "history-window" };
   let snapshot = null, fitted = null;
+  // Keep Plotly redraws sequential per chart when a slider is dragged quickly.
+  // Otherwise overlapping Plotly.react promises can render stale assumptions.
+  const pendingPlots = new Map();
+  const drawing = new Set();
+  let scenarioFrame = null;
+  async function flushPlot(id) {
+    if (drawing.has(id)) return;
+    drawing.add(id);
+    try {
+      while (pendingPlots.has(id)) {
+        const next = pendingPlots.get(id);
+        pendingPlots.delete(id);
+        await window.Plotly.react(id, next.traces, next.layout, next.config);
+      }
+    } catch (err) {
+      const errorArea = byId("data-error");
+      errorArea.hidden = false;
+      errorArea.textContent = "Unable to update chart: " + String(err.message || err);
+    } finally {
+      drawing.delete(id);
+    }
+  }
   const lastRow = () => snapshot.observations[snapshot.observations.length - 1];
   const nice = (n, digits = 2) => n.toFixed(digits);
   const bp = n => (n >= 0 ? "+" : "−") + nice(Math.abs(n * 100), 0) + " bps";
@@ -41,8 +63,12 @@
         gridcolor: "#edf0f1", zeroline: false, automargin: true },
       ...options
     };
-    return window.Plotly.react(id, traces, layout,
-      { responsive: true, displayModeBar: false, displaylogo: false, scrollZoom: false });
+    pendingPlots.set(id, {
+      traces,
+      layout,
+      config: { responsive: true, displayModeBar: false, displaylogo: false, scrollZoom: false }
+    });
+    void flushPlot(id);
   }
 
   function renderHistory(rows) {
@@ -75,6 +101,20 @@
     byId("kpi-10").textContent = percent(base.dgs10);
     byId("kpi-base-spread").textContent = bp(base.dgs10 - base.dgs5);
     byId("kpi-terminal").textContent = bp(result.terminal.spread);
+    // Preview sits beside the controls, so an interaction has immediately
+    // visible consequences even when projected charts are below the fold.
+    byId("preview-five").textContent = percent(result.terminal.y5);
+    byId("preview-ten").textContent = percent(result.terminal.y10);
+    byId("preview-spread").textContent = bp(result.terminal.spread);
+    byId("preview-spread").classList.toggle("is-inverted", result.terminal.spread < 0);
+    const policyText = state.delta < 0
+      ? Math.abs(state.delta) + "-bp cumulative cut"
+      : state.delta > 0 ? state.delta + "-bp cumulative increase" : "unchanged policy rate";
+    const spreadChange = result.terminal.spread - (base.dgs10 - base.dgs5);
+    byId("scenario-status").textContent = "Modeled outcome: " + policyText +
+      " over " + state.horizon + " months changes the 10Y–5Y spread by " +
+      (spreadChange >= 0 ? "+" : "−") + nice(Math.abs(spreadChange * 100), 0) +
+      " bps. The historical charts above remain observed data.";
     const responseGap = state.beta10 - state.beta5;
     const flatShockBp = Math.abs(responseGap) < 1e-9 ? null :
       -(base.dgs10 - base.dgs5) * 100 / responseGap;
@@ -111,14 +151,18 @@
     });
   }
 
-  function render() {
-    if (!snapshot || !window.Plotly) return;
-    const state = readControls(), selected = period(snapshot.observations);
+  function updateSliderLabels() {
+    const state = readControls();
     byId("delta-value").textContent = (state.delta < 0 ? "−" : state.delta > 0 ? "+" : "") +
       Math.abs(state.delta) + " bps";
     byId("beta5-value").textContent = nice(state.beta5) + "×";
     byId("beta10-value").textContent = nice(state.beta10) + "×";
     byId("corridor-value").textContent = state.corridor + " bps";
+  }
+
+  function renderHistoryAndFit() {
+    if (!snapshot || !window.Plotly) return;
+    const selected = period(snapshot.observations);
     fitted = M.fitSensitivities(selected);
     byId("fit-summary").textContent = fitted
       ? "Selected history: " + fitted.samples + " consecutive month-to-month changes · 5Y " +
@@ -126,11 +170,39 @@
       : "Insufficient month-to-month policy-rate variation for an informative OLS estimate.";
     byId("apply-fit").disabled = !fitted;
     renderHistory(selected);
-    renderScenario(state);
+  }
+
+  function renderScenarioFromInputs() {
+    if (!snapshot || !window.Plotly) return;
+    updateSliderLabels();
+    renderScenario(readControls());
+  }
+
+  function scheduleScenarioRender() {
+    // Show the number next to the dial without waiting for Plotly.
+    updateSliderLabels();
+    if (scenarioFrame !== null) return;
+    scenarioFrame = window.requestAnimationFrame(() => {
+      scenarioFrame = null;
+      renderScenarioFromInputs();
+    });
+  }
+
+  function render() {
+    if (!snapshot || !window.Plotly) return;
+    renderHistoryAndFit();
+    renderScenarioFromInputs();
   }
 
   function initControls() {
-    Object.values(ids).forEach(id => byId(id).addEventListener("input", render));
+    ["delta", "beta5", "beta10", "corridor", "horizon"].forEach(name => {
+      const input = byId(ids[name]);
+      input.addEventListener("input", scheduleScenarioRender);
+      input.addEventListener("change", scheduleScenarioRender);
+    });
+    // History selection changes the observations and regression, not the
+    // hypothetical assumptions until the user explicitly applies the fit.
+    byId("history-window").addEventListener("change", renderHistoryAndFit);
     byId("reset").addEventListener("click", () => {
       setControls();
       byId("fit-message").textContent = "Manual scenario assumptions reset; historical fit remains informational.";
@@ -145,7 +217,7 @@
       byId("beta5").value = (Math.round(fitted.beta5 / 0.05) * 0.05).toFixed(2);
       byId("beta10").value = (Math.round(fitted.beta10 / 0.05) * 0.05).toFixed(2);
       byId("fit-message").textContent = "Loaded rounded historical co-movement estimates. These are still assumptions, not causal forecasts.";
-      render();
+      renderScenarioFromInputs();
     });
     setControls();
   }
