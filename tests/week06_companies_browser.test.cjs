@@ -83,7 +83,7 @@ async function slide(page,id,value){
           headers:{"access-control-allow-origin":"*","Retry-After":"60"},
           json:{error:"Too many requests",source:"gateway"}});
       }
-      if(ticker!=="NVDA")return route.fulfill({
+      if(!["NVDA","CASH","STRESS"].includes(ticker))return route.fulfill({
         headers:{"access-control-allow-origin":"*"},
         json:{symbol:ticker,cik:ticker==="MTMCF"?"":1234567,data:[]}
       });
@@ -101,10 +101,15 @@ async function slide(page,id,value){
             {concept:"us-gaap_NetIncomeLoss",unit:"USD",value:r.net_income_musd*1e6},
             {concept:"us-gaap_InterestExpenseNonOperating",unit:"USD",value:2300e6}
           ],
+          // CASH lacks debt disclosures; STRESS has debt but lacks a
+          // cash balance. This exercises one/two/three visible panel states.
           bs:[
-            {concept:"us-gaap_CashAndCashEquivalentsAtCarryingValue",unit:"USD",value:20000e6},
-            {concept:"us-gaap_LongTermDebtCurrent",unit:"USD",value:12000e6},
-            {concept:"us-gaap_LongTermDebtNoncurrent",unit:"USD",value:75000e6}
+            ...(ticker==="STRESS"?[]:
+              [{concept:"us-gaap_CashAndCashEquivalentsAtCarryingValue",unit:"USD",value:20000e6}]),
+            ...(ticker==="CASH"?[]:[
+              {concept:"us-gaap_LongTermDebtCurrent",unit:"USD",value:12000e6},
+              {concept:"us-gaap_LongTermDebtNoncurrent",unit:"USD",value:75000e6}
+            ])
           ],
           cf:[
             {concept:"us-gaap_NetCashProvidedByUsedInOperatingActivities",unit:"USD",value:26000e6},
@@ -517,6 +522,11 @@ async function slide(page,id,value){
     assert.match(await page.locator("#research-company").textContent(),/International Research Example/);
     assert.match(await page.locator("#research-sector").textContent(),/Metals/);
     assert.match(await page.locator("#research-metrics").textContent(),/1\.15/);
+    assert.equal(await page.locator("#research-columns").isHidden(),true,
+      "No research cards should appear when no analytical model is possible");
+    assert.equal(await page.locator(".research-panel:visible").count(),0);
+    assert.equal(await page.locator(".research-decision").count(),0,
+      "Decision supported footers must be removed, not hidden");
     assert.equal(await page.locator("#company-chart").isHidden(),true);
     assert.equal(await page.locator("#company-empty").isHidden(),false);
     assert.equal(await page.locator("#data-error").isVisible(),false);
@@ -547,12 +557,46 @@ async function slide(page,id,value){
     assert.equal(await page.locator("#health-chart").isHidden(),false);
     assert.equal(await page.locator("#stress-chart").isHidden(),false);
     assert.equal(await page.locator("#valuation-chart").isHidden(),false);
+    assert.equal(await page.locator(".research-panel:visible").count(),3,
+      "Three supported analytical panels remain visible");
+    assert.equal(await page.locator("#research-columns").getAttribute("data-visible"),"3");
     const before=await page.locator("#stress-kpis").textContent();
     await slide(page,"#rate-shock",200);
     assert.notEqual(await page.locator("#stress-kpis").textContent(),before);
     const valueBefore=await page.locator("#valuation-kpis").textContent();
     await slide(page,"#discount-rate",12);
     assert.notEqual(await page.locator("#valuation-kpis").textContent(),valueBefore);
+    // One supported model: cash flow and interest exist, but debt does not.
+    await page.locator("#custom-ticker").fill("CASH");
+    await page.locator("#symbol-form button").click();
+    await page.waitForFunction(()=>document.querySelector("#research-source")
+      ?.textContent.includes("As-reported 10-K") &&
+      document.querySelector("#research-columns")?.dataset.visible==="1");
+    assert.equal(await page.locator("#health-panel").isVisible(),true);
+    assert.equal(await page.locator("#health-chart").isVisible(),true);
+    assert.equal(await page.locator("#stress-panel").isHidden(),true);
+    assert.equal(await page.locator("#valuation-panel").isHidden(),true);
+    assert.equal(await page.locator("#health-kpis").textContent().then(t=>t.includes("Unavailable")),false,
+      "Do not leave unavailable financial KPIs inside an otherwise useful card");
+    assert.equal(await page.locator(".research-panel:visible").count(),1);
+    assert.equal(await page.locator("#health-panel .research-number").textContent(),"01");
+    // Two supported models: debt and interest are reported, but valuation
+    // cannot subtract net debt because no verified cash balance exists.
+    await page.locator("#custom-ticker").fill("STRESS");
+    await page.locator("#symbol-form button").click();
+    await page.waitForFunction(()=>document.querySelector("#research-columns")?.dataset.visible==="2" &&
+      document.querySelector("#research-company")?.textContent==="STRESS");
+    assert.equal(await page.locator("#health-panel").isVisible(),true);
+    assert.equal(await page.locator("#stress-panel").isVisible(),true);
+    assert.equal(await page.locator("#valuation-panel").isHidden(),true);
+    assert.equal(await page.locator(".research-panel:visible").count(),2);
+    assert.equal(await page.locator("#stress-panel .research-number").textContent(),"02");
+    // Once a fully reported issuer is selected, all three panels return.
+    await page.locator("#custom-ticker").fill("NVDA");
+    await page.locator("#symbol-form button").click();
+    await page.waitForFunction(()=>document.querySelector("#research-columns")?.dataset.visible==="3" &&
+      document.querySelector("#research-company")?.textContent==="Research Example Corporation");
+    assert.equal(await page.locator(".research-panel:visible").count(),3);
     assert.equal(await page.locator("#data-error").isVisible(),false);
     assert.deepEqual(errors,[],"No uncaught browser errors during research loading");
     onCompany=false;
