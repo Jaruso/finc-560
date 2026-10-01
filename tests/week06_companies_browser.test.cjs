@@ -57,9 +57,16 @@ async function slide(page,id,value){
     // Existing Treasury dashboard must remain functional and the page-to-
     // page nav should require no verbose onboarding or extra giant heading.
     await page.goto(base+"/week-06/",{waitUntil:"domcontentloaded"});
-    assert.equal(await page.locator(".hero h1").textContent(),"Treasury yields");
+    assert.equal(await page.locator(".hero").count(),0);
     assert.deepEqual(await page.locator(".workspaces a").allTextContents(),
-      ["Macro","Companies"]);
+      ["Macro","Equities"]);
+    assert.equal(await page.locator(
+      ".week-06-header > .workspaces + .source-stamp + .course-side").count(),1);
+    const macroCenter=await page.locator(".workspaces").evaluate(n=>{
+      const r=n.getBoundingClientRect();return r.x+r.width/2;
+    });
+    assert.ok(Math.abs(macroCenter-720)<1,
+      "Macro tab switch must be horizontally centered regardless of page");
     assert.equal(await page.locator(".workspaces [aria-current=page]").textContent(),"Macro");
     await page.locator(".workspaces a").nth(1).click();
     await page.waitForURL("**/week-06/companies/");
@@ -74,9 +81,14 @@ async function slide(page,id,value){
       document.querySelector("#company-chart")?.data?.[1]?.x?.length===4);
     assert.equal(await page.locator(".company-timeline").count(),1);
     assert.equal(await page.locator("#history-chart, #projection-chart").count(),0);
-    assert.equal(await page.locator(".workspaces [aria-current=page]").textContent(),"Companies");
+    assert.equal(await page.locator(".workspaces [aria-current=page]").textContent(),"Equities");
     assert.equal(await page.locator(".hero").count(),0,
-      "The redundant Company forecasts title/hero must be gone");
+      "Company forecasts title must stay removed");
+    const equitiesCenter=await page.locator(".workspaces").evaluate(n=>{
+      const r=n.getBoundingClientRect();return r.x+r.width/2;
+    });
+    assert.ok(Math.abs(equitiesCenter-macroCenter)<1,
+      "Workspace tabs must not move when switching dashboards");
     assert.equal(await page.locator(
       ".company-header > .workspaces + .source-stamp + .course-side").count(),1,
       "Annual financial reports must appear between workspace tabs and course label");
@@ -281,6 +293,12 @@ async function slide(page,id,value){
     assert.equal(mobile.plots,1,"Mobile also presents one continuous chart");
     assert.equal(mobile.meta.singleChart,true);
     assert.ok(mobile.cardWidth<=mobile.width);
+    const mobileTabCenter=await page.locator(".workspaces").evaluate(n=>{
+      const r=n.getBoundingClientRect();return r.x+r.width/2;
+    });
+    assert.ok(Math.abs(mobileTabCenter-195)<1,
+      "Workspace switch must also stay centered on mobile");
+    assert.equal(await page.locator(".week-06-header .source-stamp").isVisible(),true);
     await page.screenshot({path:"test-artifacts/week06-company-mobile.png",fullPage:true});
     assert.deepEqual(errors,[],"No uncaught browser errors");
     onCompany=false;

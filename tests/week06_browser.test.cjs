@@ -43,6 +43,20 @@ async function slide(page,id,v){
       const d=document.querySelector("#chart-yields");
       return d?.data?.length===8&&d.data[0].x.length===120&&d.data[6].x.length===13;
     });
+    assert.deepEqual(await page.locator(".workspaces a").allTextContents(),
+      ["Macro","Equities"]);
+    assert.equal(await page.locator(".hero").count(),0,
+      "No redundant Treasury yields headline or hero");
+    assert.equal(await page.locator(
+      ".week-06-header > .workspaces + .source-stamp + .course-side").count(),1,
+      "Historical date belongs between dashboard tabs and course label");
+    const macroTabCenter=await page.locator(".workspaces").evaluate(n=>{
+      const r=n.getBoundingClientRect();return r.x+r.width/2;
+    });
+    assert.ok(Math.abs(macroTabCenter-720)<1,
+      "Macro switch must be centered in the viewport");
+    assert.match(await page.locator(".week-06-header .source-stamp").textContent(),
+      /Historical data.*\d{4}-\d\d-\d\d/s);
     assert.deepEqual(await page.locator("#chart-primary option").allTextContents(),
       ["5Y & 10Y yields","10Y–5Y spread"]);
     assert.equal(await page.locator("#chart-stage > .chart-card:not(.is-view-hidden)").count(),1);
