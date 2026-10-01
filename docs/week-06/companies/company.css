@@ -15,3 +15,8 @@
   .company-preview{grid-template-columns:1fr 1fr}
   .company-preview>div{display:block}
 }
+
+/* Stable visual geometry when the scenario adds lines or clipping notices. */
+#fit-company-projection{min-width:116px;flex:0 0 116px}
+.chart-footnote{height:16px;min-height:16px;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;line-height:16px}

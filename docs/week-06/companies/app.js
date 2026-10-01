@@ -7,6 +7,9 @@
   const labels={revenue:"Revenue",operating:"Operating income",net:"Net income"};
   const cache=new Map();
   let manifest=null,company=null,sequence=0,scheduled=null;
+  // Manual range changes happen ONLY when the user explicitly presses
+  // Fit projection. Dials, model choice and forecast horizon cannot rescale.
+  let scaleContext=null,manualYRange=null,lastRenderedValues=null;
   const USD=n=>!Number.isFinite(n)?"—":"$"+(Math.abs(n)>=1000?
     (n/1000).toLocaleString("en-US",{maximumFractionDigits:1})+"B":
     n.toLocaleString("en-US",{maximumFractionDigits:0})+"M");
@@ -16,7 +19,20 @@
     method:el("method").value,horizon:Number(el("horizon").value),
     growth:Number(el("growth").value),margin:Number(el("margin").value)
   });
-  const fullChartHeight=()=>el("company-chart").clientHeight||340;
+  // Compute the plot viewport from the chart CARD, not the Plotly div
+  // itself. The div includes Plotly's previous inline height and a flex
+  // header; measuring it recursively would shrink the plot ~45px after
+  // every slider movement despite an identical y-axis range.
+  let cachedPlotHeight=null;
+  const fullChartHeight=()=>{
+    if(cachedPlotHeight!==null)return cachedPlotHeight;
+    const card=el("company-chart").closest(".chart-card");
+    const header=card.querySelector(".chart-heading");
+    const style=window.getComputedStyle(card);
+    const pad=(parseFloat(style.paddingTop)||0)+(parseFloat(style.paddingBottom)||0);
+    cachedPlotHeight=Math.max(235,Math.floor(card.clientHeight-header.offsetHeight-pad-2));
+    return cachedPlotHeight;
+  };
   // Plotly.react is async; rapidly changing sliders must not let an older
   // render paint over the most recent scenario.
   let queuedPlot=null,renderingPlot=false;
@@ -48,9 +64,33 @@
       throw Error("Forecast must connect to the final reported fiscal year.");
     }
     const displayBaseline=settings().growth!==0||settings().margin!==0;
-    const rangeValues=actual.concat(projected,displayBaseline?baseline:[]);
-    const min=Math.min(...rangeValues),max=Math.max(...rangeValues);
-    const padding=Math.max((max-min)*.14,Math.abs(max)*.035,.5);
+    // Lock scale for this COMPANY + MEASURE + HISTORICAL WINDOW. Two
+    // unadjusted model baselines at the maximum 3-year horizon anchor the
+    // default range: never include a live dial-adjusted projection here.
+    const context=[company.ticker,company.annual.at(-1).fiscal_end,
+      metric,el("history").value].join("|");
+    if(scaleContext!==context){
+      manualYRange=null;
+      scaleContext=context;
+    }
+    const referenceValues=actual.concat(["cagr","linear"].flatMap(method=>
+      M.forecast(company,{method,horizon:3,growth:0,margin:0})
+        .projected.map(r=>r[key]/1000)));
+    const baseMin=Math.min(...referenceValues),baseMax=Math.max(...referenceValues);
+    const basePadding=Math.max((baseMax-baseMin)*.14,Math.abs(baseMax)*.035,.5);
+    const defaultYRange=[baseMin-basePadding,baseMax+basePadding];
+    const range=manualYRange||defaultYRange;
+    const shownValues=actual.concat(projected,displayBaseline?baseline:[]);
+    lastRenderedValues=shownValues;
+    const overflow=shownValues.some(v=>v<range[0]||v>range[1]);
+    const fitButton=el("fit-company-projection");
+    fitButton.disabled=!overflow&&!manualYRange;
+    fitButton.textContent=overflow?"Fit projection":
+      manualYRange?"Restore scale":"Scale locked";
+    fitButton.title=overflow
+      ? "Explicitly expand the vertical scale to include this scenario"
+      : manualYRange?"Restore the fixed model-reference scale":
+        "Vertical scale remains fixed while adjusting assumptions";
     const observedTrace={
       x:xObserved,y:actual,type:"scatter",mode:"lines+markers",
       name:"Reported",line:{color,width:2.7},marker:{color,size:5},
@@ -74,11 +114,11 @@
     const cutoff=(Date.parse(boundary)-Date.parse(xObserved[0]))/total;
     const layout={
       autosize:true,height:fullChartHeight(),
-      margin:{l:66,r:18,t:68,b:47},
+      margin:{l:66,r:18,t:68,b:47,autoexpand:false},
       paper_bgcolor:"#fff",plot_bgcolor:"#fff",
       font:{family:"Inter,system-ui,sans-serif",size:11,color:"#465865"},
       showlegend:true,hovermode:"closest",
-      legend:{orientation:"h",x:.5,xanchor:"center",y:1.14,font:{size:10}},
+      legend:{orientation:"h",x:.5,xanchor:"center",y:1.14,font:{size:10},autoexpand:false},
       xaxis:{
         type:"date",range:[xObserved[0],endDate],
         tickformat:"%Y",dtick:"M12",showgrid:false,
@@ -87,7 +127,7 @@
       yaxis:{
         title:{text:unit,font:{size:11}},
         tickprefix:"$",ticksuffix:"B",
-        gridcolor:"#edf1f2",range:[min-padding,max+padding],
+        gridcolor:"#edf1f2",range:range.slice(),
         zeroline:false,automargin:true,
       },
       shapes:[
@@ -108,11 +148,15 @@
       meta:{singleChart:true,continuousCalendar:true,cutoffFraction:cutoff,
         observedStart:xObserved[0],observedEnd:boundary,
         projectionStart:xProjected[0],projectionEnd:endDate,
-        measure:metric,unit,model:result.method}
+        measure:metric,unit,model:result.method,
+        yScale:manualYRange?"manual-locked":"baseline-locked",
+        defaultYRange:defaultYRange.slice(),projectionClipped:overflow}
     };
     el("chart-heading").textContent=labels[metric];
-    el("chart-footnote").textContent=labels[metric]+" · "+unit+
-      " · Solid = reported • Dashed = browser forecast • Dotted = unadjusted baseline";
+    el("chart-footnote").textContent=overflow
+      ? labels[metric]+" · Projection extends outside the locked scale. Use Fit projection to view it."
+      : labels[metric]+" · "+unit+
+        " · Solid = reported • Dashed = browser forecast • Dotted = unadjusted baseline";
     const traces=displayBaseline?
       [observedTrace,baselineTrace,scenarioTrace]:
       [observedTrace,scenarioTrace];
@@ -210,7 +254,21 @@
         el(id).addEventListener("change",queueRender);
       }
       el("ticker").addEventListener("change",()=>void loadCompany(el("ticker").value));
+      el("fit-company-projection").addEventListener("click",()=>{
+        if(!lastRenderedValues||!company)return;
+        if(el("fit-company-projection").textContent==="Restore scale"){
+          manualYRange=null;
+        }else{
+          // This change to the y-axis is *explicit*, never slider-driven.
+          const lo=Math.min(...lastRenderedValues),hi=Math.max(...lastRenderedValues);
+          const pad=Math.max((hi-lo)*.14,Math.abs(hi)*.035,.5);
+          manualYRange=[lo-pad,hi+pad];
+        }
+        render();
+      });
       el("reset").addEventListener("click",()=>{
+        manualYRange=null;
+        scaleContext=null;
         el("method").value="cagr";el("horizon").value="3";
         el("growth").value="0";el("margin").value="0";
         el("metric").value="revenue";el("history").value="5";
@@ -218,7 +276,8 @@
       });
       let timer;
       window.addEventListener("resize",()=>{
-        clearTimeout(timer);timer=setTimeout(render,130);
+        clearTimeout(timer);
+        timer=setTimeout(()=>{cachedPlotHeight=null;render();},130);
       });
       const res=await fetch("./data/manifest.json",{cache:"no-cache"});
       if(!res.ok)throw Error("Featured SEC financial snapshots are not published yet.");
