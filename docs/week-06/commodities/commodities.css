@@ -15,3 +15,17 @@
 @media(max-width:800px){.commodity-chart-card{min-height:420px}}
 
 .commodity-source{font-size:.63rem;color:var(--teal);align-self:flex-end}
+
+
+/* Match the Bonds four-panel grid and keep all chart options genuinely readable. */
+#chart-stage{flex:1 1 auto;min-height:0}
+#chart-stage>.chart-card{min-height:0}
+#chart-stage .plot{min-height:110px}
+#chart-stage .commodity-chart-card{flex:initial}
+#chart-stage[data-count="1"] .commodity-chart-card{flex:initial}
+#commodity-empty:not([hidden]){background:#fff;border:1px dashed #9abbb5;
+  border-radius:8px;text-align:center;padding:30px;margin:12px auto;width:100%}
+@media(max-width:1000px){
+  #chart-stage{flex:none}
+  #chart-stage>.chart-card{min-height:310px}
+}

@@ -3,7 +3,18 @@
 "use strict";
 const M=window.CommodityForecast,el=id=>document.getElementById(id);
 const state={snapshot:null,commodity:null,context:null,range:null,values:null,
-  plotHeight:null,pending:null,painting:false,tick:false};
+  plotHeight:null,pending:null,painting:false,tick:false,canvas:null};
+const OPTIONS=["commodity-chart","commodity-yoy","commodity-returns","commodity-vol",
+  "commodity-seasonality","commodity-models","commodity-shock","commodity-drawdown"];
+const DEFAULT=OPTIONS.slice(0,4);
+const plotQueue=new Map(),plotting=new Set();
+const safeNumber=(v,n=1)=>(Number.isFinite(v)?v.toFixed(n):"—");
+function chartHeight(id){
+  const card=el(id).closest(".chart-card"),header=card.querySelector(".chart-heading");
+  const style=getComputedStyle(card);
+  return Math.max(180,Math.floor(card.clientHeight-header.offsetHeight-
+    (parseFloat(style.paddingTop)||0)-(parseFloat(style.paddingBottom)||0)-3));
+}
 const dollars=v=>Number.isFinite(v)?"$"+v.toLocaleString("en-US",
   {minimumFractionDigits:2,maximumFractionDigits:3}):"—";
 const input=()=>({model:el("model").value,horizon:+el("horizon").value,
@@ -13,8 +24,7 @@ function height(){
   const card=el("commodity-chart").closest(".chart-card");
   const header=card.querySelector(".chart-heading");
   const css=getComputedStyle(card);
-  return state.plotHeight=Math.max(245,Math.floor(card.clientHeight-header.offsetHeight-
-    (parseFloat(css.paddingTop)||0)-(parseFloat(css.paddingBottom)||0)-3));
+  return state.plotHeight=chartHeight("commodity-chart");
 }
 function error(ex){el("data-error").hidden=false;
   el("data-error").textContent=String(ex.message||ex);}
@@ -24,7 +34,9 @@ async function paint(){
   try{
     while(state.pending){
       const data=state.pending;state.pending=null;
-      await Plotly.react("commodity-chart",data.traces,data.layout,{
+      if(!state.canvas.visible("commodity-chart"))continue;
+      await Plotly.react("commodity-chart",data.traces,
+        {...data.layout,height:height()},{
         responsive:true,scrollZoom:false,displayModeBar:false,displaylogo:false});
     }
   }catch(ex){error(ex);}
@@ -34,6 +46,10 @@ function draw(){
   const c=state.commodity;if(!c)return;
   try{
     const opt=input(),f=M.forecast(c,opt),history=M.history(c,el("history").value);
+    // A zero shock has no sensitivity curve worth displaying. Disable it,
+    // without leaving an empty card when a scenario resets to baseline.
+    state.canvas.setAvailable(OPTIONS.filter(id=>
+      id!=="commodity-shock"||opt.shock!==0));
     const first=history[0].date,last=history.at(-1),end=f.scenario.at(-1).date;
     const key=[c.id,c.last_observation,el("history").value].join("|");
     if(state.context!==key){state.context=key;state.range=null;}
@@ -54,7 +70,9 @@ function draw(){
     const clipped=state.values.some(v=>v<range[0]||v>range[1]);
     const fit=el("fit-projection");
     fit.textContent=clipped?"Fit projection":state.range?"Restore scale":"Scale locked";
-    fit.disabled=!clipped&&!state.range;
+    fit.hidden=!state.canvas.visible("commodity-chart");
+    fit.disabled=fit.hidden||(!clipped&&!state.range);
+    el("chart-footnote").hidden=fit.hidden;
     const actual=last.value,base=f.baseline.at(-1).price,forecast=f.scenario.at(-1).price;
     const oneYearBack=c.observations.find(p=>p.date===M.shiftMonth(last.date,-12));
     el("shock-value").textContent=(opt.shock>0?"+":"")+opt.shock+"%";
@@ -77,8 +95,9 @@ function draw(){
     el("data-refresh").textContent="FRED snapshot · "+state.snapshot.retrieved_utc.slice(0,10);
     el("market-description").textContent=c.label+" · "+c.unit+" · "+c.source;
     el("chart-heading").textContent=c.label;
-    el("chart-subtitle").textContent="Reported monthly spot averages · "+c.unit+
-      " · Conditional price scenarios";
+    el("chart-subtitle").textContent="Observed "+dollars(actual)+" · "+
+      (oneYearBack?"12-month "+safeNumber((actual/oneYearBack.value-1)*100)+"% · ":"")+
+      opt.horizon+"-month modeled "+dollars(forecast)+" · "+c.unit;
     el("commodity-source").href=c.source_url;
     el("commodity-source").textContent="FRED: "+c.source_id;
     const series=(rows,name,line,rank,extra={})=>({
@@ -127,9 +146,192 @@ function draw(){
     el("chart-footnote").textContent=clipped?
       "Scenario extends beyond the fixed scale. Click Fit projection to inspect it.":
       "Solid: observed · Dashed: forecast · Dotted: baseline/volatility guides.";
-    state.pending={traces,layout};void paint();
+    if(state.canvas.visible("commodity-chart")){
+      state.pending={traces,layout};void paint();
+    }
+    renderExtras(c,history,f,opt);
   }catch(ex){error(ex);}
 }
+
+function plotAdditional(id,traces,layout){
+  if(!state.canvas.visible(id))return;
+  plotQueue.set(id,{traces,layout});
+  if(plotting.has(id))return;
+  plotting.add(id);
+  void (async()=>{
+    try{
+      while(plotQueue.has(id)){
+        const payload=plotQueue.get(id);plotQueue.delete(id);
+        if(!state.canvas.visible(id))continue;
+        await Plotly.react(id,payload.traces,
+          {...payload.layout,height:chartHeight(id)},{
+            responsive:true,scrollZoom:false,displayModeBar:false,displaylogo:false});
+      }
+    }catch(ex){error(ex);}
+    finally{plotting.delete(id);}
+  })();
+}
+function renderExtras(c,history,f,opt){
+  const chosen=new Set(state.canvas.selected());
+  const observations=c.observations,last=history.at(-1);
+  const color={main:"#0b7f73",navy:"#314b5c",secondary:"#aa7840",muted:"#8799a4"};
+  const fmt=c.unit,short=fmt.startsWith("USD/")?fmt:"USD";
+  const currency=n=>"$"+safeNumber(n,2);
+  function context(id,message){el(id+"-context").textContent=message;}
+  function layout(id,{percent=false,category=false,bars=false,zero=false,horizon=false}={}){
+    const cfg={
+      autosize:true,height:chartHeight(id),
+      margin:{l:60,r:12,t:45,b:46,autoexpand:false},
+      paper_bgcolor:"#fff",plot_bgcolor:"#fff",
+      font:{family:"Inter,system-ui,sans-serif",size:10,color:"#465865"},
+      legend:{orientation:"h",x:.5,xanchor:"center",y:1.17,font:{size:10}},
+      showlegend:bars,hovermode:"closest",
+      xaxis:{type:category?"category":"date",showgrid:false,
+        linecolor:"#dfe3e6",automargin:true},
+      yaxis:{title:percent?"Change (%)":fmt,
+        ticksuffix:percent?"%":"",tickprefix:percent?"":"$",
+        gridcolor:"#edf1f2",automargin:true},
+      shapes:[],annotations:[],meta:{commodity:c.id,metric:id,
+        source:c.source_url,modeled:horizon}
+    };
+    if(zero)cfg.shapes=[{type:"line",xref:"paper",yref:"y",x0:0,x1:1,
+      y0:0,y1:0,line:{color:"#9aabb2",dash:"dot",width:1}}];
+    if(horizon)cfg.xaxis.range=[f.scenario[0].date,f.scenario.at(-1).date];
+    return cfg;
+  }
+  const series=(name,x,y,col,{unit="%",dashed=false}={})=>({
+    type:"scatter",mode:"lines",x,y,name,
+    line:{color:col,width:2.2,dash:dashed?"dash":"solid"},
+    hovertemplate:"%{x|%b %Y}: %{y:.2f}"+unit+"<extra>"+name+"</extra>"
+  });
+  const cutoff=history[0].date;
+  const monthValue=new Map(observations.map(o=>[o.date,o.value]));
+  // Build returns using only adjacent calendar months (never bridge gaps).
+  const returns=observations.flatMap((o,i)=>i&&
+    M.shiftMonth(observations[i-1].date,1)===o.date
+    ?[{date:o.date,change:(o.value/observations[i-1].value-1)*100,
+      log:Math.log(o.value/observations[i-1].value)}]:[]);
+  const visibleReturns=returns.filter(r=>r.date>=cutoff);
+  if(chosen.has("commodity-returns")){
+    const r=visibleReturns;
+    context("commodity-returns",r.length?
+      "Latest reported monthly change "+(r.at(-1).change>=0?"+":"")+
+      safeNumber(r.at(-1).change)+"% · Actual spot-price averages.":"No adjacent monthly returns");
+    const cfg=layout("commodity-returns",{percent:true,zero:true});
+    cfg.yaxis.title="Monthly change (%)";
+    plotAdditional("commodity-returns",[
+      {type:"bar",x:r.map(p=>p.date),y:r.map(p=>p.change),
+        name:"Observed monthly change",
+        marker:{color:r.map(p=>p.change<0?color.secondary:color.main)},
+        hovertemplate:"%{x|%b %Y}: %{y:.2f}%<extra>Observed change</extra>"}
+    ],cfg);
+  }
+  if(chosen.has("commodity-yoy")){
+    const yoy=observations.flatMap(o=>{
+      const prior=monthValue.get(M.shiftMonth(o.date,-12));
+      return o.date>=cutoff&&Number.isFinite(prior)&&prior>0
+        ?[{date:o.date,value:(o.value/prior-1)*100}]:[];
+    });
+    context("commodity-yoy",yoy.length?
+      "Latest verified 12-month change "+(yoy.at(-1).value>=0?"+":"")+
+      safeNumber(yoy.at(-1).value)+"%.":"Requires matching prior-year observations");
+    const cfg=layout("commodity-yoy",{percent:true,zero:true});
+    cfg.yaxis.title="12-month change (%)";
+    plotAdditional("commodity-yoy",[
+      series("Reported annual change",yoy.map(r=>r.date),
+        yoy.map(r=>r.value),color.main)
+    ],cfg);
+  }
+  if(chosen.has("commodity-vol")){
+    const annual=[];
+    for(let i=12;i<observations.length;i++){
+      let consecutive=true;
+      const sample=[];
+      for(let j=i-11;j<=i;j++){
+        if(M.shiftMonth(observations[j-1].date,1)!==observations[j].date){
+          consecutive=false;break;
+        }
+        sample.push(Math.log(observations[j].value/observations[j-1].value));
+      }
+      if(!consecutive||observations[i].date<cutoff)continue;
+      const avg=sample.reduce((a,b)=>a+b,0)/sample.length;
+      const std=Math.sqrt(sample.reduce((t,v)=>t+(v-avg)**2,0)/(sample.length-1))*100;
+      annual.push({date:observations[i].date,vol:std});
+    }
+    context("commodity-vol",annual.length?
+      "Latest 12-month realized standard deviation "+safeNumber(annual.at(-1).vol)+"%.":
+      "Requires 12 consecutive monthly observations");
+    const cfg=layout("commodity-vol",{percent:true});
+    cfg.yaxis.title="Monthly return std. dev. (%)";
+    plotAdditional("commodity-vol",[
+      series("12-month rolling volatility",annual.map(x=>x.date),
+        annual.map(x=>x.vol),color.navy)
+    ],cfg);
+  }
+  if(chosen.has("commodity-seasonality")){
+    const groups=Array.from({length:12},()=>[]);
+    for(const r of history)groups[Number(r.date.slice(5,7))-1].push(r.value);
+    const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const mean=groups.map(g=>g.length>=2?g.reduce((a,b)=>a+b,0)/g.length:null);
+    context("commodity-seasonality","Observed calendar-month averages across "+
+      history.length+" monthly prices · Descriptive, not a seasonal price forecast.");
+    const cfg=layout("commodity-seasonality",{category:true});
+    cfg.xaxis.title="Observation month";
+    plotAdditional("commodity-seasonality",[
+      {type:"bar",x:months,y:mean,customdata:groups.map(g=>g.length),
+        name:"Observed monthly average",marker:{color:color.main},
+        hovertemplate:"%{x}: $%{y:,.2f}<br>%{customdata} observations<extra></extra>"}
+    ],cfg);
+  }
+  if(chosen.has("commodity-models")){
+    const models=[
+      {model:"mean",label:"Mean reversion",col:color.main},
+      {model:"trend",label:"Recent trend",col:color.navy},
+      {model:"unchanged",label:"Unchanged price",col:color.secondary}
+    ];
+    const traces=models.map(x=>{
+      const rows=M.forecast(c,{...opt,model:x.model,shock:0,vol:0}).baseline;
+      return series(x.label,rows.map(r=>r.date),
+        rows.map(r=>r.price),x.col,{unit:" "+short,dashed:true});
+    });
+    context("commodity-models",opt.horizon+"-month model comparison from latest verified "+
+      currency(last.value)+" · No price shock applied.");
+    const cfg=layout("commodity-models",{horizon:true});
+    cfg.showlegend=true;cfg.yaxis.title=fmt;
+    plotAdditional("commodity-models",traces,cfg);
+  }
+  if(chosen.has("commodity-shock")&&opt.shock!==0){
+    const effect=f.scenario.map((r,i)=>({date:r.date,
+      value:(r.price/f.baseline[i].price-1)*100}));
+    context("commodity-shock",(opt.shock>0?"+":"")+opt.shock+
+      "% hypothetical spot-price shock · "+opt.halfLife+"-month half-life.");
+    const cfg=layout("commodity-shock",{percent:true,zero:true,horizon:true});
+    cfg.yaxis.title="Difference vs baseline (%)";
+    plotAdditional("commodity-shock",[
+      series("Conditional price impact",effect.map(r=>r.date),
+        effect.map(r=>r.value),color.main)
+    ],cfg);
+  }
+  if(chosen.has("commodity-drawdown")){
+    let peak=0;
+    const rows=history.map(o=>{
+      peak=Math.max(peak,o.value);
+      return {date:o.date,value:(o.value/peak-1)*100};
+    });
+    context("commodity-drawdown","Decline from the previous peak within the selected "+
+      el("history").selectedOptions[0].textContent+" window · Historical only.");
+    const cfg=layout("commodity-drawdown",{percent:true,zero:true});
+    cfg.yaxis.title="Drawdown from previous peak (%)";
+    plotAdditional("commodity-drawdown",[
+      {type:"scatter",mode:"lines",x:rows.map(r=>r.date),
+        y:rows.map(r=>r.value),fill:"tozeroy",
+        fillcolor:"rgba(170,120,64,.10)",line:{color:color.secondary,width:2},
+        name:"Observed drawdown",
+        hovertemplate:"%{x|%b %Y}: %{y:.2f}%<extra>Peak-relative decline</extra>"}
+    ],cfg);
+  }
+}
+
 function schedule(){
   if(state.tick)return;
   state.tick=true;
@@ -139,7 +341,8 @@ function reset(){
   el("model").value="mean";el("horizon").value="6";
   el("shock").value="0";el("half-life").value="6";
   el("vol").value="1";el("history").value="60";
-  state.context=null;state.range=null;schedule();
+  state.context=null;state.range=null;
+  state.plotHeight=null;state.canvas.reset();schedule();
 }
 function choose(){
   state.commodity=state.snapshot.commodities.find(c=>c.id===el("commodity").value);
@@ -147,7 +350,14 @@ function choose(){
 }
 async function init(){
   try{
-    if(!window.Plotly||!M)throw Error("Commodity chart model unavailable.");
+    if(!window.Plotly||!M||!window.ChartCanvas)
+      throw Error("Commodity charts or selector unavailable.");
+    state.canvas=ChartCanvas.create({
+      ids:OPTIONS,defaults:DEFAULT,onChange:()=>{
+        state.plotHeight=null;schedule();
+      }
+    });
+    state.canvas.setAvailable([]); // Hide all studies until a verified FRED snapshot loads.
     el("commodity").addEventListener("change",choose);
     for(const id of ["model","horizon","half-life","vol","history"])
       el(id).addEventListener("change",schedule);

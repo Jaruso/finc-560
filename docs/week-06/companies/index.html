@@ -8,13 +8,14 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="../../assets/styles.css?v=20260906-week3-redesign">
   <link rel="stylesheet" href="../../assets/site-transitions.css?v=20261001">
-  <link rel="stylesheet" href="../dashboard.css?v=sidebar-titles-202610">
-  <link rel="stylesheet" href="./company.css?v=conditional-research-panels-20261001">
+  <link rel="stylesheet" href="../dashboard.css?v=multi-chart-equities-20261001">
+  <link rel="stylesheet" href="./company.css?v=multi-chart-equities-20261001">
   <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
   <script defer src="./model.js?v=1"></script>
   <script defer src="./research.js?v=finnhub-timestamps-20261001"></script>
   <script defer src="./research-ui.js?v=conditional-research-panels-20261001"></script>
-  <script defer src="./app.js?v=revenue-help-20261001"></script>
+  <script defer src="../chart-canvas.js?v=20261001"></script>
+  <script defer src="./app.js?v=multi-chart-equities-20261001"></script>
 </head>
 <body>
   <header class="site-header week-06-header company-header">
@@ -122,14 +123,29 @@
         </section>
       </aside>
       <section class="analysis-pane" aria-label="Company financial performance and projection">
-        <section class="kpis" aria-label="Financial indicators">
-          <div class="kpi card"><span>Reported revenue</span><strong id="kpi-revenue">—</strong></div>
-          <div class="kpi card"><span>Reported net income</span><strong id="kpi-profit">—</strong></div>
-          <div class="kpi card"><span>Projected revenue</span><strong id="kpi-forecast-revenue">—</strong></div>
-          <div class="kpi card prominent"><span>Projected net income</span><strong id="kpi-forecast-profit">—</strong></div>
-        </section>
+        <!-- Latest amounts belong in chart headings/hovers. Keep these nodes
+             nonvisual for existing consumers of the dashboard model state. -->
+        <div id="legacy-financial-metrics" hidden aria-hidden="true">
+          <span id="kpi-revenue"></span><span id="kpi-profit"></span>
+          <span id="kpi-forecast-revenue"></span><span id="kpi-forecast-profit"></span>
+        </div>
         <div class="chart-toolbar card">
-          <label class="chart-choice"><span>Measure</span>
+          <details class="chart-picker" id="chart-picker">
+            <summary aria-label="Choose up to four equity charts">Charts <strong id="chart-count">4 of 4</strong></summary>
+            <fieldset class="chart-options" aria-label="Select one to four equity visualizations">
+              <legend>Choose 1–4 charts</legend>
+              <label><input type="checkbox" value="company-chart" checked> Focused financial forecast</label>
+              <label><input type="checkbox" value="equity-revenue" checked> Revenue forecast</label>
+              <label><input type="checkbox" value="equity-operating" checked> Operating-income forecast</label>
+              <label><input type="checkbox" value="equity-margins" checked> Profit margins</label>
+              <label><input type="checkbox" value="equity-cashflows"> Operating cash flow vs. capex</label>
+              <label><input type="checkbox" value="equity-fcf"> Free cash flow</label>
+              <label><input type="checkbox" value="equity-coverage"> Interest coverage</label>
+              <label><input type="checkbox" value="equity-balance"> Cash vs. debt</label>
+              <p class="chart-picker-help" id="chart-selection-status" role="status" aria-live="polite">Four related charts selected.</p>
+            </fieldset>
+          </details>
+          <label class="chart-choice"><span>Focus measure</span>
             <select id="metric">
               <option value="revenue">Revenue</option>
               <option value="operating">Operating income</option>
@@ -147,32 +163,93 @@
           <button id="fit-company-projection" class="secondary" type="button"
             title="The vertical scale stays fixed while changing assumptions" disabled>Scale locked</button>
           <a class="research-jump" href="#research-lab">Company research ↓</a>
-          <span class="chart-badge">Reported → modeled forecast</span>
+          <span class="chart-badge">Actual results and assumptions appear in chart headings and hovers</span>
         </div>
         <p id="revenue-margin-guidance" class="revenue-margin-guidance" hidden>
           Profit-margin adjustments change projected earnings, not revenue.
           <button id="view-profit-impact" class="secondary" type="button">View net income</button>
         </p>
-        <article class="chart-card card company-timeline" aria-label="Unified historical and projected annual financial chart">
-          <header class="chart-heading">
-            <h2 id="chart-heading">Net income</h2>
-            <p>Annual financial performance and projected scenarios</p>
-          </header>
-          <div id="company-chart" class="plot" role="img" aria-label="Continuous historical company financials and browser-model forecast on one chronological axis"></div>
-          <div id="company-empty" class="company-empty" role="status" hidden>
-            <div class="company-empty-icon" aria-hidden="true">i</div>
-            <h3 id="company-empty-title">Checking financial statements</h3>
-            <p id="company-empty-message">Retrieving reported annual statements…</p>
-            <div class="company-empty-examples">
-              <span>Try a featured company with verified statements:</span>
-              <button type="button" class="secondary" data-research-example="AAPL">Apple</button>
-              <button type="button" class="secondary" data-research-example="MSFT">Microsoft</button>
-              <button type="button" class="secondary" data-research-example="HD">Home Depot</button>
-            </div>
-            <p class="company-empty-secondary">The company's market quote and any available profile metrics remain accessible below.</p>
-            <a href="#research-lab">View available research ↓</a>
+        <div id="chart-stage" class="chart-grid" data-count="4"
+          aria-label="Configurable equity forecasting and financial statement dashboard">
+          <article class="chart-card card company-timeline" data-chart="company-chart"
+            aria-label="Unified focused financial forecast">
+            <header class="chart-heading">
+              <h2 id="chart-heading">Net income</h2>
+              <p id="company-chart-context">Latest reported and modeled earnings</p>
+            </header>
+            <div id="company-chart" class="plot" role="img"
+              aria-label="Reported annual company performance and selected modeled forecast"></div>
+          </article>
+          <article class="chart-card card" data-chart="equity-revenue">
+            <header class="chart-heading">
+              <h2>Revenue forecasting</h2>
+              <p id="equity-revenue-context">Reported revenue and conditional financial projection</p>
+            </header>
+            <div id="equity-revenue" class="plot" role="img"
+              aria-label="Reported annual revenue and modeled forecast"></div>
+          </article>
+          <article class="chart-card card" data-chart="equity-operating">
+            <header class="chart-heading">
+              <h2>Operating-income forecasting</h2>
+              <p id="equity-operating-context">Reported operating income and modeled forecast</p>
+            </header>
+            <div id="equity-operating" class="plot" role="img"
+              aria-label="Reported annual operating income and modeled forecast"></div>
+          </article>
+          <article class="chart-card card" data-chart="equity-margins">
+            <header class="chart-heading">
+              <h2>Profit margin trends</h2>
+              <p id="equity-margins-context">Reported and conditional operating and net margins</p>
+            </header>
+            <div id="equity-margins" class="plot" role="img"
+              aria-label="Historical and modeled operating and net income margins"></div>
+          </article>
+          <article class="chart-card card is-view-hidden" data-chart="equity-cashflows" aria-hidden="true">
+            <header class="chart-heading">
+              <h2>Operating cash flow vs. capex</h2>
+              <p id="equity-cashflows-context">Source-reported cash generation and investment outlays</p>
+            </header>
+            <div id="equity-cashflows" class="plot" role="img"
+              aria-label="Annual source-reported operating cash flow and capital expenditure"></div>
+          </article>
+          <article class="chart-card card is-view-hidden" data-chart="equity-fcf" aria-hidden="true">
+            <header class="chart-heading">
+              <h2>Free cash flow</h2>
+              <p id="equity-fcf-context">Operating cash flow less disclosed capital expenditure</p>
+            </header>
+            <div id="equity-fcf" class="plot" role="img"
+              aria-label="Historical annual free cash flow based on reported statements"></div>
+          </article>
+          <article class="chart-card card is-view-hidden" data-chart="equity-coverage" aria-hidden="true">
+            <header class="chart-heading">
+              <h2>Interest-coverage trend</h2>
+              <p id="equity-coverage-context">Reported operating income divided by disclosed interest</p>
+            </header>
+            <div id="equity-coverage" class="plot" role="img"
+              aria-label="Historical capacity of operating income to cover interest expense"></div>
+          </article>
+          <article class="chart-card card is-view-hidden" data-chart="equity-balance" aria-hidden="true">
+            <header class="chart-heading">
+              <h2>Cash vs. total debt</h2>
+              <p id="equity-balance-context">Historical disclosed cash and total debt</p>
+            </header>
+            <div id="equity-balance" class="plot" role="img"
+              aria-label="Reported corporate cash versus verifiable outstanding debt"></div>
+          </article>
+        </div>
+        <div id="company-empty" class="company-empty" role="status" hidden>
+          <div class="company-empty-icon" aria-hidden="true">i</div>
+          <h3 id="company-empty-title">Checking financial statements</h3>
+          <p id="company-empty-message">Retrieving reported annual statements…</p>
+          <div class="company-empty-examples">
+            <span>Try a featured company with verified statements:</span>
+            <button type="button" class="secondary" data-research-example="AAPL">Apple</button>
+            <button type="button" class="secondary" data-research-example="MSFT">Microsoft</button>
+            <button type="button" class="secondary" data-research-example="HD">Home Depot</button>
           </div>
-        </article>
+          <p class="company-empty-secondary">Market quotes and any available company profile metrics remain accessible below.</p>
+          <a href="#research-lab">View available research ↓</a>
+        </div>
         <p id="chart-footnote" class="chart-footnote">Reported performance continues into the modeled forecast.</p>
       </section>
     </div>

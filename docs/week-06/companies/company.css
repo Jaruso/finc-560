@@ -133,3 +133,16 @@ body:has(.research-board){overflow:auto!important}
 .model-help-panel p:last-child{margin-bottom:0}
 .model-help-panel p strong{font-weight:800;color:#1a474e}
 .model-help-caution{border-top:1px solid #d9e8e5;padding-top:8px;font-style:italic}
+
+
+/* Bonds-style chart canvas; chart-picker styling and 1–4 grid layout are
+   shared via dashboard.css. Keep advanced corporate research below. */
+#chart-stage{flex:1 1 auto;min-height:0}
+#chart-stage .company-timeline{flex:initial}
+#chart-stage .plot{min-height:110px}
+#chart-stage>.chart-card{min-width:0;min-height:0}
+#company-empty:not([hidden]){flex:1 1 auto}
+@media(max-width:1000px){
+  #chart-stage{flex:none}
+  #chart-stage>.chart-card{min-height:310px}
+}
