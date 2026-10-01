@@ -98,7 +98,6 @@ def fit_factor_ar(factors: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     if len(factors) < MIN_TRAIN_MONTHS:
         raise ValueError("Insufficient factor history")
     x = np.column_stack([np.ones(len(factors) - 1), factors[:-1]])
-    coeffs = np.linalg.lstsq(x, factors[1:], rcond=None)[0]
     # Separate univariate factor regressions, not pooled cross-factor OLS:
     intercept = np.zeros(3)
     phi = np.zeros(3)
@@ -106,8 +105,9 @@ def fit_factor_ar(factors: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         beta = np.linalg.lstsq(x[:, [0, col + 1]], factors[1:, col], rcond=None)[0]
         # Mild stationarity guard prevents explosive extrapolation with
         # near-unit-root finite samples. The fitted raw phi is documented.
-        intercept[col] = float(beta[0])
         phi[col] = float(np.clip(beta[1], -0.995, 0.995))
+        intercept[col] = float(np.mean(factors[1:, col]) -
+                               phi[col] * np.mean(factors[:-1, col]))
     return intercept, phi
 
 
@@ -203,7 +203,7 @@ def build_snapshot(daily: pd.DataFrame | None = None, *, as_of: datetime | None 
         daily = fetch_fred_series(list(ALL_SERIES), START, max_age_hours=0)
     monthly, latest_day = align_monthly(daily)
     now = as_of or datetime.now(timezone.utc)
-    partial_month = monthly.index[-1].to_period("M") == pd.Timestamp(now).to_period("M")
+    partial_month = monthly.index[-1].to_period("M") == pd.Timestamp(now).tz_localize(None).to_period("M")
     matrix = monthly[list(TENORS)].to_numpy(dtype=float)
     factors = cross_section_factors(matrix)
     # Partial months are useful for latest live baseline, but not training

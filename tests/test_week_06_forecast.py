@@ -53,7 +53,10 @@ class ForecastModelTests(unittest.TestCase):
         e2,d2=rolling_errors(corrupt,f)
         # All origins evaluate targets through the last complete month, so
         # changing the last value should affect errors at some horizons.
-        self.assertNotEqual(e1["5y"][24],e2["5y"][24])
+        self.assertNotEqual(e1["5y"][23],e2["5y"][23])
+        # Only the longest horizon can reach the final evaluation month
+        # among our fixed 60 rolling origins.
+        self.assertEqual(e1["5y"][22],e2["5y"][22])
         self.assertEqual(len(e1["spread"]),24)
         self.assertEqual(len(d1),9)
         for row in d1:
