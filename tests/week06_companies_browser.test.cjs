@@ -38,6 +38,8 @@ async function slide(page,id,value){
     }));
     const symbols=["MSFT","AAPL","HD","CAT"];
     const marketCalls=[];
+    const newsCalls=[];
+    let newsNVDAFailure=true;
     let marketUnavailable=false;
     let limitNvdaFinancialsOnce=true;
     await page.route("https://finc-560-finnhub.joseph-caruso-pc.workers.dev/quote?*",route=>{
@@ -120,6 +122,39 @@ async function slide(page,id,value){
       }));
       return route.fulfill({headers:{"access-control-allow-origin":"*"},
         json:{symbol:ticker,cik:123456,data}});
+    });
+    await page.route("https://finc-560-finnhub.joseph-caruso-pc.workers.dev/news?*",route=>{
+      const request=route.request();
+      const url=new URL(request.url()),ticker=url.searchParams.get("symbol");
+      assert.deepEqual([...url.searchParams.keys()],["symbol","from","to"]);
+      assert.match(url.searchParams.get("from"),/^\d{4}-\d{2}-\d{2}$/);
+      assert.match(url.searchParams.get("to"),/^\d{4}-\d{2}-\d{2}$/);
+      assert.ok((Date.parse(url.searchParams.get("to"))-
+        Date.parse(url.searchParams.get("from")))/86400000<=31);
+      assert.equal(request.headers().authorization,undefined,
+        "News must use the server-side FINNHUB_TOKEN, not a browser token");
+      newsCalls.push(ticker);
+      const headers={"access-control-allow-origin":"*"};
+      if(ticker==="NVDA"&&newsNVDAFailure){
+        newsNVDAFailure=false;
+        return route.fulfill({status:429,headers,
+          json:{error:"Finnhub rejected the request",source:"provider",upstreamStatus:429}});
+      }
+      if(ticker==="MTMCF")return route.fulfill({headers,json:[]});
+      const count=ticker==="MSFT"?18:ticker==="AAPL"?2:4;
+      const latest=Math.floor(Date.now()/1000)-3600;
+      const articles=Array.from({length:count},(_,i)=>({
+        id:100+i,
+        headline:i===0&&ticker==="AAPL"
+          ?'<img src=x onerror=alert(1)> Quarterly update'
+          :ticker+" article "+i,
+        summary:ticker+" credit research source article "+i,
+        source:"Publisher "+(i%2+1),
+        url:"https://news.example/"+ticker+"/"+i,
+        datetime:latest-i*3600
+      }));
+      // Reverse input order to verify client enforces newest first.
+      return route.fulfill({headers,json:articles.reverse()});
     });
     await page.route("**/week-06/companies/data/*.json",route=>{
       const ticker=route.request().url().match(/\/([A-Z]+)\.json$/)?.[1];
@@ -211,6 +246,19 @@ async function slide(page,id,value){
       "Rendering a forecast must not show the old undefined .catch error");
     assert.equal(await page.locator("#ticker option").count(),4);
     assert.equal(await page.locator("#ticker").inputValue(),"MSFT");
+    await page.waitForFunction(()=>
+      document.querySelectorAll("#news-list .news-item").length===15 &&
+      document.querySelector("#news-status")?.dataset.state==="ready");
+    assert.equal(await page.locator(".research-panel").count(),0,
+      "Obsolete bottom corporate research cards have been removed");
+    assert.equal(await page.locator(".news-board").count(),1);
+    assert.match(await page.locator("#news-company-title").textContent(),/MSFT/);
+    assert.equal(await page.locator("#news-list .news-item").count(),15);
+    assert.equal(await page.locator("#news-list .news-item").first()
+      .locator("a").first().textContent(),"MSFT article 0");
+    assert.equal(await page.locator("#news-list .news-item").first()
+      .locator("time").count(),1);
+    assert.deepEqual(newsCalls,["MSFT"]);
     assert.equal(await page.locator("#metric").inputValue(),"net");
     const picker=page.locator("#chart-picker");
     assert.equal(await picker.locator('input[type="checkbox"]').count(),8);
@@ -459,6 +507,20 @@ async function slide(page,id,value){
     await page.waitForFunction(()=>document.querySelector("#quote-price")?.textContent==="$245.67");
     assert.equal(await page.locator("#quote-change").textContent(),"−$1.23 (−0.50%)");
     assert.deepEqual(marketCalls,["MSFT","AAPL"],"Company switch fetches its own quote");
+    await page.waitForFunction(()=>document.querySelector("#news-company-title")
+      ?.textContent.includes("AAPL") &&
+      document.querySelectorAll("#news-list .news-item").length===2);
+    const firstHeadline=page.locator("#news-list .news-item").first().locator("a").first();
+    assert.equal(await firstHeadline.textContent(),'<img src=x onerror=alert(1)> Quarterly update');
+    assert.equal(await page.locator("#news-list img").count(),0,
+      "Untrusted publisher headlines must be escaped as plain text");
+    assert.match(await firstHeadline.getAttribute("href"),/^https://news.example/AAPL/);
+    assert.equal(await firstHeadline.getAttribute("rel"),"noopener noreferrer");
+    await page.locator("#news-refresh").click();
+    await page.waitForFunction(()=>document.querySelector("#news-status")
+      ?.textContent.includes("Refreshed"));
+    assert.equal(newsCalls.filter(t=>t==="AAPL").length,2,
+      "Explicit refresh should request current ticker news");
     assert.notEqual(await page.locator("#kpi-revenue").textContent(),"—");
     assert.equal(await page.locator("#source-period").textContent(),"FY ending 2025-06-30");
     assert.equal(await page.locator("#data-error").isVisible(),false,
@@ -540,56 +602,49 @@ async function slide(page,id,value){
     assert.equal(await page.locator(".week-06-header .source-stamp").isVisible(),true);
     await page.screenshot({path:"test-artifacts/week06-company-mobile.png",fullPage:true});
     assert.deepEqual(errors,[],"No uncaught browser errors");
-    // A Finnhub outage must not suppress previously loaded annual forecasts.
+    // Quote and article availability must be independent of curated forecasts.
     marketUnavailable=true;
     await page.locator("#quote-refresh").click();
-    await page.waitForFunction(()=>document.querySelector("#quote-status")?.textContent.includes("limited"));
+    await page.waitForFunction(()=>
+      document.querySelector("#quote-status")?.textContent.includes("limited"));
     assert.equal(await page.locator("#data-error").isVisible(),false);
-    assert.ok(await page.locator("#company-chart").evaluate(g=>g.data?.length>=2),
-      "Market-quote failure may not break the SEC-backed financial forecast");
+    assert.ok(await page.locator("#company-chart").evaluate(g=>g.data?.length>=2));
+    assert.equal(await page.locator("#news-list .news-item").count(),2);
     marketUnavailable=false;
-    // Real-world case: an international issuer has a valid market quote and
-    // company profile but the US SEC as-reported endpoint returns no CIK/data.
+
+    // International company: annual US filings absent, but news requests still
+    // happen and the UI explains the lack of recent covered articles.
     await page.locator("#custom-ticker").fill("MTMCF");
     await page.locator("#symbol-form button").click();
     await page.waitForFunction(()=>document.querySelector("#company-empty-title")
       ?.textContent.includes("International company"));
-    assert.equal(await page.locator("#ticker").inputValue(),"MTMCF",
-      "Custom ticker should remain selected instead of displaying a blank dropdown");
+    assert.equal(await page.locator("#ticker").inputValue(),"MTMCF");
     assert.match(await page.locator("#company-empty-message").textContent(),/AUD/);
-    assert.match(await page.locator("#company-empty-message").textContent(),/premium access/);
-    assert.match(await page.locator("#research-company").textContent(),/International Research Example/);
-    assert.match(await page.locator("#research-sector").textContent(),/Metals/);
-    assert.match(await page.locator("#research-metrics").textContent(),/1\.15/);
-    assert.equal(await page.locator("#research-columns").isHidden(),true,
-      "No research cards should appear when no analytical model is possible");
-    assert.equal(await page.locator(".research-panel:visible").count(),0);
-    assert.equal(await page.locator(".research-decision").count(),0,
-      "Decision supported footers must be removed, not hidden");
-    assert.equal(await page.locator("#company-chart").isHidden(),true);
-    assert.equal(await page.locator("#company-empty").isHidden(),false);
+    await page.waitForFunction(()=>document.querySelector("#news-status")?.dataset.state==="empty" &&
+      document.querySelector("#news-company-title")?.textContent
+        .includes("International Research Example"));
+    assert.equal(await page.locator("#news-list .news-item").count(),0);
+    assert.match(await page.locator("#news-status").textContent(),/Coverage varies/);
     assert.equal(await page.locator("#data-error").isVisible(),false);
-    // Users can immediately return to a featured issuer with verified charts.
+
+    // A company news failure should not masquerade as a financial failure.
     await page.locator('[data-research-example="AAPL"]').click();
-    await page.waitForFunction(()=>document.querySelector("#company-chart")?.data?.length===2);
-    assert.equal(await page.locator("#company-empty").isHidden(),true);
-    assert.equal(await page.locator("#company-chart").isHidden(),false);
-    // Arbitrary ticker with complete as-reported filings exercises all three panels.
+    await page.waitForFunction(()=>document.querySelector("#company-chart")?.data?.length===2 &&
+      document.querySelectorAll("#news-list .news-item").length===2);
     await page.locator("#custom-ticker").fill("NVDA");
     await page.locator("#symbol-form button").click();
-    await page.waitForFunction(()=>document.querySelector("#company-empty-message")
-      ?.textContent.includes("rate limit reached"));
+    await page.waitForFunction(()=>document.querySelector("#news-status")?.dataset.state==="error");
+    assert.match(await page.locator("#news-status").textContent(),/rate limited/);
     assert.match(await page.locator("#company-empty-message").textContent(),
       /request failure, not proof/);
-    assert.match(await page.locator("#research-status").textContent(),/HTTP 429/);
-    // Once a rate-limit window ends, retry should load the actual statements.
+    await page.locator("#news-refresh").click();
+    await page.waitForFunction(()=>document.querySelector("#news-status")?.dataset.state==="ready");
+    assert.equal(await page.locator("#news-list .news-item").count(),4);
+    // Financials retry is independent of news refresh.
     await page.locator("#symbol-form button").click();
     await page.waitForFunction(()=>document.querySelector("#source-period")
       ?.textContent==="FY ending 2025-06-30");
-    await page.waitForFunction(()=>document.querySelector("#research-source")
-      ?.textContent.includes("As-reported 10-K"));
     assert.equal(await page.locator("#company-name").textContent(),"Research Example Corporation");
-    assert.match(await page.locator("#research-sector").textContent(),/Technology/);
     await page.waitForFunction(()=>
       document.querySelector("#chart-picker input[value='equity-fcf']")?.disabled===false &&
       document.querySelector("#chart-picker input[value='equity-balance']")?.disabled===false);
@@ -602,64 +657,25 @@ async function slide(page,id,value){
       const control=picker.locator('input[value="'+id+'"]');
       await control.check();
       await page.waitForFunction(({id,count})=>
-        document.getElementById(id)?.data?.length===count,
-        {id,count:expected});
+        document.getElementById(id)?.data?.length===count,{id,count:expected});
       await control.uncheck();
     }
     await picker.locator('input[value="equity-margins"]').check();
     await picker.locator("summary").click();
-    assert.match(await page.locator("#health-kpis").textContent(),/Interest coverage/);
-    assert.match(await page.locator("#stress-kpis").textContent(),/Stressed coverage/);
-    assert.match(await page.locator("#valuation-kpis").textContent(),/Implied equity value\/share/);
-    assert.equal(await page.locator("#health-chart").isHidden(),false);
-    assert.equal(await page.locator("#stress-chart").isHidden(),false);
-    assert.equal(await page.locator("#valuation-chart").isHidden(),false);
-    assert.equal(await page.locator(".research-panel:visible").count(),3,
-      "Three supported analytical panels remain visible");
-    assert.equal(await page.locator("#research-columns").getAttribute("data-visible"),"3");
-    const before=await page.locator("#stress-kpis").textContent();
-    await slide(page,"#rate-shock",200);
-    assert.notEqual(await page.locator("#stress-kpis").textContent(),before);
-    const valueBefore=await page.locator("#valuation-kpis").textContent();
-    await slide(page,"#discount-rate",12);
-    assert.notEqual(await page.locator("#valuation-kpis").textContent(),valueBefore);
-    // One supported model: cash flow and interest exist, but debt does not.
+    assert.equal(await page.locator(".research-panel").count(),0,
+      "No legacy research cards should reappear when full statements load");
+    assert.equal(await page.locator("#news-list .news-item").count(),4);
+
+    // Switching to a partially disclosed company disables unsupported main
+    // visualizations but still supplies its independent recent news.
     await page.locator("#custom-ticker").fill("CASH");
     await page.locator("#symbol-form button").click();
-    await page.waitForFunction(()=>document.querySelector("#research-source")
-      ?.textContent.includes("As-reported 10-K") &&
-      document.querySelector("#research-columns")?.dataset.visible==="1");
-    assert.equal(await page.locator("#health-panel").isVisible(),true);
-    assert.equal(await page.locator("#health-chart").isVisible(),true);
-    assert.equal(await page.locator("#stress-panel").isHidden(),true);
-    assert.equal(await page.locator("#valuation-panel").isHidden(),true);
-    assert.equal(await page.locator("#health-kpis").textContent().then(t=>t.includes("Unavailable")),false,
-      "Do not leave unavailable financial KPIs inside an otherwise useful card");
-    assert.equal(await page.locator(".research-panel:visible").count(),1);
-    assert.equal(await picker.locator('input[value="equity-balance"]').isDisabled(),true,
-      "Cash/debt view needs reported total debt; unavailable panels are disabled");
-    assert.equal(await page.locator("#health-panel .research-number").textContent(),"01");
-    // Two supported models: debt and interest are reported, but valuation
-    // cannot subtract net debt because no verified cash balance exists.
-    await page.locator("#custom-ticker").fill("STRESS");
-    await page.locator("#symbol-form button").click();
-    await page.waitForFunction(()=>document.querySelector("#research-columns")?.dataset.visible==="2" &&
-      document.querySelector("#research-company")?.textContent==="STRESS");
-    assert.equal(await page.locator("#health-panel").isVisible(),true);
-    assert.equal(await page.locator("#stress-panel").isVisible(),true);
-    assert.equal(await page.locator("#valuation-panel").isHidden(),true);
-    assert.equal(await page.locator(".research-panel:visible").count(),2);
-    assert.equal(await picker.locator('input[value="equity-balance"]').isDisabled(),true,
-      "Cash/debt view needs reported cash; unavailable panels are disabled");
-    assert.equal(await page.locator("#stress-panel .research-number").textContent(),"02");
-    // Once a fully reported issuer is selected, all three panels return.
-    await page.locator("#custom-ticker").fill("NVDA");
-    await page.locator("#symbol-form button").click();
-    await page.waitForFunction(()=>document.querySelector("#research-columns")?.dataset.visible==="3" &&
-      document.querySelector("#research-company")?.textContent==="Research Example Corporation");
-    assert.equal(await page.locator(".research-panel:visible").count(),3);
+    await page.waitForFunction(()=>
+      document.querySelector("#news-company-title")?.textContent.includes("CASH") &&
+      document.querySelector("#chart-picker input[value='equity-balance']")?.disabled===true);
+    assert.ok(await page.locator("#news-list .news-item").count()>0);
     assert.equal(await page.locator("#data-error").isVisible(),false);
-    assert.deepEqual(errors,[],"No uncaught browser errors during research loading");
+    assert.deepEqual(errors,[],"No uncaught browser errors during ticker/news loading");
     onCompany=false;
     await page.locator(".workspaces a").first().click();
     await page.waitForURL("**/week-06/");
