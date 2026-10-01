@@ -160,3 +160,45 @@ body:has(.news-board){overflow:auto!important}
 .ticker-entry-row input{min-width:0;width:100%;padding:5px 7px;
   font-size:.76rem;border:1px solid #ccd8da;border-radius:6px}
 .ticker-input-status{font-size:.63rem;color:#a64c50;margin:2px 0;line-height:1.2}
+
+
+/* Stage up to four equity tickers without changing the active analysis.
+   Compact removable pills replace both the original dropdown and lookup bar. */
+.ticker-entry{margin:4px 0 8px}
+.ticker-entry>label span{font-weight:550;color:#72838c}
+.ticker-pills{display:flex;align-items:center;align-content:flex-start;flex-wrap:wrap;
+  gap:5px;min-height:37px;padding:5px;border:1px solid #cbd9da;border-radius:8px;
+  background:#fbfdfd;margin:5px 0 7px}
+.ticker-pill{display:inline-flex;align-items:center;gap:5px;min-width:0;
+  border:1px solid #a9d1c9;border-radius:999px;background:#e8f5f1;
+  padding:3px 5px 3px 9px;color:#1d625d;font-size:.76rem}
+.ticker-pill:first-child{background:#d4eee8;border-color:#6cae9e}
+.ticker-pill strong{font-size:.74rem;font-weight:850}
+.ticker-pill small{font-size:.59rem;font-weight:800;letter-spacing:.015em}
+.ticker-pill-remove{border:0;display:grid;place-items:center;width:19px;height:19px;
+  background:transparent;border-radius:50%;cursor:pointer;color:#36685e;
+  font-size:1rem;line-height:1}
+.ticker-pill-remove:hover,.ticker-pill-remove:focus-visible{
+  background:#c4e1d9;outline-offset:1px}
+.ticker-entry-actions{display:flex;align-items:center;justify-content:space-between;
+  gap:5px;margin:7px 0 5px}
+.ticker-entry-actions>span{font-size:.63rem;line-height:1.3;color:#647780}
+.ticker-entry-actions>button{min-width:86px}
+.ticker-input-status{min-height:1.3em;line-height:1.35}
+#chart-stage .chart-heading{display:grid;grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;column-gap:5px;row-gap:2px}
+#chart-stage .chart-heading h2{grid-column:1;grid-row:1}
+#chart-stage .chart-heading p{grid-column:1/-1;grid-row:2;min-width:0;
+  color:var(--muted);font-size:.68rem;line-height:1.25;margin:0 0 4px}
+.equity-scale-switch{grid-column:2;grid-row:1;display:flex;
+  border:1px solid #b8d4cf;border-radius:6px;overflow:hidden}
+.equity-scale-switch[hidden]{display:none}
+.equity-scale-switch button{font-size:.61rem;padding:3px 5px;margin:0;border:0;
+  border-radius:0;background:#fff;color:#60757a;min-width:0}
+.equity-scale-switch button+button{border-left:1px solid #c6dcd8}
+.equity-scale-switch button.is-active{background:#dceee9;color:#145f55}
+@media(max-width:520px){
+  .ticker-entry-row{flex-wrap:wrap}
+  .ticker-entry-actions{flex-wrap:wrap}
+  .equity-scale-switch button{font-size:.58rem;padding:3px 4px}
+}
