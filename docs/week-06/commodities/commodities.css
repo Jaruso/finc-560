@@ -1,0 +1,17 @@
+/* Commodities follows the same full-height layout and centered header. */
+.commodity-header .source-stamp{max-width:230px}
+.commodity-description{font-size:.67rem;color:var(--muted);margin:-5px 0 3px}
+.commodity-preview{gap:3px}
+.commodity-preview strong{font-size:clamp(.83rem,1.1vw,1.05rem)}
+.commodity-chart-card{flex:1 1 auto}
+.commodity-empty{display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:5px;min-height:260px;background:#f6faf9;
+  border:1px dashed #bed5d0;border-radius:8px;text-align:center;padding:22px}
+.commodity-empty[hidden]{display:none}
+.commodity-empty p{max-width:430px;font-size:.75rem;color:var(--muted)}
+#fit-projection{min-width:115px}
+#chart-footnote{font-size:.67rem;margin:0 4px;color:var(--muted);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:16px}
+@media(max-width:800px){.commodity-chart-card{min-height:420px}}
+
+.commodity-source{font-size:.63rem;color:var(--teal);align-self:flex-end}

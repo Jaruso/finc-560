@@ -143,7 +143,7 @@ async function slide(page,id,value){
     await page.goto(base+"/week-06/",{waitUntil:"domcontentloaded"});
     assert.equal(await page.locator(".hero").count(),0);
     assert.deepEqual(await page.locator(".workspaces a").allTextContents(),
-      ["Macro","Equities"]);
+      ["Bonds","Equities","Commodities"]);
     assert.equal(await page.locator(
       ".week-06-header > .workspaces + .source-stamp + .course-side").count(),1);
     const macroCenter=await page.locator(".workspaces").evaluate(n=>{
@@ -151,7 +151,7 @@ async function slide(page,id,value){
     });
     assert.ok(Math.abs(macroCenter-720)<1,
       "Macro tab switch must be horizontally centered regardless of page");
-    assert.equal(await page.locator(".workspaces [aria-current=page]").textContent(),"Macro");
+    assert.equal(await page.locator(".workspaces [aria-current=page]").textContent(),"Bonds");
     await page.locator(".workspaces a").nth(1).click();
     await page.waitForURL("**/week-06/companies/");
     onCompany=true;

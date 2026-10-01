@@ -1,0 +1,56 @@
+name: Week 6 commodities dashboard tests
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "docs/week-06/**"
+      - "scripts/export_week_06_commodities.py"
+      - "tests/test_week06_commodities.py"
+      - "tests/week06_commodities*"
+      - ".github/workflows/test-week06-commodities.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docs/week-06/**"
+      - "scripts/export_week_06_commodities.py"
+      - "tests/test_week06_commodities.py"
+      - "tests/week06_commodities*"
+
+permissions:
+  contents: read
+
+jobs:
+  commodity-dashboard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Test commodity math and Python snapshot generator
+        run: |
+          python -m pip install "pandas>=2.2,<3" "pandas-datareader>=0.10,<0.11" "pyarrow>=17,<30"
+          python -m unittest discover -s tests -p 'test_week06_commodities.py'
+          node --test tests/week06_commodities_model.test.cjs
+      - name: Verify official FRED can provide complete commodity prices
+        run: |
+          python scripts/export_week_06_commodities.py
+          python -c "import json; s=json.load(open('docs/week-06/commodities/data.json')); assert s['status']=='ready' and len(s['commodities'])==3"
+      - name: Install Chromium and Plotly
+        run: |
+          npm install --no-save playwright@1.55.1 plotly.js-dist-min@2.32.0
+          npx playwright install --with-deps chromium
+      - name: Exercise three-asset dashboard in real Chromium
+        run: node tests/week06_commodities_browser.test.cjs
+      - name: Attach screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: week06-commodities
+          path: test-artifacts/
+          if-no-files-found: ignore
