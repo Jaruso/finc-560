@@ -58,6 +58,21 @@ async function slide(page,n,value){
     assert.equal(await page.locator("#controls-heading").textContent(),"Forecast controls");
     assert.equal(await page.locator("#reset").textContent(),"Reset");
     assert.equal(await page.locator("#commodity option").count(),3);
+    const picker=page.locator("#chart-picker");
+    assert.equal(await picker.locator('input[type="checkbox"]').count(),8);
+    assert.equal(await picker.locator("input:checked").count(),4);
+    assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"4");
+    assert.equal(await page.locator(".kpis").count(),0,
+      "Commodity results belong in chart headings and hovers");
+    await page.waitForFunction(()=>["commodity-yoy","commodity-returns","commodity-vol"]
+      .every(id=>document.getElementById(id)?.data?.length===1));
+    const four=await page.locator("#chart-stage").evaluate(stage=>
+      [...stage.querySelectorAll(".chart-card:not(.is-view-hidden)")].map(node=>{
+        const rect=node.getBoundingClientRect();
+        return {x:Math.round(rect.x),y:Math.round(rect.y),w:rect.width};
+      }));
+    assert.ok(four[0].y===four[1].y&&four[2].y===four[3].y);
+    assert.ok(four[1].x>four[0].x&&four[2].y>four[0].y);
     assert.equal(await page.locator("#commodity").inputValue(),"wti");
     assert.equal(await page.locator("#source-period").textContent(),"Through 2026-08");
     assert.equal(await page.locator("#data-error").isVisible(),false);
@@ -85,6 +100,8 @@ async function slide(page,n,value){
       return g?.data?.some(t=>t.name==="Conditional scenario (dashed)" &&
         t.y.at(-1)>previous);
     },initial.forecast.at(-1));
+    assert.equal(await picker.locator('input[value="commodity-shock"]').isDisabled(),false,
+      "A nonzero conditional shock enables its own sensitivity chart");
     const shocked=await page.locator("#commodity-chart").evaluate(g=>({
       reported:g.data[0].y.slice(),range:g.layout.yaxis.range.slice(),
       pixel:g._fullLayout.yaxis.l2p(g.data[0].y.at(-1)),
@@ -119,6 +136,38 @@ async function slide(page,n,value){
       ?.layout?.meta?.commodity==="gas");
     assert.equal(await page.locator("#kpi-unit").textContent(),"USD/MMBtu");
     assert.match(await page.locator("#commodity-source").getAttribute("href"),/DHHNGSP/);
+    // Optional charts use the same verified spot data; no additional API calls.
+    await picker.locator("summary").click();
+    await picker.locator('input[value="commodity-vol"]').uncheck();
+    for(const [id,expected] of [
+      ["commodity-models",3],["commodity-seasonality",1],
+      ["commodity-drawdown",1],["commodity-shock",1]
+    ]){
+      const control=picker.locator('input[value="'+id+'"]');
+      await control.check();
+      await page.waitForFunction(({id,n})=>
+        document.getElementById(id)?.data?.length===n,{id,n:expected});
+      assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"4");
+      await control.uncheck();
+    }
+    const boxes=()=>page.locator("#chart-stage").evaluate(stage=>
+      [...stage.querySelectorAll(".chart-card:not(.is-view-hidden)")].map(node=>{
+        const r=node.getBoundingClientRect();
+        return {x:Math.round(r.x),y:Math.round(r.y),w:r.width};
+      }));
+    assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"3");
+    const three=await boxes();
+    assert.ok(three[0].w>three[1].w*1.8&&
+      three[1].y===three[2].y&&three[2].x>three[1].x);
+    await picker.locator('input[value="commodity-returns"]').uncheck();
+    const two=await boxes();
+    assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"2");
+    assert.ok(two[1].y>two[0].y&&two[0].x===two[1].x);
+    await picker.locator('input[value="commodity-yoy"]').uncheck();
+    assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"1");
+    await picker.locator('input[value="commodity-chart"]').click();
+    assert.equal(await picker.locator('input[value="commodity-chart"]').isChecked(),true,
+      "Cannot deselect the final visible chart");
     await page.locator("#reset").click();
     await page.waitForFunction(()=>document.querySelector("#shock-value")
       ?.textContent==="0%");
@@ -126,6 +175,9 @@ async function slide(page,n,value){
     assert.equal(await page.locator("#model").inputValue(),"mean");
     assert.equal(await page.locator("#history").inputValue(),"60");
     assert.equal(await page.locator("#horizon").inputValue(),"6");
+    assert.equal(await picker.locator("input:checked").count(),4);
+    assert.equal(await picker.locator('input[value="commodity-shock"]').isDisabled(),true,
+      "Zero-shock sensitivity must never create a useless chart");
     assert.equal(await page.locator("#data-error").isVisible(),false);
     await page.setViewportSize({width:390,height:844});
     const mobile=await page.evaluate(()=>({
