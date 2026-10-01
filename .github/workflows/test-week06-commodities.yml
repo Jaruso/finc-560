@@ -38,7 +38,7 @@ jobs:
           python -m pip install "openpyxl>=3.1,<4"
           python -m unittest discover -s tests -p 'test_week06_commodities.py'
           python -m unittest discover -s tests -p 'test_world_bank_pink_sheet.py'
-          node --test tests/week06_commodities_model.test.cjs
+          node --test tests/week06_commodities_model.test.cjs tests/week06_commodities_comparison.test.cjs
       - name: Verify official World Bank, EIA and IMF commodity data
         run: |
           python scripts/export_week_06_commodities.py
