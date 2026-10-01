@@ -14,6 +14,11 @@
   let manifest=null,company=null,sequence=0,scheduled=null;
   let activeTicker=null;
   const research=window.EquityResearchUI;
+  const C=window.EquityComparison;
+  const R=window.EquityResearch;
+  const MAX_TICKERS=4;
+  let stagedTickers=[],appliedTickers=[],comparisonData=new Map();
+  let comparisonGeneration=0,comparisonController=null,scaleModes={};
   // Public Worker address, not a credential. FINNHUB_TOKEN is server-side.
   const QUOTE_API="https://finc-560-finnhub.joseph-caruso-pc.workers.dev";
   let quoteController=null,quoteGeneration=0;
@@ -91,6 +96,191 @@
     method:el("method").value,horizon:Number(el("horizon").value),
     growth:Number(el("growth").value),margin:Number(el("margin").value)
   });
+  // Pill edits remain staged. No chart, news or API request runs before Analyze.
+  const tickerPattern=/^[A-Z][A-Z.]{0,9}$/;
+  const sameTickers=(a,b)=>a.length===b.length&&a.every((ticker,i)=>ticker===b[i]);
+  const pillStatus=message=>{el("ticker-input-status").textContent=message;};
+  function renderPills(){
+    const host=el("ticker-pills");
+    host.replaceChildren();
+    for(const [index,ticker] of stagedTickers.entries()){
+      const pill=document.createElement("span");
+      pill.className="ticker-pill";
+      const name=document.createElement("strong");
+      name.textContent=ticker;
+      pill.append(name);
+      if(index===0){
+        const primary=document.createElement("small");
+        primary.textContent="Primary";
+        pill.append(primary);
+      }
+      const remove=document.createElement("button");
+      remove.type="button";
+      remove.className="ticker-pill-remove";
+      remove.setAttribute("aria-label","Remove "+ticker);
+      remove.textContent="×";
+      remove.addEventListener("click",()=>{
+        stagedTickers=stagedTickers.filter(value=>value!==ticker);
+        renderPills();
+      });
+      pill.append(remove);
+      host.append(pill);
+    }
+    el("ticker-count").textContent=stagedTickers.length+" of "+MAX_TICKERS+
+      " · First ticker is primary";
+    el("ticker-add").disabled=stagedTickers.length>=MAX_TICKERS;
+    el("analyze-tickers").disabled=!stagedTickers.length;
+    pillStatus(!sameTickers(stagedTickers,appliedTickers)
+      ?"Selection pending · Click Analyze to update charts."
+      :"Displayed: "+appliedTickers.join(" · ")+". Press Enter to add a ticker.");
+  }
+  function stageTicker(value){
+    const ticker=String(value||"").trim().toUpperCase();
+    if(!tickerPattern.test(ticker)){
+      pillStatus("Enter a valid US ticker, such as NVDA or BRK.B.");
+      return false;
+    }
+    if(stagedTickers.includes(ticker)){
+      el("custom-ticker").value="";
+      pillStatus(ticker+" is already selected.");
+      return false;
+    }
+    if(stagedTickers.length>=MAX_TICKERS){
+      pillStatus("Choose up to four equities. Remove a pill to make room.");
+      return false;
+    }
+    stagedTickers.push(ticker);
+    el("custom-ticker").value="";
+    renderPills();
+    el("custom-ticker").focus();
+    return true;
+  }
+  async function comparisonCompany(ticker,signal){
+    if(cache.has(ticker))return cache.get(ticker);
+    const item=manifest.companies.find(row=>row.ticker===ticker);
+    if(item){
+      if(!/^data\/[A-Z.]{1,10}\.json$/.test(item.file))
+        throw Error("Invalid published company data path.");
+      const response=await fetch("./"+item.file,{cache:"no-cache",signal});
+      if(!response.ok)throw Error("Published snapshot unavailable");
+      const verified=M.verify(await response.json());
+      if(verified.ticker!==ticker)throw Error("Snapshot ticker mismatch");
+      cache.set(ticker,verified);
+      return verified;
+    }
+    const base="https://finc-560-finnhub.joseph-caruso-pc.workers.dev/";
+    const request=async endpoint=>{
+      const response=await fetch(base+endpoint+"?symbol="+encodeURIComponent(ticker),{
+        method:"GET",mode:"cors",cache:"no-store",signal
+      });
+      if(!response.ok)throw Error(endpoint+" HTTP "+response.status);
+      return response.json();
+    };
+    const [profile,financials]=await Promise.all([
+      request("profile"),request("financials")
+    ]);
+    const verified=M.verify(R.normalize(financials,profile,ticker));
+    cache.set(ticker,verified);
+    return verified;
+  }
+  async function applyTickers(){
+    const pending=el("custom-ticker").value.trim();
+    if(pending&&!stageTicker(pending))return;
+    if(!stagedTickers.length){
+      pillStatus("Add at least one ticker before analyzing.");
+      return;
+    }
+    const generation=++comparisonGeneration;
+    if(comparisonController)comparisonController.abort();
+    comparisonController=new AbortController();
+    const signal=comparisonController.signal;
+    appliedTickers=[...stagedTickers];
+    scaleModes={};
+    comparisonData=new Map();
+    pillStatus("Loading "+appliedTickers.join(" · ")+"…");
+    const primary=appliedTickers[0],secondaries=appliedTickers.slice(1);
+    if(company?.ticker===primary)comparisonData.set(primary,company);
+    void loadCompany(primary);
+    const results=await Promise.allSettled(secondaries.map(async ticker=>{
+      const verified=await comparisonCompany(ticker,signal);
+      if(signal.aborted||generation!==comparisonGeneration)return;
+      comparisonData.set(ticker,verified);
+      queueRender();
+    }));
+    if(signal.aborted||generation!==comparisonGeneration)return;
+    const failed=secondaries.filter((ticker,i)=>results[i].status!=="fulfilled");
+    pillStatus(failed.length
+      ?"Comparable annual filings unavailable for "+failed.join(", ")+
+        ". Available companies are shown; missing financial values are not inferred."
+      :"Showing "+appliedTickers.join(" · ")+
+        ". Market quote and news follow primary "+primary+".");
+    queueRender();
+  }
+  function createScaleControls(){
+    for(const id of C.ABSOLUTE){
+      const heading=el(id).closest(".chart-card").querySelector(".chart-heading");
+      const group=document.createElement("div");
+      group.className="equity-scale-switch";
+      group.hidden=true;
+      group.setAttribute("role","group");
+      group.setAttribute("aria-label",id+" display scale");
+      for(const mode of ["indexed","nominal"]){
+        const button=document.createElement("button");
+        button.type="button";
+        button.className="secondary";
+        button.dataset.mode=mode;
+        button.textContent=mode==="indexed"?"Indexed":"Nominal";
+        button.addEventListener("click",()=>{scaleModes[id]=mode;render();});
+        group.append(button);
+      }
+      heading.append(group);
+    }
+  }
+  function setScaleControls(comparing){
+    for(const id of C.ABSOLUTE){
+      const group=el(id).closest(".chart-card").querySelector(".equity-scale-switch");
+      group.hidden=!comparing;
+      for(const button of group.querySelectorAll("button")){
+        const active=(scaleModes[id]||"indexed")===button.dataset.mode;
+        button.classList.toggle("is-active",active);
+        button.setAttribute("aria-pressed",String(active));
+      }
+    }
+  }
+  function renderComparisons(frames,assumptions){
+    const available=new Set(C.available(frames));
+    canvas.setAvailable([...available]);
+    const selected=new Set(canvas.selected());
+    setScaleControls(true);
+    const focused=selected.has("company-chart");
+    el("fit-company-projection").hidden=true;
+    el("chart-footnote").hidden=!focused;
+    el("revenue-margin-guidance").hidden=
+      !focused||el("metric").value!=="revenue";
+    el("company-name").textContent=frames[0].name+
+      " · Comparing with "+frames.slice(1).map(f=>f.ticker).join(", ");
+    for(const id of selected){
+      if(!available.has(id))continue;
+      let mode=scaleModes[id]||"indexed",chart;
+      try{
+        chart=C.study(frames,id,el("metric").value,mode,assumptions);
+      }catch(error){
+        if(mode!=="indexed"||!C.ABSOLUTE.includes(id))throw error;
+        scaleModes[id]="nominal";
+        chart=C.study(frames,id,el("metric").value,"nominal",assumptions);
+        setScaleControls(true);
+      }
+      el(id+"-context").textContent=chart.context;
+      if(id==="company-chart"){
+        el("chart-heading").textContent=labels[el("metric").value];
+        el("chart-footnote").textContent=
+          "Color = equity · Solid = reported · Dashed = forecast · Each company uses its own fiscal dates.";
+        lastRenderedValues=null;
+        queuedPlot={traces:chart.traces,layout:chart.layout};
+        void plotLatest();
+      }else extraPlot(id,chart.traces,chart.layout);
+    }
+  }
   // Compute the plot viewport from the chart CARD, not the Plotly div
   // itself. The div includes Plotly's previous inline height and a flex
   // header; measuring it recursively would shrink the plot ~45px after
