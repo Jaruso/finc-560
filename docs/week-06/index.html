@@ -4,14 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="FINC-560 interactive Treasury yield curve and hypothetical rate adjustment dashboard">
-  <title>Week 6 | Treasury Yield Curve Scenario Lab</title>
+  <title>Week 6 | Treasury Yield Curve Forecast Lab</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="../assets/styles.css?v=20260906-week3-redesign">
   <link rel="stylesheet" href="../assets/site-transitions.css?v=20261001">
-  <link rel="stylesheet" href="./dashboard.css?v=20261001-true-time">
+  <link rel="stylesheet" href="./dashboard.css?v=dns-engine">
   <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
-  <script defer src="./model.js?v=splitpath"></script>
-  <script defer src="./app.js?v=two-views"></script>
+  
+  <script defer src="./forecast_model.js?v=dns-engine"></script>
+  <script defer src="./app.js?v=dns-engine"></script>
 </head>
 <body>
   <header class="site-header week-06-header">
@@ -25,8 +26,8 @@
     <header class="hero">
       <div>
         <p class="eyebrow">Interactive financial decision support</p>
-        <h1>Treasury Yield Curve <span>Scenario Lab</span></h1>
-        <p class="subtitle">Compare observed Treasury yields and model hypothetical changes to the 10Y–5Y spread.</p>
+        <h1>Treasury Yield Curve <span>Forecast Lab</span></h1>
+        <p class="subtitle">Model-calibrated Treasury forecasts and separately labeled conditional Fed-rate scenarios.</p>
       </div>
       <div class="source-stamp" aria-live="polite">
         <span class="stamp-label">Historical data</span>
@@ -38,82 +39,58 @@
     <div id="data-error" class="error" role="alert" hidden></div>
 
     <div class="workspace">
-      <aside class="controls-rail" aria-label="Scenario assumptions">
+      <aside class="controls-rail" aria-label="Model forecasting and conditional policy controls">
     <section class="controls card" aria-labelledby="controls-heading">
       <div class="section-line">
         <div>
-          <p class="eyebrow">Explore assumptions</p>
-          <h2 id="controls-heading">Scenario controls</h2>
+          <p class="eyebrow">Calibrated forecasting engine</p>
+          <h2 id="controls-heading">Forecast controls</h2>
         </div>
-        <button id="reset" type="button" class="secondary">Reset scenario</button>
+        <button id="reset" type="button" class="secondary">Clear scenario</button>
       </div>
+      <p class="model-status" id="model-status">Loading fitted Treasury forecast…</p>
       <div class="control-grid">
         <label class="control">
-          <span>Sensitivity fit window <small>Historical regression sample; chart view has its own control</small></span>
-          <select id="history-window">
-            <option value="5">Last 5 years</option>
-            <option value="10" selected>Last 10 years</option>
-            <option value="15">Last 15 years</option>
-            <option value="all">All available history</option>
-          </select>
-        </label>
-        <label class="control">
-          <span>Illustrative adjustment horizon <small>Illustrative, not a forecast</small></span>
-          <select id="horizon">
-            <option value="6">6 months</option>
-            <option value="12" selected>12 months</option>
-            <option value="24">24 months</option>
-          </select>
+          <span>Forecast horizon</span>
+          <select id="horizon"><option value="6">6 months</option><option value="12" selected>12 months</option><option value="24">24 months</option></select>
         </label>
         <label class="control slider-control">
-          <span>Fed rate adjustment <output id="delta-value" for="delta">−50 bps</output></span>
-          <input id="delta" type="range" min="-200" max="200" value="-50" step="25">
-          <span class="endpoints"><span>−200 bps</span><span>0</span><span>+200 bps</span></span>
+          <span>Next-month Fed-rate deviation <output id="delta-value" for="delta">0 bps</output></span>
+          <input id="delta" type="range" min="-100" max="100" value="0" step="25">
+          <span class="endpoints"><span>−100 bps</span><span>0</span><span>+100 bps</span></span>
         </label>
-        <label class="control slider-control">
-          <span>5Y response / 1 pp policy change <output id="beta5-value" for="beta5">0.65×</output></span>
-          <input id="beta5" type="range" min="-1" max="2" value="0.65" step="0.05">
-          <span class="endpoints"><span>−1.0×</span><span>0×</span><span>2.0×</span></span>
-        </label>
-        <label class="control slider-control">
-          <span>10Y response / 1 pp policy change <output id="beta10-value" for="beta10">0.30×</output></span>
-          <input id="beta10" type="range" min="-1" max="2" value="0.30" step="0.05">
-          <span class="endpoints"><span>−1.0×</span><span>0×</span><span>2.0×</span></span>
-        </label>
-        <label class="control slider-control">
-          <span>Sensitivity width <output id="corridor-value" for="corridor">25 bps</output></span>
-          <input id="corridor" type="range" min="0" max="100" value="25" step="5">
-          <span class="endpoints"><span>0 bps</span><span>50 bps</span><span>100 bps</span></span>
+        <p class="policy-note">This is a <strong>deviation from the statistical baseline</strong>, not a market-implied rate decision. Conditional response is estimated from historical co-movement, not identified causal effects.</p>
+        <label class="control band-toggle">
+          <span>Historical-error ranges</span>
+          <span class="band-inline"><input type="checkbox" id="show-bands" checked>10th–90th percentiles</span>
         </label>
       </div>
-      <div class="scenario-impact" role="group" aria-label="Live scenario results">
-        <div><span>Model 5Y</span><strong id="preview-five">—</strong></div>
-        <div><span>Model 10Y</span><strong id="preview-ten">—</strong></div>
-        <div class="scenario-impact-spread"><span>10Y–5Y</span><strong id="preview-spread">—</strong></div>
-        <p id="scenario-status" class="scenario-status" aria-live="polite">Loading scenario…</p>
+      <div class="scenario-impact" role="group" aria-label="Live fitted model and scenario results">
+        <div><span>Forecast 5Y</span><strong id="preview-five">—</strong></div>
+        <div><span>Forecast 10Y</span><strong id="preview-ten">—</strong></div>
+        <div class="scenario-impact-spread"><span>Forecast spread</span><strong id="preview-spread">—</strong></div>
+        <p id="scenario-status" class="scenario-status" aria-live="polite">Loading fitted baseline…</p>
       </div>
-      <details class="fit-disclosure">
-        <summary>Historical fit <span>optional</span></summary>
-      <div class="fit-panel">
-        <div>
-          <p class="fit-head">Observed historical co-movement <span class="info">Not a causal Fed-policy estimate</span></p>
-          <p id="fit-summary">Calculating from historical FRED observations…</p>
-        </div>
-        <button type="button" id="apply-fit" class="secondary" disabled>Use fitted response assumptions</button>
-      </div>
+      <p class="control-note" id="fit-message">Baseline forecasts are fitted from Treasury data. Conditional policy adjustments are observational what-if changes, not causal predictions.</p>
+      <details class="fit-disclosure" open>
+        <summary>Out-of-sample forecast accuracy</summary>
+        <p class="validation-note">Expanding-window rolling backtest RMSE in basis points. Compare with unchanged-yield forecasts; lower is better.</p>
+        <div class="validation-scroll"><table class="validation-table" aria-label="Out-of-sample forecast accuracy">
+          <thead><tr><th>Months</th><th>Metric</th><th>Model</th><th>No change</th></tr></thead>
+          <tbody id="backtest-table"><tr><td colspan="4">Loading validation…</td></tr></tbody>
+        </table></div>
       </details>
-      <p class="control-note" id="fit-message" aria-live="polite">Upper/lower yield bounds use half the selected width; spread bounds use its full width. All are hypothetical sensitivity ranges, not standard deviations or probabilities.</p>
-    <details class="methods card">
-      <summary>Methodology, limitations &amp; data sources</summary>
-      <div class="methods-body">
-        <p><strong>Audience and decision:</strong> Fixed-income analysts evaluating how assumptions about policy-rate changes and maturity-specific responses affect the shape of the Treasury curve. This is a what-if tool, not an investment recommendation.</p>
-        <p><strong>Observed data:</strong> FRED <a href="https://fred.stlouisfed.org/series/DGS5">DGS5</a>, <a href="https://fred.stlouisfed.org/series/DGS10">DGS10</a>, and <a href="https://fred.stlouisfed.org/series/DFF">DFF</a>. Each month uses the latest available reading for each series; the current month may be incomplete. Figures are annualized yield percentages; spreads are shown in percentage points or basis points as labeled.</p>
-        <p><strong>Historical fit:</strong> For the selected lookback period, ordinary least squares calculates the contemporaneous relationship between monthly changes in DFF and monthly changes in each Treasury yield. This is not an identified causal response; markets anticipate policy, and term premia and other factors matter. Clicking “Use fitted response assumptions” rounds the diagnostics to the nearest 0.05×.</p>
-        <p><strong>Scenario math:</strong> A user-selected cumulative rate shift is phased in linearly over the selected horizon. Each Treasury yield moves by its separate, editable response factor times the cumulative shift. The spread equals projected 10Y minus projected 5Y. A negative modeled spread is a hypothetical inversion, not a recession forecast. Estimated crossing time follows solely from this assumed linear path.</p>
-        <p><strong>Corridor:</strong> The shaded ± basis-point spread corridor widens linearly to the user-selected terminal width. It is a sensitivity illustration, NOT a statistical confidence interval, probability of inversion, or prediction. This simplified model omits forward guidance, term-premium shocks, market expectations and macroeconomic feedback.</p>
-        <p><strong>Reproducibility:</strong> The <a href="https://github.com/jaruso/finc-560/blob/main/src/assignments/week_06.py">Python source</a> retrieves the FRED series using the repository's existing cache/provider and publishes this site's JSON snapshot with a GitHub Actions refresh. No FRED API key or proprietary data is required.</p>
-      </div>
-    </details>
+      <details class="methods card">
+        <summary>Model methodology &amp; limitations</summary>
+        <div class="methods-body">
+          <p><strong>Observations:</strong> Eight FRED Treasury constant maturities (1, 2, 3, 5, 7, 10, 20 and 30 years) and the <a href="https://fred.stlouisfed.org/series/DFF">effective federal funds rate</a>. Each monthly yield cross-section is selected from a single common trading date. The latest month may be incomplete.</p>
+          <p><strong>Forecast baseline:</strong> Fixed-decay Nelson–Siegel level/slope/curvature factor regression (λ = 0.0609 per month), followed by separately estimated monthly factor AR(1) forecasts. This is a simplified Diebold–Li-style approach, not an arbitrage-free model.</p>
+          <p><strong>Historical-error ranges:</strong> 10th–90th percentile forecast errors estimated using expanding rolling-origin out-of-sample backtests at every horizon; joint spread errors are measured directly. Descriptive historical-error ranges do not guarantee future coverage, especially under policy scenarios.</p>
+          <p><strong>Policy dial:</strong> One-time next-month DFF deviation relative to the statistical baseline. The fitted monthly association of changes in DFF with changes in the model factors is propagated using AR coefficients. This is observational association, not a measured causal impact of a surprise Fed decision or a futures-implied forecast.</p>
+          <p><strong>Validation:</strong> 6, 12 and 24-month rolling out-of-sample RMSE compared with an unchanged-yields baseline. No future observations enter models fitted at earlier historical forecast origins. Partial current months are excluded from model training and backtests.</p>
+          <p><strong>Refresh:</strong> Automated weekday FRED data/model refresh, not real-time market streaming. Failed refreshes retain the prior verified snapshot. <a href="https://github.com/jaruso/finc-560/blob/main/src/assignments/week_06_forecast.py">Review model implementation.</a></p>
+        </div>
+      </details>
     </section>
       </aside>
       <section class="analysis-pane" aria-label="Interactive yield chart workspace">
@@ -121,7 +98,7 @@
       <div class="kpi card"><span>5Y observed</span><strong id="kpi-5">—</strong><small>Latest available historical month</small></div>
       <div class="kpi card"><span>10Y observed</span><strong id="kpi-10">—</strong><small>Latest available historical month</small></div>
       <div class="kpi card"><span>Observed spread</span><strong id="kpi-base-spread">—</strong><small>Below 0 = inverted</small></div>
-      <div class="kpi card prominent"><span>Scenario spread</span><strong id="kpi-terminal">—</strong><small id="kpi-crossing">Requires historical data</small></div>
+      <div class="kpi card prominent"><span>Modeled spread</span><strong id="kpi-terminal">—</strong><small id="kpi-crossing">Requires historical data</small></div>
     </section>
       <div class="chart-toolbar card" aria-label="Chart controls">
         <label class="chart-choice"><span>Chart</span>
@@ -144,26 +121,26 @@
         <button id="focus-projection" type="button" class="secondary focus-button" aria-pressed="false">Focus projection</button>
         <span class="chart-badge">Continuous calendar scale • One chart</span>
       </div>
-      <p id="axis-explanation" class="axis-explanation" aria-live="polite">Continuous calendar dates: 10 years observed → 12 months hypothetical. Projection width reflects its actual duration. Use Focus projection to inspect a short scenario without distorting time.</p>
+      <p id="axis-explanation" class="axis-explanation" aria-live="polite">Ten years of observed data followed by the fitted model horizon on a continuous calendar axis.</p>
       <div class="chart-grid" id="chart-stage" aria-label="Continuous historical and projected time-series charts">
         <article class="chart-card card">
           <header class="chart-heading">
             <h2>5Y and 10Y Treasury yields</h2>
-            <p>Two maturity lines: solid observed yields continue as dashed hypothetical paths with understated sensitivity shading.</p>
+            <p>Solid lines are observations; dashed paths show data-calibrated forecasts and conditional adjustments.</p>
           </header>
           <div id="chart-yields" class="plot" role="img" aria-label="Five-year and ten-year Treasury yields on one continuous calendar axis with hypothetical future paths"></div>
         </article>
         <article class="chart-card card is-view-hidden" aria-hidden="true">
           <header class="chart-heading">
             <h2>10Y − 5Y spread</h2>
-            <p>Observed yield-curve spread continuing into hypothetical central, upper and lower scenarios.</p>
+            <p>Observed spread followed by fitted forecasts and historical forecast-error ranges.</p>
           </header>
           <div id="chart-spread" class="plot" role="img" aria-label="Observed 10-year minus 5-year spread and hypothetical scenarios on one continuous calendar axis"></div>
         </article>
       </div>
       </section>
     </div>
-    <footer>FINC-560 • Interactive Financial Dashboard • Historical observations and hypothetical scenarios are labeled separately.</footer>
+    <footer>FINC-560 • Interactive Financial Dashboard • Observations, fitted forecasts and conditional scenarios are labeled separately.</footer>
   </main>
 </body>
 </html>

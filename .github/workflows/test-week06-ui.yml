@@ -7,16 +7,20 @@ on:
       - "docs/index.html"
       - "docs/assets/site-transitions.css"
       - "docs/week-06/**"
+      - "src/assignments/week_06_forecast.py"
+      - "tests/**"
       - "tests/week06_browser.test.cjs"
       - ".github/workflows/test-week06-ui.yml"
   push:
     branches:
       - main
-      - fix/week06-interactions-transitions
+      - feature/week06-live-diebold-li
     paths:
       - "docs/index.html"
       - "docs/assets/site-transitions.css"
       - "docs/week-06/**"
+      - "src/assignments/week_06_forecast.py"
+      - "tests/**"
       - "tests/week06_browser.test.cjs"
       - ".github/workflows/test-week06-ui.yml"
 
@@ -37,7 +41,7 @@ jobs:
           npm install --no-save playwright@1.55.1 plotly.js-dist-min@2.32.0
           npx playwright install --with-deps chromium
       - name: Check scenario math
-        run: node --test tests/week_06_model.test.cjs
+        run: node --test tests/week_06_model.test.cjs tests/week06_forecast_frontend.test.cjs
       - name: Test real interactions and navigation in Chromium
         run: node tests/week06_browser.test.cjs
       - name: Upload browser layouts

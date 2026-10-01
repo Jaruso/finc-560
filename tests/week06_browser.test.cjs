@@ -1,145 +1,158 @@
-/* Week 6 regression: two selectable charts with continuous historical/projected dates. */
-const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const { spawn } = require("node:child_process");
-const { chromium } = require("playwright");
-const base = "http://127.0.0.1:8788";
-async function awaitServer() {
-  for (let i = 0; i < 60; i++) {
-    try { if ((await fetch(base + "/week-06/")).ok) return; } catch {}
-    await new Promise(r => setTimeout(r, 200));
+/* Real Chromium + real Plotly against a deterministic, test-only model snapshot. */
+const assert=require("node:assert/strict");
+const fs=require("node:fs");
+const {spawn}=require("node:child_process");
+const {chromium}=require("playwright");
+const {makeFixture}=require("./week06_forecast_fixture.cjs");
+const base="http://127.0.0.1:8788";
+async function waitServer(){
+  for(let i=0;i<60;i++){
+    try{if((await fetch(base+"/week-06/")).ok)return;}catch{}
+    await new Promise(done=>setTimeout(done,180));
   }
   throw Error("Preview server did not start");
 }
-async function slide(page,id,value) {
-  await page.$eval(id,(n,v)=>{
-    n.value = String(v);
+async function slide(page,id,v){
+  await page.$eval(id,(n,value)=>{
+    n.value=String(value);
     n.dispatchEvent(new Event("input",{bubbles:true}));
     n.dispatchEvent(new Event("change",{bubbles:true}));
-  },value);
+  },v);
 }
 (async()=>{
   const server=spawn("python3",["-m","http.server","8788","--bind","127.0.0.1","--directory","docs"],{stdio:"ignore"});
   let browser;
-  try {
-    await awaitServer();
+  try{
+    await waitServer();
     browser=await chromium.launch({headless:true});
     const page=await browser.newPage({viewport:{width:1440,height:900},reducedMotion:"no-preference"});
     const errors=[];
-    let inSimulator=false;
-    page.on("pageerror",e=>{if(inSimulator)errors.push(e.message);});
+    let onSimulator=false;
+    page.on("pageerror",e=>{if(onSimulator)errors.push(e.message);});
     await page.route("https://cdn.plot.ly/**",r=>r.fulfill({
       path:require.resolve("plotly.js-dist-min"),contentType:"application/javascript"
     }));
+    // This fixture tests the browser independent of FRED network availability.
+    // Separate Python/refresh CI verifies the actual FRED fitting pipeline.
+    await page.route("**/week-06/data.json",r=>r.fulfill({json:makeFixture()}));
     await page.goto(base+"/#week-05",{waitUntil:"domcontentloaded"});
     await page.locator("a.week-06-nav").click();
     await page.waitForURL("**/week-06/");
-    inSimulator=true;
-    await page.waitForFunction(()=>
-      document.querySelector("#chart-yields")?.data?.length===8 &&
-      document.querySelector("#chart-yields").data[0].x.length===120);
-    const select=await page.locator("#chart-primary option").allTextContents();
-    assert.deepEqual(select,["5Y & 10Y yields","10Y–5Y spread"]);
-    assert.equal(await page.locator("#mode-compare").count(),0);
-    assert.equal(await page.locator("#chart-stage > .chart-card:not(.is-view-hidden)").count(),1);
-
-    const first=await page.locator("#chart-yields").evaluate(n=>({
-      x:n.data.map(t=>t.x),y:n.data.map(t=>t.y),
-      traces:n.data.map(t=>({name:t.name,showlegend:t.showlegend,line:t.line,fill:t.fill,fillcolor:t.fillcolor})),
-      xaxis:n.layout.xaxis,secondAxis:n.layout.xaxis2,meta:n.layout.meta,shapes:n.layout.shapes
-    }));
-    assert.equal(first.secondAxis,undefined,"Only one calendar x-axis.");
-    assert.equal(first.xaxis.range[0],first.x[0][0]);
-    assert.equal(first.meta.forecastStart,first.x[0].at(-1));
-    assert.equal(first.meta.forecastStart,first.x[1].at(-1));
-    for(let i=2;i<8;i++)assert.equal(first.x[i][0],first.meta.forecastStart);
-    assert.ok(first.meta.boundaryFraction>.89 && first.meta.boundaryFraction<.94);
-    assert.notDeepEqual(first.y[0],first.y[1],"Distinct 5Y and 10Y observed histories.");
-    assert.equal(first.traces[0].name,"5Y Treasury");
-    assert.equal(first.traces[1].name,"10Y Treasury");
-    assert.equal(first.traces[0].line.color,first.traces[6].line.color);
-    assert.equal(first.traces[1].line.color,first.traces[7].line.color);
-    assert.equal(first.traces[6].line.dash,"dash");
-    assert.equal(first.traces[7].line.dash,"dash");
-    assert.equal(first.traces[6].showlegend,false);
-    assert.equal(first.traces[7].showlegend,false);
-    assert.equal(first.traces[3].fill,"tonexty");
-    assert.equal(first.traces[5].fill,"tonexty");
-    assert.equal(first.y[0].at(-1),first.y[6][0]);
-    assert.equal(first.y[1].at(-1),first.y[7][0]);
-    assert.ok(first.shapes.some(s=>s.xref==="x"&&s.x0===first.meta.forecastStart&&s.x1===first.meta.forecastStart));
-
-    const observed5=first.y[0],observed10=first.y[1];
-    const terminal5=first.y[6].at(-1),terminal10=first.y[7].at(-1);
-    await slide(page,"#delta",200);
-    await page.waitForFunction(old=>{
-      const n=document.querySelector("#chart-yields");
-      return n?.data?.[6]?.y&&Math.abs(n.data[6].y.at(-1)-old)>.01;
-    },terminal5);
-    const changed=await page.locator("#chart-yields").evaluate(n=>n.data.map(d=>d.y));
-    assert.deepEqual(changed[0],observed5,"5Y observed history unaffected by scenario");
-    assert.deepEqual(changed[1],observed10,"10Y observed history unaffected by scenario");
-    assert.ok(Math.abs(changed[7].at(-1)-terminal10)>.01,"10Y hypothetical changes too");
-    await slide(page,"#beta10",1.2);
-    const tenAfter=changed[7].at(-1);
-    await page.waitForFunction(old=>Math.abs(document.querySelector("#chart-yields")?.data?.[7]?.y.at(-1)-old)>.01,tenAfter);
-
-    await slide(page,"#corridor",80);
+    onSimulator=true;
     await page.waitForFunction(()=>{
-      const d=document.querySelector("#chart-yields")?.data;
-      return d && Math.abs(d[3].y.at(-1)-d[2].y.at(-1)-.8)<1e-6 &&
-        Math.abs(d[5].y.at(-1)-d[4].y.at(-1)-.8)<1e-6;
+      const d=document.querySelector("#chart-yields");
+      return d?.data?.length===8&&d.data[0].x.length===120&&d.data[6].x.length===13;
     });
+    assert.deepEqual(await page.locator("#chart-primary option").allTextContents(),
+      ["5Y & 10Y yields","10Y–5Y spread"]);
+    assert.equal(await page.locator("#chart-stage > .chart-card:not(.is-view-hidden)").count(),1);
+    assert.equal(await page.locator("#model-status").textContent(),
+      "Fitted Diebold–Li style · 189 training months · 8 Treasury maturities");
+    assert.equal(await page.locator("#backtest-table tr").count(),9);
+
+    const baseline=await page.locator("#chart-yields").evaluate(n=>({
+      names:n.data.map(t=>t.name),hist5:n.data[0].y,hist10:n.data[1].y,
+      pred5:n.data[6].y,pred10:n.data[7].y,
+      scenarioStart:n.layout.meta.forecastStart,
+      histEnd:n.data[0].x.at(-1),futureStart:n.data[6].x[0],
+      boundary:n.layout.meta.boundaryFraction,
+      sameAxis:n.layout.xaxis2===undefined,
+      bands:n.layout.meta.empiricalBands,shapes:n.layout.shapes
+    }));
+    assert.deepEqual(baseline.names.slice(0,2),["5Y Treasury","10Y Treasury"]);
+    assert.equal(baseline.pred5[0],baseline.hist5.at(-1));
+    assert.equal(baseline.pred10[0],baseline.hist10.at(-1));
+    assert.notEqual(baseline.pred5.at(-1),baseline.hist5.at(-1));
+    assert.equal(baseline.scenarioStart,baseline.histEnd);
+    assert.equal(baseline.futureStart,baseline.histEnd);
+    assert.ok(baseline.sameAxis&&baseline.boundary>.88&&baseline.boundary<.94);
+    assert.equal(baseline.bands,true);
+    const initialTerminal5=baseline.pred5.at(-1);
+    const initialTerminal10=baseline.pred10.at(-1);
+    const actual5=await page.locator("#kpi-5").textContent();
+
+    // The policy input is data-calibrated, not separate arbitrary 5Y and 10Y slopes.
+    assert.equal(await page.locator("#beta5").count(),0);
+    assert.equal(await page.locator("#beta10").count(),0);
+    assert.equal(await page.locator("#corridor").count(),0);
+    await slide(page,"#delta",50);
+    await page.waitForFunction(previous=>{
+      const g=document.querySelector("#chart-yields");
+      return g?.data?.[6]?.y&&Math.abs(g.data[6].y.at(-1)-previous)>.01;
+    },initialTerminal5);
+    const shocked=await page.locator("#chart-yields").evaluate(n=>({
+      p5:n.data[6].y.at(-1),p10:n.data[7].y.at(-1),
+      actual5:n.data[0].y,actual10:n.data[1].y,
+      label:n.layout.annotations[1].text,meta:n.layout.meta
+    }));
+    assert.notEqual(shocked.p10,initialTerminal10);
+    assert.deepEqual(shocked.actual5,baseline.hist5);
+    assert.deepEqual(shocked.actual10,baseline.hist10);
+    assert.equal(shocked.label,"<b>CONDITIONAL SCENARIO</b>");
+    assert.equal(await page.locator("#kpi-5").textContent(),actual5);
+    assert.equal(shocked.meta.conditionalShockBp,50);
+
+    // Confidence setting changes historical-error shading, never the central.
+    await page.locator("#show-bands").uncheck();
+    await page.waitForFunction(()=>document.querySelector("#chart-yields")?.data?.length===4);
+    const without=await page.locator("#chart-yields").evaluate(n=>n.data.map(t=>t.y.at(-1)));
+    assert.equal(without[2],shocked.p5);
+    assert.equal(without[3],shocked.p10);
+    await page.locator("#show-bands").check();
+    await page.waitForFunction(()=>document.querySelector("#chart-yields")?.data?.length===8);
+
     await page.selectOption("#horizon","6");
     await page.waitForFunction(()=>document.querySelector("#chart-yields")?.data?.[6]?.x.length===7);
     const short=await page.locator("#chart-yields").evaluate(n=>n.layout.meta.boundaryFraction);
-    assert.ok(short>.93&&short<.97,"Six months is proportionally narrow beside decade history");
+    assert.ok(short>.93&&short<.97);
     await page.selectOption("#horizon","24");
     await page.waitForFunction(()=>document.querySelector("#chart-yields")?.data?.[6]?.x.length===25);
-    await page.waitForFunction(old=>document.querySelector("#chart-yields")?.layout?.meta?.boundaryFraction<old,short);
+    const long=await page.locator("#chart-yields").evaluate(n=>n.layout.meta.boundaryFraction);
+    assert.ok(long<short&&long>.81&&long<.87);
 
     await page.locator("#focus-projection").click();
     await page.waitForFunction(()=>document.querySelector("#chart-yields")?.layout?.meta?.focused===true);
-    const focus=await page.locator("#chart-yields").evaluate(n=>n.layout.meta);
-    assert.ok(focus.boundaryFraction>.46&&focus.boundaryFraction<.54);
-    await page.selectOption("#chart-context","all");
-    await page.waitForFunction(()=>document.querySelector("#chart-yields")?.data?.[0]?.x.length>180);
+    const focused=await page.locator("#chart-yields").evaluate(n=>n.layout.meta.boundaryFraction);
+    assert.ok(focused>.46&&focused<.54);
     await page.locator("#focus-projection").click();
-    await page.waitForFunction(()=>document.querySelector("#chart-yields")?.layout?.meta?.focused===false);
+    await page.selectOption("#chart-context","180");
+    await page.waitForFunction(()=>document.querySelector("#chart-yields")?.data?.[0]?.x.length===180);
+
     await page.selectOption("#chart-primary","chart-spread");
     await page.waitForFunction(()=>document.querySelector("#chart-spread")?.data?.length===4);
     const spread=await page.locator("#chart-spread").evaluate(n=>({
-      n:n.data.length,meta:n.layout.meta,shapes:n.layout.shapes,terminal:n.data[3].x.at(-1)
+      first:n.data[0].y.at(-1),central:n.data[3].y,
+      lower:n.data[1].y,upper:n.data[2].y,
+      zero:n.layout.shapes.find(s=>s.y0===0&&s.y1===0),
+      bound:n.layout.meta.forecastStart
     }));
-    assert.equal(spread.n,4,"Original spread chart retained");
-    assert.equal(spread.meta.equalTimeScale,true);
-    assert.ok(spread.shapes.some(s=>s.y0===0&&s.y1===0&&s.x1===spread.terminal),
-      "Spread chart retains the zero inversion line");
-
+    assert.ok(spread.zero&&spread.zero.xref==="x");
+    assert.equal(spread.lower[0],spread.first);
+    assert.equal(spread.upper[0],spread.first);
+    assert.equal(spread.central[0],spread.first);
+    await page.locator("#reset").click();
+    await page.waitForFunction(()=>document.querySelector("#delta-value").textContent==="0 bps");
+    assert.equal(await page.locator("#horizon").inputValue(),"12");
+    assert.equal(await page.locator("#show-bands").isChecked(),true);
     await page.selectOption("#chart-primary","chart-yields");
     await page.waitForFunction(()=>document.querySelector("#chart-yields")?.data?.length===8);
-    assert.equal(await page.locator("#chart-stage > .chart-card:not(.is-view-hidden)").count(),1);
-    await page.locator("#reset").click();
-    await page.waitForFunction(()=>document.querySelector("#delta-value")?.textContent==="−50 bps");
-    assert.equal(await page.locator("#chart-context").inputValue(),"120");
     const desktop=await page.evaluate(()=>({
       bottom:document.querySelector("#chart-stage").getBoundingClientRect().bottom,
-      viewport:innerHeight,
-      railRight:document.querySelector(".controls-rail").getBoundingClientRect().right,
-      chartLeft:document.querySelector("#chart-stage").getBoundingClientRect().left
+      height:innerHeight,rail:document.querySelector(".controls-rail").getBoundingClientRect().right,
+      left:document.querySelector("#chart-stage").getBoundingClientRect().left
     }));
-    assert.ok(desktop.bottom<=desktop.viewport+4&&desktop.railRight<=desktop.chartLeft);
+    assert.ok(desktop.bottom<=desktop.height+4&&desktop.rail<=desktop.left);
     fs.mkdirSync("test-artifacts",{recursive:true});
-    await page.screenshot({path:"test-artifacts/week06-two-options.png",fullPage:false});
+    await page.screenshot({path:"test-artifacts/week06-fitted-model.png",fullPage:false});
     await page.setViewportSize({width:390,height:844});
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));
-    await page.screenshot({path:"test-artifacts/week06-two-options-mobile.png",fullPage:true});
-    assert.deepEqual(errors,[],"No simulator JavaScript exceptions");
-    inSimulator=false;
+    await page.screenshot({path:"test-artifacts/week06-fitted-mobile.png",fullPage:true});
+    assert.deepEqual(errors,[],"No browser exceptions");
+    onSimulator=false;
     await page.locator(".lab-home").click();
     await page.waitForURL(/\/(#week-05)?$/);
-    console.log("PASS: two chart options, 5Y+10Y historical and hypothetical lines, spread, chronology, controls and mobile.");
-  } finally {
+    console.log("PASS: fitted baseline, shock response, empirical intervals, RMSE table, chart switching, calendar axes and mobile.");
+  }finally{
     if(browser)await browser.close();
     server.kill("SIGTERM");
   }
