@@ -4,7 +4,7 @@ Small authenticated Finnhub proxy for the Week 6 company dashboard. GitHub Pages
 
 ## Configure Cloudflare
 
-1. Prefer the EXISTING Cloudflare Worker with your existing FINNHUB_TOKEN secret. If its name is not finc-560, edit the name field in worker/wrangler.jsonc to EXACTLY match your existing Cloudflare Worker BEFORE connecting to GitHub. Creating a second Worker does not transfer secrets.
+1. Prefer the EXISTING Cloudflare Worker with your existing FINNHUB_TOKEN secret. The checked-in Worker name is finc-560-finnhub to match the existing Cloudflare Worker; keep worker/wrangler.jsonc in sync if you ever rename it. Creating a second Worker does not transfer secrets.
 2. In Worker Settings > Variables and Secrets, retain FINNHUB_TOKEN as a runtime Secret. Add a SECOND, independent runtime Secret named DASHBOARD_ACCESS_TOKEN with a long random value. Neither secret belongs in GitHub, build variables, query parameters, public JavaScript, screenshots, or chat.
 3. Worker Settings > Builds > Connect: select Jaruso/finc-560, branch main, root directory worker, leave Build command blank, Deploy command npx wrangler deploy. If available, set Build watch paths to worker/**.
 4. Once deployed, visit https://YOUR-WORKER.YOUR-SUBDOMAIN.workers.dev/health. It should return {"ok":true}; this does NOT verify Finnhub access. For authenticated testing, use curl with Authorization: Bearer <DASHBOARD_ACCESS_TOKEN> to request /quote?symbol=AAPL. Never include either secret in the URL or a saved terminal transcript.
