@@ -521,7 +521,7 @@ async function selectPrimary(page,ticker){
     assert.equal(await page.locator("#ticker-pills .ticker-pill").count(),2);
     assert.equal(await page.locator("#ticker-pills .ticker-pill").first()
       .locator("strong").textContent(),"MSFT");
-    assert.equal(await page.locator("#company-name").textContent(),"MSFT");
+    assert.equal(await page.locator("#company-name").textContent(),"Test Corporation");
     assert.equal(marketCalls.length,oldQuoteCalls);
     assert.equal(newsCalls.length,oldNewsCalls);
     await page.locator("#ticker-pills .ticker-pill-remove").last().click();
@@ -704,6 +704,49 @@ async function selectPrimary(page,ticker){
       document.querySelectorAll("#news-list .news-item").length>0);
     assert.ok(await page.locator("#news-list .news-item").count()>0);
     assert.equal(await page.locator("#data-error").isVisible(),false);
+
+    // Staged AAPL must not affect displayed MSFT until Analyze; both
+    // comparative charts use real independent statements and fiscal dates.
+    await selectPrimary(page,"MSFT");
+    await page.waitForFunction(()=>document.querySelector("#company-chart")?.data?.length===2);
+    await page.locator("#reset").click();
+    await page.locator("#custom-ticker").fill("AAPL");
+    await page.locator("#custom-ticker").press("Enter");
+    assert.equal(await page.locator("#ticker-pills .ticker-pill").count(),2);
+    assert.equal(await page.locator("#company-name").textContent(),"Test Corporation");
+    assert.equal(await page.locator("#company-chart").evaluate(g=>g.layout.meta.singleChart),true);
+    await page.locator("#analyze-tickers").click();
+    await page.waitForFunction(()=>document.querySelector("#company-chart")?.layout?.meta
+      ?.comparison===true&&document.querySelector("#company-chart")?.data?.length===4);
+    const comparative=await page.locator("#company-chart").evaluate(g=>({
+      primary:g.layout.meta.primary,tickers:g.layout.meta.tickers,
+      indexed:g.layout.meta.indexed,
+      anchor1:g.data[0].y[0],anchor2:g.data[2].y[0]
+    }));
+    assert.deepEqual(comparative.tickers,["MSFT","AAPL"]);
+    assert.equal(comparative.primary,"MSFT");
+    assert.equal(comparative.indexed,true);
+    assert.equal(comparative.anchor1,100);
+    assert.equal(comparative.anchor2,100);
+    assert.equal(await page.locator("#equity-comparison-sources").isVisible(),true);
+    assert.equal(await page.locator("#equity-comparison-sources a").count(),2);
+    assert.match(await page.locator("#news-company-title").textContent(),/MSFT/,
+      "News still follow primary ticker during a comparison");
+    await page.locator('[data-chart="company-chart"] .equity-scale-switch '+
+      'button[data-mode="nominal"]').click();
+    await page.waitForFunction(()=>document.querySelector("#company-chart")
+      ?.layout?.meta?.indexed===false);
+    assert.equal(await page.locator("#equity-revenue").evaluate(g=>
+      g.layout.meta.indexed),true,"Each absolute-value chart keeps its own scale");
+    await page.locator("#ticker-pills .ticker-pill-remove").first().click();
+    assert.equal(await page.locator("#ticker-pills .ticker-pill strong").textContent(),"AAPL");
+    assert.equal(await page.locator("#company-chart").evaluate(g=>g.layout.meta.primary),
+      "MSFT","Removing a pill does not replot the applied comparison");
+    await page.locator("#analyze-tickers").click();
+    await page.waitForFunction(()=>document.querySelector("#company-chart")
+      ?.layout?.meta?.singleChart===true&&
+      document.querySelector("#news-company-title")?.textContent.includes("AAPL"));
+    assert.equal(await page.locator("#equity-comparison-sources").isVisible(),false);
     assert.deepEqual(errors,[],"No uncaught browser errors during ticker/news loading");
     onCompany=false;
     await page.locator(".workspaces a").first().click();
