@@ -20,6 +20,13 @@ async function slide(page,id,value){
     node.dispatchEvent(new Event("change",{bubbles:true}));
   },value);
 }
+async function selectPrimary(page,ticker){
+  const remove=page.locator("#ticker-pills .ticker-pill-remove");
+  while(await remove.count())await remove.first().click();
+  await page.locator("#custom-ticker").fill(ticker);
+  await page.locator("#custom-ticker").press("Enter");
+  await page.locator("#analyze-tickers").click();
+}
 (async()=>{
   const server=spawn("python3",["-m","http.server","8788",
     "--bind","127.0.0.1","--directory","docs"],{stdio:"ignore"});
@@ -190,9 +197,11 @@ async function slide(page,id,value){
     await page.locator(".workspaces a").nth(1).click();
     await page.waitForURL("**/week-06/companies/");
     onCompany=true;
-    await page.waitForFunction(()=>document.querySelector("#ticker")?.disabled===false)
+    await page.waitForFunction(()=>
+      document.querySelectorAll("#ticker-pills .ticker-pill").length===1 &&
+      document.querySelector("#ticker-pills")?.textContent.includes("MSFT"))
       .catch(async error => {
-        throw new Error("Ticker failed to load: "+
+        throw new Error("Ticker pills failed to initialize: "+
           await page.locator("#data-error").textContent()+"; "+error.message);
       });
     await page.waitForFunction(()=>document.querySelector("#company-chart")?.data?.length===2 &&
@@ -244,8 +253,11 @@ async function slide(page,id,value){
       /Annual financial reports.*FY ending 2025-06-30.*(Verified annual snapshot|SEC refreshed)/s);
     assert.equal(await page.locator("#data-error").isVisible(),false,
       "Rendering a forecast must not show the old undefined .catch error");
-    assert.equal(await page.locator("#ticker option").count(),4);
-    assert.equal(await page.locator("#ticker").inputValue(),"MSFT");
+    assert.equal(await page.locator("#ticker").count(),0,
+      "Old single-select company dropdown must be removed");
+    assert.equal(await page.locator("#ticker-pills .ticker-pill").count(),1);
+    assert.match(await page.locator("#ticker-pills").textContent(),/MSFT.*Primary/);
+    assert.equal(await page.locator("#custom-ticker").inputValue(),"");
     await page.waitForFunction(()=>
       document.querySelectorAll("#news-list .news-item").length===15 &&
       document.querySelector("#news-status")?.dataset.state==="ready");
@@ -502,7 +514,20 @@ async function slide(page,id,value){
       "Expanding observation window shifts boundary right on the same scale");
     assert.match(await page.locator("#backtest").textContent(),/historical one-year origins/);
 
-    await page.selectOption("#ticker","AAPL");
+    // Enter and pill removal only change pending selection, not analysis.
+    const oldQuoteCalls=marketCalls.length,oldNewsCalls=newsCalls.length;
+    await page.locator("#custom-ticker").fill("AAPL");
+    await page.locator("#custom-ticker").press("Enter");
+    assert.equal(await page.locator("#ticker-pills .ticker-pill").count(),2);
+    assert.equal(await page.locator("#ticker-pills .ticker-pill").first()
+      .locator("strong").textContent(),"MSFT");
+    assert.equal(await page.locator("#company-name").textContent(),"MSFT");
+    assert.equal(marketCalls.length,oldQuoteCalls);
+    assert.equal(newsCalls.length,oldNewsCalls);
+    await page.locator("#ticker-pills .ticker-pill-remove").last().click();
+    assert.equal(await page.locator("#ticker-pills .ticker-pill").count(),1);
+    assert.equal(marketCalls.length,oldQuoteCalls);
+    await selectPrimary(page,"AAPL");
     await page.waitForFunction(()=>document.querySelector("#company-name")?.textContent==="Another Test Corporation");
     await page.waitForFunction(()=>document.querySelector("#quote-price")?.textContent==="$245.67");
     assert.equal(await page.locator("#quote-change").textContent(),"−$1.23 (−0.50%)");
@@ -530,7 +555,7 @@ async function slide(page,id,value){
     assert.equal(await page.locator("#method").inputValue(),"cagr");
     assert.equal(await page.locator("#horizon").inputValue(),"3");
     assert.equal(await page.locator("#metric").inputValue(),"net");
-    assert.equal(await page.locator("#ticker").inputValue(),"AAPL");
+    assert.equal(await page.locator("#ticker-pills .ticker-pill strong").textContent(),"AAPL");
     assert.equal(await page.locator("#history").inputValue(),"5");
     await page.waitForFunction(()=>
       document.querySelector("#company-chart")?.data?.length===2 &&
@@ -614,11 +639,10 @@ async function slide(page,id,value){
 
     // International company: annual US filings absent, but news requests still
     // happen and the UI explains the lack of recent covered articles.
-    await page.locator("#custom-ticker").fill("MTMCF");
-    await page.locator("#symbol-form button").click();
+    await selectPrimary(page,"MTMCF");
     await page.waitForFunction(()=>document.querySelector("#company-empty-title")
       ?.textContent.includes("International company"));
-    assert.equal(await page.locator("#ticker").inputValue(),"MTMCF");
+    assert.equal(await page.locator("#ticker-pills .ticker-pill strong").textContent(),"MTMCF");
     assert.match(await page.locator("#company-empty-message").textContent(),/AUD/);
     await page.waitForFunction(()=>document.querySelector("#news-status")?.dataset.state==="empty" &&
       document.querySelector("#news-company-title")?.textContent
@@ -628,11 +652,15 @@ async function slide(page,id,value){
     assert.equal(await page.locator("#data-error").isVisible(),false);
 
     // A company news failure should not masquerade as a financial failure.
+    // Example buttons now stage a ticker; Analyze alone commits it.
     await page.locator('[data-research-example="AAPL"]').click();
+    assert.equal(await page.locator("#ticker-pills .ticker-pill").count(),2);
+    assert.equal(await page.locator("#news-company-title").textContent(),
+      "International Research Example");
+    await selectPrimary(page,"AAPL");
     await page.waitForFunction(()=>document.querySelector("#company-chart")?.data?.length===2 &&
       document.querySelectorAll("#news-list .news-item").length===2);
-    await page.locator("#custom-ticker").fill("NVDA");
-    await page.locator("#symbol-form button").click();
+    await selectPrimary(page,"NVDA");
     await page.waitForFunction(()=>document.querySelector("#news-status")?.dataset.state==="error");
     assert.match(await page.locator("#news-status").textContent(),/rate limited/);
     assert.match(await page.locator("#company-empty-message").textContent(),
@@ -641,7 +669,7 @@ async function slide(page,id,value){
     await page.waitForFunction(()=>document.querySelector("#news-status")?.dataset.state==="ready");
     assert.equal(await page.locator("#news-list .news-item").count(),4);
     // Financials retry is independent of news refresh.
-    await page.locator("#symbol-form button").click();
+    await page.locator("#analyze-tickers").click();
     await page.waitForFunction(()=>document.querySelector("#source-period")
       ?.textContent==="FY ending 2025-06-30");
     assert.equal(await page.locator("#company-name").textContent(),"Research Example Corporation");
@@ -668,8 +696,7 @@ async function slide(page,id,value){
 
     // Switching to a partially disclosed company disables unsupported main
     // visualizations but still supplies its independent recent news.
-    await page.locator("#custom-ticker").fill("CASH");
-    await page.locator("#symbol-form button").click();
+    await selectPrimary(page,"CASH");
     await page.waitForFunction(()=>
       document.querySelector("#news-company-title")?.textContent.includes("CASH") &&
       document.querySelector("#chart-picker input[value='equity-balance']")?.disabled===true);
