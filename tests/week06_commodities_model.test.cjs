@@ -54,3 +54,22 @@ test("history controls return exact observed months",()=>{
   assert.deepEqual(M.history(c,"all"),c.observations);
   assert.throws(()=>M.history(c,1),/Invalid/);
 });
+
+test("expanded categorized commodity catalog enforces trusted origins and unique IDs",()=>{
+  const c=commodity();
+  const snap={schema_version:2,status:"ready",retrieved_utc:"2026-10-01T10:00:00Z",
+    commodities:Array.from({length:33},(_,i)=>({
+      ...structuredClone(c),id:"wb-sample-"+i,
+      category:i%2?"Precious metals":"Grains",
+      source:"World Bank Pink Sheet",
+      source_url:"https://thedocs.worldbank.org/en/doc/official/related/CMO-Historical-Data-Monthly.xlsx"
+    }))};
+  assert.equal(M.verify(snap),snap);
+  assert.throws(()=>M.verify({...snap,commodities:snap.commodities.slice(0,32)}),/incomplete/);
+  const spoofed=structuredClone(snap);
+  spoofed.commodities[0].source_url="https://unverified.example/data.csv";
+  assert.throws(()=>M.verify(spoofed),/Invalid commodity history/);
+  const duplicated=structuredClone(snap);
+  duplicated.commodities[1].id=duplicated.commodities[0].id;
+  assert.throws(()=>M.verify(duplicated),/Invalid commodity history/);
+});

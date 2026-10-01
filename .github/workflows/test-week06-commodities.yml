@@ -35,18 +35,22 @@ jobs:
       - name: Test commodity math and Python snapshot generator
         run: |
           python -m pip install "pandas>=2.2,<3" "pandas-datareader>=0.10,<0.11" "pyarrow>=17,<30" "setuptools>=70"
+          python -m pip install "openpyxl>=3.1,<4"
           python -m unittest discover -s tests -p 'test_week06_commodities.py'
+          python -m unittest discover -s tests -p 'test_world_bank_pink_sheet.py'
           node --test tests/week06_commodities_model.test.cjs
-      - name: Verify official FRED can provide complete commodity prices
+      - name: Verify official World Bank, EIA and IMF commodity data
         run: |
           python scripts/export_week_06_commodities.py
-          python -c "import json; s=json.load(open('docs/week-06/commodities/data.json')); assert s['status']=='ready' and len(s['commodities'])==3"
+          python -c "import json; s=json.load(open('docs/week-06/commodities/data.json')); assert s['status']=='ready' and s['schema_version']==2 and len(s['commodities'])>=33; print(len(s['commodities']), 'benchmarks from official sources')"
       - name: Install Chromium and Plotly
         run: |
           npm install --no-save playwright@1.55.1 plotly.js-dist-min@2.32.0
           npx playwright install --with-deps chromium
       - name: Exercise three-asset dashboard in real Chromium
-        run: node tests/week06_commodities_browser.test.cjs
+        run: |
+          node tests/week06_commodities_browser.test.cjs
+          node tests/week06_commodities_catalog_browser.test.cjs
       - name: Attach screenshot
         if: always()
         uses: actions/upload-artifact@v4

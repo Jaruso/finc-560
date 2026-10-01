@@ -29,3 +29,13 @@
   #chart-stage{flex:none}
   #chart-stage>.chart-card{min-height:310px}
 }
+
+/* Scalable categorized commodity discovery without consuming chart space. */
+#commodity-search{width:100%;min-height:30px;padding:5px 9px;
+  border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);
+  font:inherit;font-size:.75rem}
+#commodity-search:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
+.commodity-count{font-size:.64rem;color:var(--teal);font-weight:750;margin:-4px 0 0}
+#catalog-gap-list{font-size:.67rem;color:var(--muted);line-height:1.4;
+  margin:8px 0 0;padding-left:18px}
+#catalog-gap-list li{margin:5px 0}

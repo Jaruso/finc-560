@@ -15,24 +15,37 @@
     return d.toISOString().slice(0,10);
   }
   function verify(snapshot){
-    if(!snapshot||snapshot.schema_version!==1||snapshot.status!=="ready"||
+    if(!snapshot||![1,2].includes(snapshot.schema_version)||snapshot.status!=="ready"||
       !Array.isArray(snapshot.commodities)||snapshot.commodities.length<3){
-      throw Error("Verified FRED commodity snapshot is not available.");
+      throw Error("Verified commodity history is not available.");
     }
+    if(snapshot.schema_version===2&&snapshot.commodities.length<33)
+      throw Error("The expanded commodity catalog is incomplete.");
     const ids=new Set();
     for(const c of snapshot.commodities){
-      if(ids.has(c.id)||!["wti","brent","gas"].includes(c.id)||
-        !c.label||!c.unit||!/^https:\/\/fred.stlouisfed.org\/series\//.test(c.source_url||"")||
-        !Array.isArray(c.observations)||c.observations.length<60)throw Error("Invalid commodity history.");
+      let url;
+      try{url=new URL(c.source_url);}
+      catch{throw Error("Invalid commodity history.");}
+      const trusted=url.protocol==="https:"&&(
+        url.hostname==="fred.stlouisfed.org"&&url.pathname.startsWith("/series/")||
+        url.hostname==="thedocs.worldbank.org"&&
+          url.pathname.endsWith("/CMO-Historical-Data-Monthly.xlsx"));
+      if(!/^[a-z0-9-]{2,100}$/.test(c.id||"")||ids.has(c.id)||
+        !c.label||!c.unit||!trusted||
+        (snapshot.schema_version===2&&typeof c.category!=="string")||
+        !Array.isArray(c.observations)||c.observations.length<60)
+        throw Error("Invalid commodity history.");
       ids.add(c.id);
       for(let i=0;i<c.observations.length;i++){
         const o=c.observations[i],prev=c.observations[i-1];
         if(!dateRE.test(o.date)||!Number.isFinite(o.value)||o.value<=0||
-           (prev&&prev.date>=o.date))throw Error("Unordered or invalid commodity prices.");
+          (prev&&prev.date>=o.date))throw Error("Unordered or invalid commodity prices.");
       }
-      if(c.last_observation!==c.observations.at(-1).date)throw Error("Commodity latest observation mismatch.");
+      if(c.last_observation!==c.observations.at(-1).date)
+        throw Error("Commodity latest observation mismatch.");
     }
-    if(ids.size!==3)throw Error("Missing selected commodity series.");
+    if(snapshot.schema_version===1&&ids.size!==3)
+      throw Error("Missing selected commodity series.");
     return snapshot;
   }
   function stats(history){
