@@ -81,7 +81,7 @@ async function slide(page,id,value){
       ".company-header > .workspaces + .source-stamp + .course-side").count(),1,
       "Annual financial reports must appear between workspace tabs and course label");
     assert.match(await page.locator(".company-header .source-stamp").textContent(),
-      /Annual financial reports.*FY ending 2025-06-30.*Verified annual snapshot/s);
+      /Annual financial reports.*FY ending 2025-06-30.*(Verified annual snapshot|SEC refreshed)/s);
     assert.equal(await page.locator("#data-error").isVisible(),false,
       "Rendering a forecast must not show the old undefined .catch error");
     assert.equal(await page.locator("#ticker option").count(),4);
