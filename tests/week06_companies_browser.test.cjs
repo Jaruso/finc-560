@@ -629,6 +629,11 @@ async function selectPrimary(page,ticker){
     assert.equal(await page.locator(".week-06-header .source-stamp").isVisible(),true);
     await page.screenshot({path:"test-artifacts/week06-company-mobile.png",fullPage:true});
     assert.deepEqual(errors,[],"No uncaught browser errors");
+    // Desktop-only sidebar interaction checks resume after validating mobile
+    // layout. Mobile controls live inside a deliberately closed drawer.
+    await page.setViewportSize({width:1440,height:900});
+    await page.waitForFunction(()=>getComputedStyle(
+      document.querySelector(".controls-rail")).visibility==="visible");
     // Quote and article availability must be independent of curated forecasts.
     marketUnavailable=true;
     await page.locator("#quote-refresh").click();
