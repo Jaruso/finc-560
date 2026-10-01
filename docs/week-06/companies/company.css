@@ -78,3 +78,18 @@ body:has(.research-board){overflow:auto!important}
   background:#eaf5f2;border:1px solid #b9d8d1;border-radius:6px;padding:7px 9px}
 .research-jump:hover,.research-jump:focus-visible{text-decoration:underline;background:#d7eee8}
 #research-lab{scroll-margin-top:70px}
+
+/* Provide a deliberate, useful state for symbols without full filings. */
+.company-empty{flex:1 1 auto;min-height:230px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:9px;padding:clamp(15px,3vw,40px);
+  text-align:center;background:#f8fbfa;border:1px dashed #bdcfce;border-radius:8px;margin-top:6px}
+.company-empty-icon{border-radius:50%;border:1px solid #98c1b8;color:#17776e;
+  width:26px;height:26px;display:grid;place-items:center;font-weight:850;font-size:1rem}
+.company-empty h3{font-size:1.05rem;line-height:1.25;margin:0;color:#173c45}
+.company-empty p{font-size:.76rem;line-height:1.5;max-width:640px;margin:0;color:#536970}
+.company-empty-examples{display:flex;align-items:center;justify-content:center;
+  flex-wrap:wrap;gap:6px;margin-top:7px}
+.company-empty-examples>span{font-size:.7rem;font-weight:750;color:#36545b;margin-right:3px}
+.company-empty a{color:#0b7f73;font-size:.73rem;font-weight:800;text-decoration:none}
+.company-empty a:hover,.company-empty a:focus-visible{text-decoration:underline}
+.company-empty .company-empty-secondary{font-size:.67rem;color:#62747a}
