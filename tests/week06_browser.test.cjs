@@ -70,12 +70,12 @@ async function slide(page,id,v){
       const reset=n.querySelector("#reset").getBoundingClientRect();
       const wrapper=n.getBoundingClientRect();
       return {titleWidth:title.width,containerWidth:wrapper.width,
-        titleBottom:title.bottom,resetTop:reset.top,
-        titleRight:title.right,resetLeft:reset.left};
+        titleBottom:title.bottom,resetTop:reset.top};
     });
-    assert.ok(macroHeading.titleRight<=macroHeading.resetLeft+1||
-      macroHeading.titleBottom<=macroHeading.resetTop+1,
-      "Compact or wrapped Reset must not overlap the heading");
+    assert.ok(macroHeading.titleWidth>macroHeading.containerWidth-2,
+      "Sidebar heading must occupy the full available width");
+    assert.ok(macroHeading.resetTop>=macroHeading.titleBottom,
+      "Reset must not crowd the title");
     assert.equal(await page.locator("#backtest-table tr").count(),9);
 
     const baseline=await page.locator("#chart-yields").evaluate(n=>({
@@ -261,17 +261,10 @@ async function slide(page,id,v){
     fs.mkdirSync("test-artifacts",{recursive:true});
     await page.screenshot({path:"test-artifacts/week06-fitted-model.png",fullPage:false});
     await page.setViewportSize({width:390,height:844});
-    // Plotly and the drawer relayout asynchronously after changing viewport.
-    // Check the fully settled mobile width rather than the desktop plot frame.
-    await page.waitForFunction(()=>document.documentElement.scrollWidth<=innerWidth+2,
-      null,{timeout:5000});
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));
     assert.equal(await page.locator(".mobile-controls-toggle").isVisible(),true);
     await page.waitForFunction(()=>getComputedStyle(
       document.querySelector(".controls-rail")).visibility==="hidden");
-    await page.waitForFunction(()=>
-      document.querySelector(".controls-rail").getBoundingClientRect().right<=1,
-      null,{timeout:4000}); // Wait for the 210ms off-canvas slide, not only visibility.
     assert.ok(await page.locator(".controls-rail").evaluate(n=>
       n.getBoundingClientRect().right<=1),"Closed controls stay outside the mobile viewport");
     await page.locator(".mobile-controls-toggle").click();
