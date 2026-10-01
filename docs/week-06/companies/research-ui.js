@@ -40,13 +40,20 @@
     const p=current.profile;
     text("research-company",p?.name||current.curated?.company||current.ticker);
     text("research-sector",p?.finnhubIndustry||"Industry unavailable");
+    // Finnhub does not guarantee the reporting currency also denominates market cap.
+    const capCurrency=typeof p?.marketCapCurrency==="string" &&
+      /^[A-Z]{3}$/.test(p.marketCapCurrency)?p.marketCapCurrency:null;
     text("research-market-cap",Number.isFinite(p?.marketCapitalization)?
-      USD(p.marketCapitalization):"Market cap unavailable");
+      "Market cap "+p.marketCapitalization.toLocaleString("en-US",{maximumFractionDigits:1})+
+      "M "+(capCurrency||"(currency unverified)"):"Market cap unavailable");
     const m=R.metricsSummary(current.metrics);
     text("research-metrics","Finnhub metrics · Beta "+fmt(m.beta,2)+
       " · P/E "+fmt(m.pe,1)+" · Current ratio "+fmt(m.currentRatio,2));
     const asReported=current.normalized?.annual?.length>=5;
     const source=asReported?current.normalized:current.curated;
+    const filingHint=!source?.annual?.length&&p?.currency&&p.currency!=="USD"
+      ?" · Reports in "+p.currency+"; this model requires five comparable USD SEC 10-K annual filings.":
+      "";
     const liveEnd=asReported?current.normalized.annual.at(-1).fiscal_end:null;
     const curatedEnd=current.curated?.annual?.at(-1)?.fiscal_end;
     const olderThanCurated=asReported&&curatedEnd&&liveEnd<curatedEnd;
@@ -58,7 +65,7 @@
         :source?.annual?.length
           ?"Verified dated financial snapshots · FY "+source.annual.at(-1).fiscal_end+
             " (Finnhub filing history insufficient or unavailable)"
-          :"No verified complete five-year history; financial modeling unavailable.");
+          :"No verified complete five-year history; financial modeling unavailable."+filingHint);
     const sourceUrl=asReported?source.data_source:source?.data_source;
     const link=el("research-filing-link");
     if(typeof sourceUrl==="string"&&/^https:\/\/www\.sec\.gov\/Archives\/edgar\/data\/\d+\//.test(sourceUrl)){
@@ -176,7 +183,7 @@
     }
     return macroPromise;
   }
-  async function load(ticker,curated,onAnnual){
+  async function load(ticker,curated,onAnnual,onUnavailable){
     const generation=++seq;
     if(controller)controller.abort();
     const active=new AbortController();
@@ -201,6 +208,10 @@
       current.normalized={ticker,annual:[],warning:error.message};
     }
     const years=current.normalized?.annual.length||0;
+    if(!curated&&years<5&&typeof onUnavailable==="function"){
+      onUnavailable({ticker,profile:current.profile,years,
+        failed:reported.status==="rejected"});
+    }
     const issues=[
       profile.status==="rejected"?"profile unavailable":null,
       metrics.status==="rejected"?"basic metrics unavailable":null,
@@ -243,7 +254,7 @@
         return;
       }
       el("ticker-input-status").textContent="";
-      el("ticker").value=[...el("ticker").options].some(x=>x.value===symbol)?symbol:"";
+      // loadCompany retains arbitrary tickers visibly in the Company selector.
       form.dispatchEvent(new CustomEvent("research-ticker",{bubbles:true,detail:{ticker:symbol}}));
     });
   }

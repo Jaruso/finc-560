@@ -9,12 +9,12 @@
   <link rel="stylesheet" href="../../assets/styles.css?v=20260906-week3-redesign">
   <link rel="stylesheet" href="../../assets/site-transitions.css?v=20261001">
   <link rel="stylesheet" href="../dashboard.css?v=sidebar-titles-202610">
-  <link rel="stylesheet" href="./company.css?v=research-lab-20261001">
+  <link rel="stylesheet" href="./company.css?v=international-feedback-20261001">
   <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
   <script defer src="./model.js?v=1"></script>
   <script defer src="./research.js?v=20261001"></script>
-  <script defer src="./research-ui.js?v=20261001"></script>
-  <script defer src="./app.js?v=legend-only-20261001"></script>
+  <script defer src="./research-ui.js?v=international-feedback-20261001"></script>
+  <script defer src="./app.js?v=international-feedback-20261001"></script>
 </head>
 <body>
   <header class="site-header week-06-header company-header">
@@ -143,6 +143,19 @@
             <p>Annual financial performance and projected scenarios</p>
           </header>
           <div id="company-chart" class="plot" role="img" aria-label="Continuous historical company financials and browser-model forecast on one chronological axis"></div>
+          <div id="company-empty" class="company-empty" role="status" hidden>
+            <div class="company-empty-icon" aria-hidden="true">i</div>
+            <h3 id="company-empty-title">Checking financial statements</h3>
+            <p id="company-empty-message">Retrieving reported annual statements…</p>
+            <div class="company-empty-examples">
+              <span>Try a featured company with verified statements:</span>
+              <button type="button" class="secondary" data-research-example="AAPL">Apple</button>
+              <button type="button" class="secondary" data-research-example="MSFT">Microsoft</button>
+              <button type="button" class="secondary" data-research-example="HD">Home Depot</button>
+            </div>
+            <p class="company-empty-secondary">The company's market quote and any available profile metrics remain accessible below.</p>
+            <a href="#research-lab">View available research ↓</a>
+          </div>
         </article>
         <p id="chart-footnote" class="chart-footnote">Reported performance continues into the browser-model forecast.</p>
       </section>

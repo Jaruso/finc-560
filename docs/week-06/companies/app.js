@@ -269,6 +269,8 @@
   function showAnnual(payload){
     if(!payload)return;
     company=payload;
+    el("company-empty").hidden=true;
+    el("company-chart").hidden=false;
     el("company-name").textContent=payload.company;
     el("source-period").textContent="FY ending "+payload.annual.at(-1).fiscal_end;
     el("data-refresh").textContent=payload.refresh_mode==="finnhub-as-reported"
@@ -284,7 +286,11 @@
   }
   function clearAnnual(ticker){
     company=null;
-    el("company-name").textContent=ticker+" · Awaiting reported financials";
+    el("company-name").textContent=ticker+" · Checking financial statements";
+    el("company-empty").hidden=false;
+    el("company-chart").hidden=true;
+    el("company-empty-title").textContent="Checking financial statement coverage";
+    el("company-empty-message").textContent="Looking for comparable annual filings for "+ticker+".";
     el("source-period").textContent="Awaiting 10-K data";
     el("data-refresh").textContent="Finnhub as-reported · Checking coverage";
     for(const id of ["kpi-revenue","kpi-profit","kpi-forecast-revenue","kpi-forecast-profit",
@@ -293,6 +299,27 @@
     el("backtest").textContent="Awaiting complete annual reports.";
     el("chart-footnote").textContent="No historical or modeled values are shown until source validation succeeds.";
     if(window.Plotly)window.Plotly.purge("company-chart");
+  }
+  function unavailableAnnual(details){
+    if(company||activeTicker!==details.ticker)return;
+    const p=details.profile||{};
+    const international=(p.country&&p.country!=="US")||(p.currency&&p.currency!=="USD");
+    el("company-name").textContent=(p.name||details.ticker)+(p.exchange?" · "+p.exchange:"");
+    el("company-empty-title").textContent=international
+      ?"International company: financial history unavailable":"Annual financial history unavailable";
+    el("company-empty-message").textContent=international
+      ?"Finnhub returned no usable US 10-K history for "+details.ticker+
+        ". It reports in "+(p.currency||"a non-USD currency")+
+        ". Our annual models require five comparable USD SEC 10-K filings. "+
+        "Finnhub's international standardized financial statements require premium access."
+      :details.failed
+        ?"Finnhub's financial statement request failed. Market quotes and company profile can still work."
+        :"Finnhub returned "+details.years+" usable fiscal years. Historical forecasts require at least five comparable annual reports.";
+    el("source-period").textContent="No comparable annual filings";
+    el("data-refresh").textContent="Quote and company profile available";
+    el("model-note").textContent="Financial forecasts require five comparable verified annual filings; unavailable figures are never estimated.";
+    el("backtest").textContent="Unavailable without sufficient annual reports.";
+    el("chart-footnote").textContent="The historical chart is unavailable for this ticker; market data and profile may still be available.";
   }
   async function loadCompany(ticker){
     if(!manifest||!M||!research)return;
@@ -305,6 +332,16 @@
     el("data-error").hidden=true;
     scaleContext=null;manualYRange=null;lastRenderedValues=null;
     const item=manifest.companies.find(row=>row.ticker===ticker);
+    const oldCustom=[...el("ticker").options].find(o=>o.dataset.custom==="true");
+    if(oldCustom)oldCustom.remove();
+    if(!item){
+      const option=document.createElement("option");
+      option.dataset.custom="true";
+      option.value=ticker;
+      option.textContent=ticker+" · Custom";
+      el("ticker").append(option);
+    }
+    el("ticker").value=ticker;
     let curated=null;
     try{
       if(item){
@@ -330,7 +367,7 @@
         // Do not replace a newer curated fiscal year with an older filing.
         if(curated&&validated.annual.at(-1).fiscal_end<curated.annual.at(-1).fiscal_end)return;
         showAnnual(validated);
-      });
+      },unavailableAnnual);
     }catch(error){
       if(generation!==sequence)return;
       clearAnnual(ticker);
@@ -340,13 +377,19 @@
       void research.load(ticker,null,normalized=>{
         if(generation!==sequence)return;
         showAnnual(M.verify(normalized));
-      });
+      },unavailableAnnual);
     }
   }
   async function initialize(){
     try{
       if(!window.Plotly||!M||!research)throw Error("Browser research or forecasting engine unavailable.");
       research.init();
+      document.querySelectorAll("[data-research-example]").forEach(button=>{
+        button.addEventListener("click",()=>{
+          el("custom-ticker").value=button.dataset.researchExample;
+          void loadCompany(button.dataset.researchExample);
+        });
+      });
       el("symbol-form").addEventListener("research-ticker",event=>{
         void loadCompany(event.detail.ticker);
       });
