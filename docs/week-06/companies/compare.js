@@ -150,23 +150,29 @@
       }
     }
     const starts=traces.flatMap(t=>t.x).sort();
-    // Only forecast-bearing charts need a projection region. Companies can
-    // have different fiscal endpoints, so shade from the LAST reported date:
-    // every selected company is in forecast territory beyond that boundary.
-    // Dashed traces still begin at each company's own last reported date.
     const forecasts=["company-chart","equity-revenue","equity-operating",
       "equity-margins"].includes(id);
-    const latestReported=frames.map(f=>f.history.at(-1).fiscal_end).sort().at(-1);
-    const finalProjected=forecasts?
-      frames.map(f=>f.forecast.projected.at(-1).fiscal_end).sort().at(-1):null;
-    const forecastShapes=forecasts&&latestReported<finalProjected?[
-      {type:"rect",xref:"x",yref:"paper",
-        x0:latestReported,x1:finalProjected,y0:0,y1:1,
-        fillcolor:"rgba(11,127,115,.06)",line:{width:0},layer:"below"},
-      {type:"line",xref:"x",yref:"paper",
-        x0:latestReported,x1:latestReported,y0:0,y1:1,
-        line:{color:"#92aba7",width:1.35,dash:"dash"}}
-    ]:[];
+    // Preserve each company's actual fiscal cutoff, just as the commodities
+    // comparison preserves each benchmark's last observation. Layer one
+    // translucent rectangle per company: early forecast-only territory is
+    // light; overlaps become progressively darker. Individual rectangles end
+    // at that company's own forecast horizon, never at another firm's date.
+    const windows=forecasts?frames.map(f=>({
+      ticker:f.ticker,
+      start:f.history.at(-1).fiscal_end,
+      end:f.forecast.projected.at(-1).fiscal_end
+    })).filter(w=>w.start<w.end):[];
+    const cutoffs=[...new Set(windows.map(w=>w.start))].sort();
+    const forecastShapes=[
+      ...windows.map(w=>({
+        type:"rect",xref:"x",yref:"paper",x0:w.start,x1:w.end,y0:0,y1:1,
+        fillcolor:"rgba(11,127,115,.045)",line:{width:0},layer:"below"
+      })),
+      ...cutoffs.map(start=>({
+        type:"line",xref:"x",yref:"paper",x0:start,x1:start,y0:0,y1:1,
+        line:{color:"#96b0aa",dash:"dash",width:1}
+      }))
+    ];
     const yLabel=index?"Index (100 = shared FY "+anchorYear+")":
       nativeUnit==="percent"?"Percent (%)":nativeUnit==="ratio"?
         "Interest coverage (×)":"USD billions";
@@ -176,9 +182,8 @@
         nativeUnit==="usd"?"Nominal reported USD billions":
           nativeUnit==="percent"?"Reported and assumed margins (%)":
             "Reported operating income / interest expense")+" · "+
-      "Actual fiscal dates; dashed lines are separately modeled forecasts."+
-      (forecastShapes.length?" Shading begins after the latest reported date "+
-        "when all selected companies are projected.":"");
+      "Actual fiscal dates; dashed forecasts begin at each company's own fiscal end."+
+      (windows.length?" Layered shading marks overlapping projection periods.":"");
     return {traces,context,
       layout:{
         autosize:true,
@@ -197,7 +202,8 @@
           gridcolor:"#edf1f2",automargin:true},
         meta:{comparison:true,tickers:frames.map(f=>f.ticker),primary:frames[0].ticker,
           indexed:index,anchorFiscalYear:anchorYear,perCompanyFiscalCalendars:true,
-          sharedProjectionStart:forecastShapes.length?latestReported:null}
+          sharedProjectionStart:cutoffs.length?cutoffs.at(-1):null,
+          projectionWindows:windows}
       }
     };
   }
