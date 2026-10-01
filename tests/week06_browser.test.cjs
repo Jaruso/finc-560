@@ -177,9 +177,35 @@ async function slide(page,id,v){
     await page.waitForFunction(()=>document.querySelector("#chart-yields")?.data?.[0]?.x.length===180);
 
     await page.locator("#chart-picker summary").click();
-    for(const id of ["chart-yields","chart-policy","chart-accuracy"]){
-      await page.locator("#chart-picker input[value="+id+"]").uncheck();
-    }
+    const chartInput=id=>page.locator('#chart-picker input[value="'+id+'"]');
+    await chartInput("chart-five").check();
+    assert.equal(await chartInput("chart-five").isChecked(),false,
+      "A fifth chart must be refused");
+    assert.match(await page.locator("#chart-selection-status").textContent(),/maximum/);
+    const boxes=()=>page.locator("#chart-stage .chart-card:not(.is-view-hidden)")
+      .evaluateAll(cards=>cards.map(card=>{
+        const r=card.getBoundingClientRect();
+        return {top:Math.round(r.top),left:Math.round(r.left),width:r.width};
+      }));
+    const four=await boxes();
+    assert.ok(four[0].top===four[1].top&&four[2].top===four[3].top);
+    assert.ok(four[2].top>four[0].top&&four[1].left>four[0].left);
+    await chartInput("chart-accuracy").uncheck();
+    assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"3");
+    const three=await boxes();
+    assert.ok(three[0].width>three[1].width*1.8 &&
+      three[1].top===three[2].top && three[2].left>three[1].left,
+      "Three charts must show a full-width featured chart over two columns");
+    await chartInput("chart-policy").uncheck();
+    const two=await boxes();
+    assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"2");
+    assert.ok(two[1].top>two[0].top&&two[0].left===two[1].left,
+      "Two charts must stack at full width");
+    await chartInput("chart-yields").uncheck();
+    assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"1");
+    await chartInput("chart-spread").uncheck();
+    assert.equal(await chartInput("chart-spread").isChecked(),true,
+      "The last chart cannot be removed");
     await page.waitForFunction(()=>document.querySelector("#chart-spread")?.data?.length===4);
     const spread=await page.locator("#chart-spread").evaluate(n=>({
       first:n.data[0].y.at(-1),central:n.data[3].y,
