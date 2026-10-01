@@ -57,9 +57,8 @@ async function slide(page,id,v){
       "Macro switch must be centered in the viewport");
     assert.match(await page.locator(".week-06-header .source-stamp").textContent(),
       /Historical data.*\d{4}-\d\d-\d\d/s);
-    assert.deepEqual(await page.locator("#chart-primary option").allTextContents(),
-      ["5Y & 10Y yields","10Y–5Y spread"]);
-    assert.equal(await page.locator("#chart-stage > .chart-card:not(.is-view-hidden)").count(),1);
+    assert.equal(await page.locator("#chart-picker input").count(),8);
+    assert.equal(await page.locator("#chart-stage > .chart-card:not(.is-view-hidden)").count(),4);
     assert.equal(await page.locator("#model-status").textContent(),
       "Fitted Diebold–Li style · 189 training months · 8 Treasury maturities");
     assert.equal(await page.locator("#controls-heading").textContent(),"Forecast controls");
