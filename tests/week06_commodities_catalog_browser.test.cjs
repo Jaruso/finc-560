@@ -111,8 +111,115 @@ async function ready(){
      g.layout.meta.commodity),"wb-tea",
      "No matching filters must not fabricate or silently change a chart");
    assert.equal(await page.locator("#data-error").isVisible(),false);
+
+   // Level 2: independently compare four verified commodities from different
+   // units/categories on all eight selectable study types without new APIs.
+   await page.locator("#commodity-search").fill("");
+   await page.selectOption("#commodity","wti");
+   await page.waitForFunction(()=>document.querySelector("#commodity-chart")
+     ?.layout?.meta?.commodity==="wti");
+   const compare=page.locator("#comparison-picker");
+   assert.equal(await page.locator("#comparison-count").textContent(),"1 of 4");
+   await compare.locator("summary").click();
+   for(const id of ["brent","wb-gold","wb-copper"]){
+     await compare.locator('input[value="'+id+'"]').check();
+   }
+   await page.waitForFunction(()=>document.querySelector("#commodity-chart")
+     ?.layout?.meta?.commodities?.length===4);
+   await page.waitForFunction(()=>["commodity-yoy","commodity-returns","commodity-vol"]
+     .every(id=>document.getElementById(id)?.data?.length===4));
+   assert.equal(await page.locator("#comparison-count").textContent(),"4 of 4");
+   assert.equal(await compare.locator('input[value="wb-silver"]').isDisabled(),true,
+     "Additional commodities must be disabled at the four-asset cap");
+   assert.equal(await compare.locator('input[value="wti"]').isDisabled(),true,
+     "The primary commodity remains selected in the comparison picker");
+   const initialMulti=await page.locator("#commodity-chart").evaluate(g=>({
+     names:g.data.filter(t=>t.showlegend!==false).map(t=>t.name),
+     commodities:g.layout.meta.commodities.slice(),
+     priceIndex:g.data.slice(0,4).map(t=>t.y[0]),
+     originals:g.data.slice(0,4).map(t=>t.customdata[0]),
+     units:g.data.slice(0,4).map(t=>t.meta.unit),
+     colors:g.data.slice(0,4).map(t=>t.line.color),
+     history:g.data[0].y.slice(),
+     yRange:g.layout.yaxis.range.slice(),
+     pixel:g._fullLayout.yaxis.l2p(g.data[0].y.at(-1)),
+     height:g._fullLayout.height
+   }));
+   assert.deepEqual(initialMulti.commodities,["wti","brent","wb-gold","wb-copper"]);
+   assert.deepEqual(initialMulti.names,["WTI crude oil","Brent crude oil","Gold","Copper"]);
+   assert.deepEqual(initialMulti.priceIndex,[100,100,100,100]);
+   assert.deepEqual(initialMulti.units,
+     ["USD/barrel","USD/barrel","USD/troy oz","USD/metric ton"]);
+   assert.equal(new Set(initialMulti.colors).size,4);
+   assert.ok(Math.max(...initialMulti.originals)>2000,
+     "Native gold/copper prices must remain available in the index trace hover");
+   assert.equal(await page.locator("#comparison-sources a").count(),4);
+   assert.match(await page.locator("#chart-subtitle").textContent(),/Index 100/);
+   assert.equal(await page.locator("#comparison-preview-row").count(),0);
+   assert.equal(await page.locator("#comparison-preview .comparison-preview-row").count(),4);
+   // All four share the same conditional input; reported indexed observations
+   // and the locked y-axis must remain pixel-stable when changing that input.
+   await page.$eval("#shock",input=>{
+     input.value="20";
+     input.dispatchEvent(new Event("input",{bubbles:true}));
+     input.dispatchEvent(new Event("change",{bubbles:true}));
+   });
+   await page.waitForFunction(()=>document.querySelector("#commodity-chart")
+     ?.data?.some(t=>t.name==="Gold forecast"&&t.line.dash==="dash"));
+   await page.waitForFunction(()=>document.querySelector("#commodity-shock")?.data?.length===0
+     ||document.querySelector('#chart-picker input[value="commodity-shock"]')?.disabled===false);
+   const afterShock=await page.locator("#commodity-chart").evaluate(g=>({
+     actual:g.data[0].y.slice(),range:g.layout.yaxis.range.slice(),
+     pixel:g._fullLayout.yaxis.l2p(g.data[0].y.at(-1)),
+     units:g.data.slice(0,4).map(t=>t.meta.unit),
+     commodities:g.layout.meta.commodities.slice()
+   }));
+   assert.deepEqual(afterShock.actual,initialMulti.history);
+   assert.deepEqual(afterShock.range,initialMulti.yRange);
+   assert.ok(Math.abs(afterShock.pixel-initialMulti.pixel)<.01,
+     "Changing the common shock cannot move indexed history vertically");
+   assert.deepEqual(afterShock.commodities,initialMulti.commodities);
+   assert.equal(await page.locator("#data-error").isVisible(),false);
+
+   const studies=page.locator("#chart-picker");
+   await studies.locator("summary").click();
+   await studies.locator('input[value="commodity-vol"]').uncheck();
+   for(const [id,expected] of [
+     ["commodity-seasonality",4],["commodity-models",12],
+     ["commodity-shock",4],["commodity-drawdown",4]
+   ]){
+     const control=studies.locator('input[value="'+id+'"]');
+     await control.check();
+     await page.waitForFunction(({id,count})=>
+       document.getElementById(id)?.data?.length===count,
+       {id,count:expected});
+     const checked=await page.locator("#chart-stage").getAttribute("data-count");
+     assert.equal(checked,"4","Chart canvas must still select at most four graphs");
+     const ids=await page.locator("#"+id).evaluate(g=>
+       [...new Set(g.data.map(t=>t.meta.commodity))].sort());
+     assert.deepEqual(ids,["brent","wb-copper","wb-gold","wti"].sort(),
+       "All selected commodities must appear in "+id);
+     await control.uncheck();
+   }
+   await studies.locator('input[value="commodity-vol"]').check();
+   await studies.locator("summary").click();
+   // Search the comparison control across categories without touching focus
+   // search, then remove enough assets to return to raw-price single mode.
+   await page.locator("#comparison-search").fill("silver");
+   assert.equal(await compare.locator('input[value="wb-silver"]').isDisabled(),true);
+   await page.locator("#comparison-search").fill("");
+   for(const id of ["wb-copper","wb-gold","brent"]){
+     await page.locator('#comparison-chips button[data-remove="'+id+'"]').click();
+   }
+   await page.waitForFunction(()=>document.querySelector("#commodity-chart")
+     ?.layout?.meta?.unit==="USD/barrel"&&
+       !document.querySelector("#commodity-chart")?.layout?.meta?.comparison);
+   assert.equal(await page.locator("#comparison-count").textContent(),"1 of 4");
+   assert.equal(await page.locator("#comparison-sources").isHidden(),true);
+   assert.equal(await page.locator("#commodity-source").isHidden(),false);
    assert.deepEqual(errors,[]);
    console.log("PASS: Categorized multi-source commodity market discovery, units and provenance");
+   console.log("PASS: Four-commodity overlays across eight studies, indexed units and locked scales");
  }finally{
    if(browser)await browser.close();
    server.kill("SIGTERM");

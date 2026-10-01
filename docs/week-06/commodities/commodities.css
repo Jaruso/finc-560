@@ -39,3 +39,6 @@
 #catalog-gap-list{font-size:.67rem;color:var(--muted);line-height:1.4;
   margin:8px 0 0;padding-left:18px}
 #catalog-gap-list li{margin:5px 0}
+
+.comparison-option[hidden],.comparison-group[hidden]{display:none!important}
+.comparison-option:focus-within{outline:2px solid var(--teal);outline-offset:-2px}
