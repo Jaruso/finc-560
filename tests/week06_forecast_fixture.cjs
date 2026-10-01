@@ -28,7 +28,15 @@ function makeFixture(){
         rmse_model_bp:20+h*2,rmse_no_change_bp:32+h*2});
     }
   }
+  const latest_treasury_yields={
+    DGS1:Number((last.dgs5-.65).toFixed(4)),
+    DGS2:Number((last.dgs5-.38).toFixed(4)),
+    DGS3:Number((last.dgs5-.2).toFixed(4)),
+    DGS5:last.dgs5,DGS7:last.dgs5+.1,DGS10:last.dgs10,
+    DGS20:last.dgs10+.2,DGS30:last.dgs10+.3
+  };
   return {status:"ready",schema_version:2,observations,forecast,
+    latest_treasury_yields,
     empirical_error_bands:{"5y":error(.011),"10y":error(.012),spread:error(.009)},
     backtest:{metrics,origin_count:60},
     model_parameters:{complete_training_months:189,lambda_per_month:.0609},
