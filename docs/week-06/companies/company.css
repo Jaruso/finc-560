@@ -7,14 +7,11 @@
 .company-preview span{color:var(--muted);font-weight:750;font-size:.66rem}
 .company-preview strong{font-size:1rem;font-variant-numeric:tabular-nums}
 .compact-note{font-size:.68rem;line-height:1.4;color:var(--muted);margin:8px 0}
-.company-chart-pair{flex:1;min-height:0;min-width:0;display:grid;grid-template-columns:minmax(0,4fr) minmax(0,3fr);gap:8px}
-.company-chart-pair .chart-card{min-width:0}
-.company-chart-pair .plot{min-height:175px}
-.projection-chart{border-left:3px solid #badcd5}
+.company-timeline{flex:1 1 auto;min-width:0;min-height:0}
+.company-timeline .plot{width:100%;min-height:175px}
 .chart-footnote{flex:0 0 auto;font-size:.68rem;color:var(--muted);margin:0 4px 1px}
 @media(max-width:800px){
-  .company-chart-pair{min-height:580px;grid-template-columns:1fr!important;grid-template-rows:1fr 1fr}
-  .company-chart-pair .chart-card{min-height:260px}
+  .company-timeline{min-height:400px}
   .company-preview{grid-template-columns:1fr 1fr}
   .company-preview>div{display:block}
 }

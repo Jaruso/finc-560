@@ -16,14 +16,23 @@
     method:el("method").value,horizon:Number(el("horizon").value),
     growth:Number(el("growth").value),margin:Number(el("margin").value)
   });
-  const fullChartHeight=id=>el(id).clientHeight||340;
-
-  async function plot(id,traces,layout){
-    // plotly.react is called sequentially per chart, one update per animation
-    // frame. Browser session computes all forecasts; no prediction API call.
-    await window.Plotly.react(id,traces,layout,{
-      responsive:true,displayModeBar:false,displaylogo:false,scrollZoom:false
-    });
+  const fullChartHeight=()=>el("company-chart").clientHeight||340;
+  // Plotly.react is async; rapidly changing sliders must not let an older
+  // render paint over the most recent scenario.
+  let queuedPlot=null,renderingPlot=false;
+  async function plotLatest(){
+    if(renderingPlot)return;
+    renderingPlot=true;
+    try{
+      while(queuedPlot){
+        const {traces,layout}=queuedPlot;
+        queuedPlot=null;
+        await window.Plotly.react("company-chart",traces,layout,{
+          responsive:true,displayModeBar:false,displaylogo:false,scrollZoom:false,
+        });
+      }
+    }catch(error){showError(error);}
+    finally{renderingPlot=false;}
   }
   function financialCharts(history,result){
     const key=metricKey(),metric=el("metric").value;
@@ -31,67 +40,84 @@
     const actual=history.map(r=>r[key]/1000);
     const projected=result.projected.map(r=>r[key]/1000);
     const baseline=result.baseline.map(r=>r[key]/1000);
-    const all=actual.concat(projected,baseline);
-    const min=Math.min(...all),max=Math.max(...all);
-    const padding=Math.max((max-min)*.14,Math.abs(max)*.035,0.5);
-    const yRange=[min-padding,max+padding];
-    const xs=history.map(r=>r.fiscal_end);
-    const xf=result.projected.map(r=>r.fiscal_end);
-    const common={
-      autosize:true,paper_bgcolor:"#fff",plot_bgcolor:"#fff",
-      font:{family:"Inter,system-ui,sans-serif",size:11,color:"#465865"},
-      margin:{l:66,r:14,t:33,b:44},
-      hovermode:"closest",
-      xaxis:{type:"date",tickformat:"%Y",dtick:"M12",showgrid:false,
-        linecolor:"#dfe3e6",automargin:true,range:[xs[0],xs.at(-1)]},
-      yaxis:{title:{text:unit,font:{size:11}},tickprefix:"$",ticksuffix:"B",
-        tickfont:{size:10},gridcolor:"#edf1f2",range:yRange,zeroline:true,
-        automargin:true},
-      showlegend:false
+    const xObserved=history.map(r=>r.fiscal_end);
+    const xProjected=result.projected.map(r=>r.fiscal_end);
+    const boundary=xObserved.at(-1),endDate=xProjected.at(-1);
+    if(boundary!==xProjected[0]||actual.at(-1)!==projected[0]||
+       !history.length||xObserved[0]>=endDate){
+      throw Error("Forecast must connect to the final reported fiscal year.");
+    }
+    const displayBaseline=settings().growth!==0||settings().margin!==0;
+    const rangeValues=actual.concat(projected,displayBaseline?baseline:[]);
+    const min=Math.min(...rangeValues),max=Math.max(...rangeValues);
+    const padding=Math.max((max-min)*.14,Math.abs(max)*.035,.5);
+    const observedTrace={
+      x:xObserved,y:actual,type:"scatter",mode:"lines+markers",
+      name:"Reported",line:{color,width:2.7},marker:{color,size:5},
+      hovertemplate:"FY ending %{x|%b %Y}<br>$%{y:,.2f}B<extra>Annual reported</extra>"
     };
-    const actualTrace={
-      x:xs,y:actual,type:"scatter",mode:"lines+markers",
-      name:labels[metric]+" as reported",line:{color,width:2.6},marker:{size:5,color},
-      hovertemplate:"FY ending %{x|%b %Y}<br>$%{y:,.2f}B<extra>SEC reported</extra>"
-    };
-    const scenario={
-      x:xf,y:projected,type:"scatter",mode:"lines+markers",
-      name:labels[metric]+" adjusted",line:{color,width:2.7},marker:{size:6,color},
-      hovertemplate:"FY ending %{x|%b %Y}<br>$%{y:,.2f}B<extra>Conditional model</extra>"
+    const scenarioTrace={
+      x:xProjected,y:projected,type:"scatter",mode:"lines+markers",
+      name:displayBaseline?"Adjusted scenario":"Model forecast",
+      line:{color,width:2.65,dash:"dash"},marker:{color,size:5},
+      hovertemplate:"FY ending %{x|%b %Y}<br>$%{y:,.2f}B<extra>Browser model</extra>"
     };
     const baselineTrace={
-      x:xf,y:baseline,type:"scatter",mode:"lines",name:"Unadjusted baseline",
-      line:{color:colors.baseline,width:1.7,dash:"dot"},
-      hovertemplate:"FY ending %{x|%b %Y}<br>$%{y:,.2f}B<extra>Unadjusted baseline</extra>"
+      x:xProjected,y:baseline,type:"scatter",mode:"lines",
+      name:"Unadjusted baseline",
+      line:{color:colors.baseline,width:1.9,dash:"dot"},
+      hovertemplate:"FY ending %{x|%b %Y}<br>$%{y:,.2f}B<extra>Unadjusted model</extra>"
     };
-    const showBaseline=settings().growth!==0||settings().margin!==0;
-    // Match the layout's relative widths to actual elapsed annual
-    // intervals, instead of giving three years the same width as eight.
-    const pastIntervals=Math.max(1,history.length-1);
-    el("company-charts").style.gridTemplateColumns=
-      "minmax(0,"+pastIntervals+"fr) minmax(0,"+result.horizon+"fr)";
-    const projectionLayout={
-      ...common,
-      height:fullChartHeight("projection-chart"),
-      margin:{l:9,r:22,t:33,b:44},
-      xaxis:{...common.xaxis,range:[xf[0],xf.at(-1)]},
-      yaxis:{...common.yaxis,title:undefined,showticklabels:false},
-      legend:{orientation:"h",x:1,xanchor:"right",y:1.17,font:{size:10}},
-      showlegend:showBaseline,
-      shapes:[{type:"rect",xref:"paper",yref:"paper",x0:0,x1:1,y0:0,y1:1,
-        line:{width:0},fillcolor:"rgba(11,127,115,.035)",layer:"below"}],
-      annotations:[{xref:"paper",yref:"paper",x:.01,y:1.12,showarrow:false,
-        text:showBaseline?"<b>Adjusted vs baseline</b>":"<b>Model baseline</b>",
-        xanchor:"left",font:{size:10,color:"#0b7f73"}}]
+    // There is exactly one date and financial-value axis. Future width is
+    // determined by its actual elapsed calendar duration, not split cards.
+    const total=Date.parse(endDate)-Date.parse(xObserved[0]);
+    const cutoff=(Date.parse(boundary)-Date.parse(xObserved[0]))/total;
+    const layout={
+      autosize:true,height:fullChartHeight(),
+      margin:{l:66,r:18,t:68,b:47},
+      paper_bgcolor:"#fff",plot_bgcolor:"#fff",
+      font:{family:"Inter,system-ui,sans-serif",size:11,color:"#465865"},
+      showlegend:true,hovermode:"closest",
+      legend:{orientation:"h",x:.5,xanchor:"center",y:1.14,font:{size:10}},
+      xaxis:{
+        type:"date",range:[xObserved[0],endDate],
+        tickformat:"%Y",dtick:"M12",showgrid:false,
+        linecolor:"#dfe3e6",automargin:true,
+      },
+      yaxis:{
+        title:{text:unit,font:{size:11}},
+        tickprefix:"$",ticksuffix:"B",
+        gridcolor:"#edf1f2",range:[min-padding,max+padding],
+        zeroline:false,automargin:true,
+      },
+      shapes:[
+        {type:"rect",xref:"x",yref:"paper",x0:boundary,x1:endDate,
+          y0:0,y1:1,fillcolor:"rgba(11,127,115,.045)",line:{width:0},layer:"below"},
+        {type:"line",xref:"x",yref:"paper",x0:boundary,x1:boundary,
+          y0:0,y1:1,line:{color:"#92aba7",width:1.35,dash:"dash"}}
+      ],
+      annotations:[
+        {xref:"x",yref:"paper",x:boundary,y:1.055,xanchor:"right",
+          xshift:-10,showarrow:false,text:"<b>REPORTED</b>",
+          font:{size:10,color:"#314b5c"}},
+        {xref:"x",yref:"paper",x:boundary,y:1.055,xanchor:"left",
+          xshift:10,showarrow:false,
+          text:displayBaseline?"<b>SCENARIO</b>":"<b>FORECAST</b>",
+          font:{size:10,color:"#0b7f73"}}
+      ],
+      meta:{singleChart:true,continuousCalendar:true,cutoffFraction:cutoff,
+        observedStart:xObserved[0],observedEnd:boundary,
+        projectionStart:xProjected[0],projectionEnd:endDate,
+        measure:metric,unit,model:result.method}
     };
-    const historicLayout={...common,height:fullChartHeight("history-chart")};
+    el("chart-heading").textContent=labels[metric];
     el("chart-footnote").textContent=labels[metric]+" · "+unit+
-      " · Linked y-axis • Annual SEC observations on left; "+result.horizon+
-      "-year model projection on right. Same fiscal-year units.";
-    return Promise.all([
-      plot("history-chart",[actualTrace],historicLayout),
-      plot("projection-chart",showBaseline?[baselineTrace,scenario]:[scenario],projectionLayout)
-    ]);
+      " · Solid = reported • Dashed = browser forecast • Dotted = unadjusted baseline";
+    const traces=displayBaseline?
+      [observedTrace,baselineTrace,scenarioTrace]:
+      [observedTrace,scenarioTrace];
+    queuedPlot={traces,layout};
+    void plotLatest();
   }
   function render(){
     if(!company)return;
