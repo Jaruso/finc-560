@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="./dashboard.css?v=dns-engine">
   <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
   
+  <script defer src="./forecast_model.js?v=dns-engine"></script>
   <script defer src="./app.js?v=dns-engine"></script>
 </head>
 <body>
@@ -38,7 +39,7 @@
     <div id="data-error" class="error" role="alert" hidden></div>
 
     <div class="workspace">
-      <aside class="controls-rail" aria-label="Scenario assumptions">
+      <aside class="controls-rail" aria-label="Model forecasting and conditional policy controls">
     <section class="controls card" aria-labelledby="controls-heading">
       <div class="section-line">
         <div>
@@ -64,7 +65,7 @@
           <span class="band-inline"><input type="checkbox" id="show-bands" checked>10th–90th percentiles</span>
         </label>
       </div>
-      <div class="scenario-impact" role="group" aria-label="Live scenario results">
+      <div class="scenario-impact" role="group" aria-label="Live fitted model and scenario results">
         <div><span>Forecast 5Y</span><strong id="preview-five">—</strong></div>
         <div><span>Forecast 10Y</span><strong id="preview-ten">—</strong></div>
         <div class="scenario-impact-spread"><span>Forecast spread</span><strong id="preview-spread">—</strong></div>
@@ -120,7 +121,7 @@
         <button id="focus-projection" type="button" class="secondary focus-button" aria-pressed="false">Focus projection</button>
         <span class="chart-badge">Continuous calendar scale • One chart</span>
       </div>
-      <p id="axis-explanation" class="axis-explanation" aria-live="polite">Continuous calendar dates: 10 years observed → 12 months hypothetical. Projection width reflects its actual duration. Use Focus projection to inspect a short scenario without distorting time.</p>
+      <p id="axis-explanation" class="axis-explanation" aria-live="polite">Ten years of observed data followed by the fitted model horizon on a continuous calendar axis.</p>
       <div class="chart-grid" id="chart-stage" aria-label="Continuous historical and projected time-series charts">
         <article class="chart-card card">
           <header class="chart-heading">
