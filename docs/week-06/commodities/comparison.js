@@ -24,13 +24,19 @@
     return [Math.max(0,min-pad),max+pad];
   };
   function prepare(commodities,months,opt){
-    if(!Array.isArray(commodities)||commodities.length<2||commodities.length>4||
+    if(!Array.isArray(commodities)||commodities.length<1||commodities.length>4||
       new Set(commodities.map(c=>c.id)).size!==commodities.length)
-      throw Error("Select two to four distinct commodity benchmarks.");
+      throw Error("Select one to four distinct commodity benchmarks.");
     const windows=commodities.map(c=>M.history(c,months));
     // Index all series to their first reported price on or after the first
     // shared visible month. There is no interpolation or forward-filling.
-    const start=windows.map(w=>w[0].date).sort().at(-1);
+    const visibleDates=new Set(windows[0].map(row=>row.date));
+    const shared=windows[0].find(row=>windows.slice(1).every(w=>
+      w.some(point=>point.date===row.date))&&
+      row.date>=windows.map(w=>w[0].date).sort().at(-1));
+    if(!shared||!visibleDates.has(shared.date))
+      throw Error("No common reporting month to index the selected commodities.");
+    const start=shared.date;
     return commodities.map((commodity,i)=>{
       const history=windows[i].filter(row=>row.date>=start);
       if(history.length<3)throw Error("Not enough overlapping commodity observations.");
@@ -219,5 +225,183 @@
       category:id==="commodity-seasonality",zero:id!=="commodity-vol",
       context:contexts[id]||"",price:false};
   }
-  return {COLORS,MODELS,prepare,commonRange,projectedRange,prices,study};
+
+  /* The two display modes are independent for every card. In Nominal mode,
+     disparate units get separate, labeled Plotly axes; only equal units ever
+     share an actual-price axis. Indexed mode uses an explicitly stated base. */
+  const oldPrices=prices,oldStudy=study;
+  function nominalPriceTraces(result){
+    return {...result,traces:result.traces.map(t=>{
+      if(!t.customdata)return t;
+      const copy={...t,y:t.customdata.slice()};
+      copy.hovertemplate="%{x|%b %Y}: %{y:,.3f} "+t.meta.unit+
+        "<extra>"+t.name+"</extra>";
+      return copy;
+    }),context:result.context.replace(/Index 100 at first shared visible month/,
+      "Unadjusted nominal prices in their original units")};
+  }
+  function priceMode(frames,opt,mode="indexed"){
+    if(!["indexed","nominal"].includes(mode))throw Error("Unsupported display mode");
+    const value=oldPrices(frames,opt);
+    return mode==="nominal"?nominalPriceTraces(value):value;
+  }
+  function calculateNominalStudy(frames,id,opt){
+    if(id==="commodity-chart")return nominalPriceTraces(oldPrices(frames,opt));
+    if(id==="commodity-models"){
+      const indexed=oldStudy(frames,id,opt);
+      const traces=indexed.traces.map(t=>({
+        ...t,y:t.customdata.slice(),
+        hovertemplate:"%{x|%b %Y}: %{y:,.3f} "+t.meta.unit+
+          "<extra>"+t.name+"</extra>"
+      }));
+      return {...indexed,traces,price:true,nominal:true,
+        context:"Actual modeled future prices · Separate labeled axes for different units. "+
+        "Color = commodity; line style = model."};
+    }
+    const traces=[];
+    for(const frame of frames){
+      const observations=frame.commodity.observations;
+      const lookup=new Map(observations.map(o=>[o.date,o.value]));
+      let rows=[];
+      if(id==="commodity-yoy"||id==="commodity-returns"){
+        const months=id==="commodity-yoy"?12:1;
+        rows=observations.flatMap(row=>{
+          if(row.date<frame.start)return [];
+          const prior=lookup.get(M.shiftMonth(row.date,-months));
+          return Number.isFinite(prior)&&prior>0
+            ?[{date:row.date,value:row.value-prior}]:[];
+        });
+      }else if(id==="commodity-vol"){
+        for(let i=12;i<observations.length;i++){
+          const row=observations[i];if(row.date<frame.start)continue;
+          const delta=[];let consecutive=true;
+          for(let j=i-11;j<=i;j++){
+            if(M.shiftMonth(observations[j-1].date,1)!==observations[j].date){
+              consecutive=false;break;
+            }
+            delta.push(observations[j].value-observations[j-1].value);
+          }
+          if(!consecutive)continue;
+          const mean=delta.reduce((a,v)=>a+v,0)/delta.length;
+          const stdev=Math.sqrt(delta.reduce((a,v)=>a+(v-mean)**2,0)/
+            (delta.length-1));
+          rows.push({date:row.date,value:stdev});
+        }
+      }else if(id==="commodity-drawdown"){
+        let peak=0;
+        rows=frame.history.map(row=>{
+          peak=Math.max(peak,row.value);
+          return {date:row.date,value:row.value-peak};
+        });
+      }else if(id==="commodity-shock"){
+        rows=frame.forecast.scenario.map((row,i)=>({
+          date:row.date,value:row.price-frame.forecast.baseline[i].price
+        }));
+      }else if(id==="commodity-seasonality"){
+        const groups=Array.from({length:12},()=>[]);
+        for(const row of frame.history)groups[Number(row.date.slice(5,7))-1].push(row.value);
+        rows=groups.map((g,i)=>({date:monthNames[i],
+          value:g.length>=2?g.reduce((a,v)=>a+v,0)/g.length:null}));
+      }else throw Error("Unsupported nominal chart "+id);
+      const trace={
+        type:"scatter",mode:"lines",x:rows.map(o=>o.date),y:rows.map(o=>o.value),
+        line:{color:frame.color,width:2.2},name:frame.commodity.label,
+        meta:{commodity:frame.commodity.id,unit:frame.unit,kind:"solid"}
+      };
+      trace.hovertemplate=(id==="commodity-seasonality"?"%{x}":"%{x|%b %Y}")+
+        ": %{y:,.3f} "+frame.unit+"<extra>"+frame.commodity.label+"</extra>";
+      traces.push(trace);
+    }
+    const labels={
+      "commodity-yoy":"Nominal price change versus the same calendar month a year ago (each unit labeled).",
+      "commodity-returns":"Nominal change since the preceding reported month (each unit labeled).",
+      "commodity-vol":"Rolling 12-month standard deviation of actual monthly price changes.",
+      "commodity-drawdown":"Nominal decline from each asset's highest price in the visible period.",
+      "commodity-seasonality":"Actual historical seasonal means in each underlying price unit.",
+      "commodity-shock":"Absolute price difference from each commodity's no-shock baseline."
+    };
+    return {traces,nominal:true,percent:false,index:false,price:false,
+      category:id==="commodity-seasonality",
+      zero:["commodity-yoy","commodity-returns","commodity-drawdown",
+        "commodity-shock"].includes(id),context:labels[id]};
+  }
+  function studyMode(frames,id,opt,mode="indexed"){
+    if(!["indexed","nominal"].includes(mode))throw Error("Unsupported display mode");
+    return mode==="nominal"?calculateNominalStudy(frames,id,opt):
+      oldStudy(frames,id,opt);
+  }
+  function unitGroups(frames){
+    return [...new Set(frames.map(frame=>frame.unit))];
+  }
+  function paddedRange(values,positiveOnly=false){
+    const finite=values.filter(Number.isFinite);
+    if(!finite.length)return [-1,1];
+    const min=Math.min(...finite),max=Math.max(...finite);
+    const pad=Math.max((max-min)*.14,Math.abs(max)*.04,.05);
+    return [positiveOnly?Math.max(0,min-pad):min-pad,max+pad];
+  }
+  function nominalPriceRanges(frames,{projected=false,opt={}}={}){
+    const values=new Map(unitGroups(frames).map(u=>[u,[]]));
+    for(const frame of frames){
+      const data=values.get(frame.unit);
+      data.push(...frame.history.map(o=>o.value));
+      if(projected){
+        data.push(...frame.forecast.scenario.map(r=>r.price));
+        if(opt.shock)data.push(...frame.forecast.baseline.map(r=>r.price));
+        if(opt.vol)data.push(...frame.forecast.low.concat(frame.forecast.high)
+          .map(r=>r.price));
+      }else{
+        for(const model of M.MODELS)data.push(...M.forecast(frame.commodity,
+          {model,horizon:12,shock:0,vol:0}).baseline.map(r=>r.price));
+      }
+    }
+    return Object.fromEntries([...values].map(([unit,data])=>
+      [unit,paddedRange(data,true)]));
+  }
+  function nominalStudyRanges(traces,{positiveOnly=false}={}){
+    const groups=new Map();
+    for(const trace of traces){
+      const unit=trace.meta?.unit;
+      if(!unit)continue;
+      if(!groups.has(unit))groups.set(unit,[]);
+      groups.get(unit).push(...trace.y);
+    }
+    return Object.fromEntries([...groups].map(([unit,values])=>
+      [unit,paddedRange(values,positiveOnly)]));
+  }
+  function nominalAxes(traces,frames,{ranges=null,positiveOnly=false}={}){
+    const units=unitGroups(frames);
+    const merged=ranges||nominalStudyRanges(traces,{positiveOnly});
+    const many=units.length>1;
+    const axisLayout={},xDomain=many?
+      (units.length===2?[.06,.85]:units.length===3?[.10,.75]:[.10,.69]):null;
+    units.forEach((unit,i)=>{
+      const id=i===0?"y":"y"+(i+1),key=i===0?"yaxis":"yaxis"+(i+1);
+      const same=frames.filter(frame=>frame.unit===unit);
+      const cfg={
+        title:{text:unit,font:{size:9,color:same[0].color}},
+        tickfont:{size:9,color:same[0].color},
+        gridcolor:i?"rgba(0,0,0,0)":"#edf1f2",
+        showgrid:i===0,zeroline:false,
+        automargin:true,range:merged[unit]||[-1,1],
+        tickformat:".3~s"
+      };
+      if(many){
+        cfg.anchor="free";
+        cfg.side=i===0?"left":"right";
+        cfg.position=i===0?xDomain[0]:xDomain[1];
+        if(i>0){cfg.overlaying="y";cfg.autoshift=true;
+          cfg.shift=(i-1)*43;}
+      }
+      axisLayout[key]=cfg;
+      for(const trace of traces){
+        if(trace.meta?.unit===unit)trace.yaxis=id;
+      }
+    });
+    return {axes:axisLayout,xDomain,units};
+  }
+  return {COLORS,MODELS,prepare,commonRange,projectedRange,
+    prices:priceMode,study:studyMode,nominalAxes,nominalPriceRanges,
+    nominalStudyRanges,unitGroups};
+
 });

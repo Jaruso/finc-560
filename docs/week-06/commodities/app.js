@@ -3,7 +3,7 @@
 "use strict";
 const M=window.CommodityForecast,C=window.CommodityComparison,el=id=>document.getElementById(id);
 const state={snapshot:null,commodity:null,context:null,range:null,values:null,
-  plotHeight:null,pending:null,painting:false,tick:false,canvas:null,selectedIds:[]};
+  plotHeight:null,pending:null,painting:false,tick:false,canvas:null,selectedIds:[],modes:{},axisValues:null};
 const OPTIONS=["commodity-chart","commodity-yoy","commodity-returns","commodity-vol",
   "commodity-seasonality","commodity-models","commodity-shock","commodity-drawdown"];
 const DEFAULT=OPTIONS.slice(0,4);
@@ -25,6 +25,43 @@ const CATEGORIES=["Energy","Precious metals","Industrial metals","Critical miner
 const categoryOf=c=>c.category||"Energy";
 const input=()=>({model:el("model").value,horizon:+el("horizon").value,
   shock:+el("shock").value,halfLife:+el("half-life").value,vol:+el("vol").value});
+
+/* Each panel has its own explicit Indexed / Nominal preference. Single
+   benchmarks initially retain their familiar raw spot and model prices and
+   percentage-return measures; comparison price charts begin indexed. */
+const SINGLE_NOMINAL=new Set(["commodity-chart","commodity-seasonality",
+  "commodity-models"]);
+function modeFor(id){
+  return state.modes[id]||(state.selectedIds.length<=1&&SINGLE_NOMINAL.has(id)?
+    "nominal":"indexed");
+}
+function syncModes(){
+  for(const group of document.querySelectorAll(".chart-scale-toggle")){
+    for(const button of group.querySelectorAll("button[data-mode]"))
+      button.setAttribute("aria-pressed",
+        String(modeFor(group.dataset.chartMode)===button.dataset.mode));
+  }
+}
+function needsUnifiedSingle(){
+  return OPTIONS.some(id=>Object.hasOwn(state.modes,id)&&
+    modeFor(id)!==(SINGLE_NOMINAL.has(id)?"nominal":"indexed"));
+}
+function updateEmptyVisibility(){
+  const blank=!state.selectedIds.length;
+  el("commodity-empty").hidden=!blank;
+  if(blank){
+    el("commodity-empty").querySelector("strong").textContent=
+      "Choose your first commodity";
+    el("commodity-empty").querySelector("p").textContent=
+      "The first selection is primary; up to three more can be compared.";
+    el("source-period").textContent="Awaiting selection";
+    el("comparison-preview").hidden=true;
+    el("comparison-sources").hidden=true;
+    el("commodity-source").hidden=true;
+    state.canvas.setAvailable([]);
+  }
+}
+
 function height(){
   if(state.plotHeight!==null)return state.plotHeight;
   const card=el("commodity-chart").closest(".chart-card");
@@ -50,7 +87,10 @@ async function paint(){
 }
 function draw(){
   const c=state.commodity;if(!c)return;
-  if(state.selectedIds.length>1){drawComparison();return;}
+  syncModes();
+  if(state.selectedIds.length>1||needsUnifiedSingle()){
+    drawComparison();return;
+  }
   el("comparison-preview").hidden=true;
   el("comparison-sources").hidden=true;
   el("commodity-source").hidden=false;
@@ -360,13 +400,14 @@ function reset(){
   el("model").value="mean";el("horizon").value="6";
   el("shock").value="0";el("half-life").value="6";
   el("vol").value="1";el("history").value="60";
-  state.context=null;state.range=null;
-  state.plotHeight=null;state.canvas.reset();schedule();
+  state.context=null;state.range=null;state.axisValues=null;
+  state.plotHeight=null;state.modes={};syncModes();state.canvas.reset();schedule();
 }
 
-/* The category/search controls retain their original quick-focus workflow.
-   Comparison checkboxes search *all* verified categories independently, so
-   a filtered Energy view can still overlay a metal or agricultural benchmark. */
+
+/* One Commodity dropdown replaces the duplicate compare panel. Checked items
+   are displayed in the exact order selected; slot 1 is always the primary.
+   Category/search only filter *available additions*: never mutate selection. */
 function formatNative(value,commodity){
   if(!Number.isFinite(value))return "—";
   const number=value.toLocaleString("en-US",{
@@ -375,132 +416,141 @@ function formatNative(value,commodity){
   return commodity.unit==="cents/sheet"?number+"¢":
     "$"+number+" "+commodity.unit.replace(/^USD\//,"/");
 }
-function updateComparisonPicker(message=""){
-  if(!state.snapshot||!state.selectedIds.length)return;
-  const selected=new Set(state.selectedIds),first=state.selectedIds[0];
-  const atLimit=selected.size>=4;
-  for(const input of el("comparison-options").querySelectorAll('input[type="checkbox"]')){
-    input.checked=selected.has(input.value);
-    input.disabled=input.value===first||atLimit&&!selected.has(input.value);
-    input.title=input.value===first?"Focus commodity; change it using the selector above":
-      input.disabled?"Remove a commodity before adding another":"";
-  }
-  const chips=el("comparison-chips");
-  chips.replaceChildren();
-  const pool=new Map(state.snapshot.commodities.map(c=>[c.id,c]));
-  state.selectedIds.forEach((id,i)=>{
-    const c=pool.get(id);if(!c)return;
-    const chip=document.createElement("span");chip.className="comparison-chip";
-    const dot=document.createElement("span");dot.className="comparison-dot";
-    dot.style.setProperty("--series-color",C.COLORS[i]);
-    const title=document.createElement("strong");title.textContent=c.label;
-    chip.append(dot,title);
-    if(i){
-      const remove=document.createElement("button");
-      remove.type="button";remove.dataset.remove=id;
-      remove.setAttribute("aria-label","Remove "+c.label+" from comparison");
-      remove.textContent="×";
-      chip.append(remove);
-    }else chip.title="Focus commodity";
-    chips.append(chip);
-  });
-  el("comparison-count").textContent=selected.size+" of 4";
-  el("comparison-status").textContent=message||(
-    atLimit?"Four selected. Remove one to compare another.":
-    selected.size===1?"Choose up to three more; mixed units are indexed to 100.":
-    selected.size+" selected · All charts now compare these commodities."
-  );
+function updateSelection(next){
+  state.selectedIds=next.slice(0,4);
+  state.commodity=state.snapshot.commodities.find(c=>c.id===state.selectedIds[0])||null;
+  state.context=null;state.range=null;state.plotHeight=null;state.axisValues=null;
+  renderChoices();
+  syncModes();
+  updateEmptyVisibility();
+  if(state.commodity)draw();
 }
-function buildComparisonPicker(){
-  const root=el("comparison-options");root.replaceChildren();
-  const ordered=state.snapshot.commodities.slice().sort((a,b)=>
-    CATEGORIES.indexOf(categoryOf(a))-CATEGORIES.indexOf(categoryOf(b))||
-    a.label.localeCompare(b.label));
-  let category=null,group=null;
-  for(const commodity of ordered){
-    const next=categoryOf(commodity);
-    if(next!==category){
-      category=next;group=document.createElement("div");
-      group.className="comparison-group";group.setAttribute("role","group");
-      group.setAttribute("aria-label",category);
-      const heading=document.createElement("h3");heading.textContent=category;
-      group.append(heading);root.append(group);
-    }
-    const label=document.createElement("label");
-    label.className="comparison-option";
-    label.dataset.name=(commodity.label+" "+category).toLowerCase();
-    const checkbox=document.createElement("input");
-    checkbox.type="checkbox";checkbox.value=commodity.id;
-    const text=document.createElement("span");
-    text.textContent=commodity.label+" · "+commodity.unit;
-    label.append(checkbox,text);group.append(label);
-  }
-  el("comparison-search").disabled=false;
-  el("comparison-search").addEventListener("input",()=>{
-    const term=el("comparison-search").value.trim().toLowerCase();
-    for(const group of root.querySelectorAll(".comparison-group")){
-      let matches=0;
-      for(const label of group.querySelectorAll(".comparison-option")){
-        const yes=!term||label.dataset.name.includes(term);
-        label.hidden=!yes;
-        if(yes)matches++;
+function renderChoices(message=""){
+  if(!state.snapshot)return;
+  const category=el("commodity-category").value;
+  const term=el("commodity-search").value.trim().toLowerCase();
+  const pool=state.snapshot.commodities;
+  const selected=state.selectedIds.map(id=>pool.find(c=>c.id===id)).filter(Boolean);
+  const chosen=new Set(state.selectedIds);
+  const eligible=pool.filter(c=>(category==="all"||categoryOf(c)===category)&&
+    (!term||[c.label,categoryOf(c),c.source].join(" ").toLowerCase().includes(term)))
+    .sort((a,b)=>CATEGORIES.indexOf(categoryOf(a))-
+      CATEGORIES.indexOf(categoryOf(b))||a.label.localeCompare(b.label));
+  const root=el("commodity-options");root.replaceChildren();
+  const group=(title,items,selectedGroup)=>{
+    const container=document.createElement("section");
+    container.className="commodity-multi-group";
+    const heading=document.createElement("h3");heading.textContent=title;
+    container.append(heading);
+    items.forEach((commodity)=>{
+      const label=document.createElement("label");label.className="commodity-multi-option";
+      const checkbox=document.createElement("input");
+      checkbox.type="checkbox";checkbox.value=commodity.id;
+      const index=state.selectedIds.indexOf(commodity.id);
+      checkbox.checked=index>=0;
+      checkbox.disabled=index<0&&state.selectedIds.length===4;
+      label.append(checkbox);
+      const name=document.createElement("span");name.textContent=
+        commodity.label+" · "+commodity.unit;
+      label.append(name);
+      if(index>=0){
+        const rank=document.createElement("span");rank.className="selection-rank";
+        rank.textContent=index===0?"Primary":"Compare "+index;
+        label.append(rank);
       }
-      group.hidden=matches===0;
-    }
-  });
+      container.append(label);
+    });
+    root.append(container);
+  };
+  if(selected.length)group("Selected · in selection order",selected,true);
+  let last=null,bucket=[];
+  function flush(){
+    if(bucket.length)group(last,bucket,false);
+    bucket=[];
+  }
+  for(const commodity of eligible){
+    if(chosen.has(commodity.id))continue;
+    const category=categoryOf(commodity);
+    if(last!==category){flush();last=category;}
+    bucket.push(commodity);
+  }
+  flush();
+  if(!selected.length&&!eligible.length){
+    const blank=document.createElement("p");blank.className="commodity-multi-empty";
+    blank.textContent="No matching verified commodities.";root.append(blank);
+  }
+  const n=selected.length;
+  const primary=selected[0];
+  el("commodity-summary").textContent=primary?
+    primary.label+(n>1?" + "+(n-1)+" comparison"+(n===2?"":"s"):""):
+    "Select a commodity…";
+  el("commodity-selection-count").textContent=n+" of 4";
+  el("commodity-selection-status").textContent=message||
+    (n===4?"Four selected; uncheck one to add another.":
+      n===0?"Choose a commodity to begin.":
+      "First selected = primary · Select up to "+(4-n)+" more.");
+  const distinct=new Set(eligible.map(categoryOf));
+  el("commodity-count").textContent=eligible.length+" verified benchmark"+
+    (eligible.length===1?"":"s")+
+    (category==="all"?" across "+distinct.size+" categor"+
+      (distinct.size===1?"y":"ies"):"")+
+    (!eligible.length?" · Clear search or change category.":"");
+}
+function buildCommodityPicker(){
+  const root=el("commodity-options");
   root.addEventListener("change",event=>{
-    const checkbox=event.target;
-    if(checkbox.type!=="checkbox")return;
-    const id=checkbox.value;
-    if(checkbox.checked){
-      if(state.selectedIds.length>=4){
-        checkbox.checked=false;
-        updateComparisonPicker("Four commodities maximum. Remove one before adding another.");
+    const input=event.target;
+    if(!input.matches('input[type="checkbox"]'))return;
+    const id=input.value,index=state.selectedIds.indexOf(id);
+    if(input.checked){
+      if(index>=0){renderChoices();return;}
+      if(state.selectedIds.length===4){
+        renderChoices("Four commodities maximum; uncheck one first.");
         return;
       }
-      if(!state.selectedIds.includes(id))state.selectedIds.push(id);
+      updateSelection([...state.selectedIds,id]);
     }else{
-      if(id===state.selectedIds[0]){
-        checkbox.checked=true;return;
-      }
-      state.selectedIds=state.selectedIds.filter(value=>value!==id);
+      if(index<0)return;
+      updateSelection(state.selectedIds.filter(value=>value!==id));
     }
-    state.context=null;state.range=null;state.plotHeight=null;
-    updateComparisonPicker();draw();
   });
-  el("comparison-chips").addEventListener("click",event=>{
-    const button=event.target.closest("button[data-remove]");
-    if(!button)return;
-    state.selectedIds=state.selectedIds.filter(id=>id!==button.dataset.remove);
-    state.context=null;state.range=null;state.plotHeight=null;
-    updateComparisonPicker();draw();
-  });
+  el("commodity-clear").addEventListener("click",()=>updateSelection([]));
 }
+
 function drawComparison(){
-  if(!state.snapshot||state.selectedIds.length<2)return;
+  if(!state.snapshot||!state.selectedIds.length)return;
   try{
     const commodities=state.selectedIds.map(id=>
       state.snapshot.commodities.find(c=>c.id===id));
     const opt=input(),frames=C.prepare(commodities,el("history").value,opt);
     const primary=frames[0],observed=primary.history.at(-1);
+    const priceMode=modeFor("commodity-chart");
     state.canvas.setAvailable(OPTIONS.filter(id=>
       id!=="commodity-shock"||opt.shock!==0));
     const key=state.selectedIds.join("|")+"|"+el("history").value+"|"+
-      frames.map(f=>f.commodity.last_observation).join("|");
+      frames.map(f=>f.commodity.last_observation).join("|")+"|"+priceMode;
     if(state.context!==key){
-      state.context=key;state.range=null;
+      state.context=key;state.range=null;state.axisValues=null;
     }
-    const defaultRange=C.commonRange(frames);
-    const rendered=C.prices(frames,opt);
-    const visiblePrices=frames.flatMap(f=>
+    const nominal=priceMode==="nominal";
+    const defaultRange=nominal?
+      C.nominalPriceRanges(frames):C.commonRange(frames);
+    const rendered=C.prices(frames,opt,priceMode);
+    const currentRange=nominal?
+      C.nominalPriceRanges(frames,{projected:true,opt}):null;
+    const visiblePrices=nominal?[]:frames.flatMap(f=>
       f.history.map(row=>f.toIndex(row.value)).concat(
         f.forecast.scenario.map(row=>f.toIndex(row.price)),
         opt.shock?f.forecast.baseline.map(row=>f.toIndex(row.price)):[],
         opt.vol?f.forecast.low.concat(f.forecast.high)
           .map(row=>f.toIndex(row.price)):[]));
     state.values=visiblePrices;
+    state.axisValues=currentRange;
     const axis=state.range||defaultRange;
-    const clipped=visiblePrices.some(value=>value<axis[0]||value>axis[1]);
+    const clipped=nominal?
+      Object.keys(currentRange).some(unit=>
+        currentRange[unit][0]<axis[unit][0]||currentRange[unit][1]>axis[unit][1]):
+      visiblePrices.some(value=>value<axis[0]||value>axis[1]);
     const fit=el("fit-projection");
     fit.textContent=clipped?"Fit projection":state.range?"Restore scale":"Scale locked";
     fit.hidden=!state.canvas.visible("commodity-chart");
@@ -523,7 +573,8 @@ function drawComparison(){
     el("preview-difference").textContent=safeNumber((adjusted/initial-1)*100)+"%";
     el("preview-baseline").closest(".commodity-preview").classList.add("is-comparing");
     el("scenario-status").textContent=frames.length+
-      " verified benchmarks · Shared "+opt.horizon+"-month model and "+
+      " verified benchmark"+(frames.length===1?"":"s")+
+      " · Shared "+opt.horizon+"-month model and "+
       (opt.shock?"conditional "+(opt.shock>0?"+":"")+opt.shock+"% shock":"zero shock")+".";
     const preview=el("comparison-preview");preview.hidden=false;preview.replaceChildren();
     for(const frame of frames){
@@ -540,16 +591,25 @@ function drawComparison(){
         formatNative(frame.forecast.baseline.at(-1).price,frame.commodity);
       row.append(name,value,delta);preview.append(row);
     }
-    el("source-period").textContent="Multiple monthly series";
+    el("source-period").textContent=frames.length>1?
+      "Multiple monthly series":"Through "+primary.last.slice(0,7);
     el("data-refresh").textContent="Verified snapshot · "+state.snapshot.retrieved_utc.slice(0,10);
-    el("market-description").textContent=frames.length+
-      " selected verified benchmarks · Price data may have different reporting months.";
-    el("chart-heading").textContent=frames.length+"-commodity price comparison";
-    el("chart-subtitle").textContent=rendered.context+
-      " · Solid actual, dashed forecast, dotted baseline or volatility.";
-    el("commodity-source").hidden=true;
-    const sources=el("comparison-sources");sources.hidden=false;sources.replaceChildren();
-    for(const frame of frames){
+    el("market-description").textContent=frames.length>1?
+      frames.length+" selected benchmarks · "+primary.commodity.label+
+      " is primary. Dates and original units may differ.":
+      primary.commodity.label+" · "+primary.unit+" · "+primary.commodity.source;
+    el("chart-heading").textContent=frames.length>1?
+      frames.length+"-commodity price comparison":primary.commodity.label;
+    el("chart-subtitle").textContent=rendered.context+" · "+
+      (nominal?"Actual units (labeled by axis and in hover)":
+        "Hover for original units")+
+      " · Solid observed, dashed forecasts.";
+    el("commodity-source").hidden=frames.length>1;
+    el("commodity-source").href=primary.commodity.source_url;
+    el("commodity-source").textContent=primary.commodity.source+" · "+primary.commodity.source_id;
+    const sources=el("comparison-sources");sources.hidden=frames.length===1;
+    sources.replaceChildren();
+    if(frames.length>1)for(const frame of frames){
       const anchor=document.createElement("a");
       anchor.href=frame.commodity.source_url;
       anchor.target="_blank";anchor.rel="noopener noreferrer";
@@ -568,26 +628,37 @@ function drawComparison(){
         tickformat:"%b %Y",dtick:frames[0].history.length>36?"M12":"M3",
         linecolor:"#dfe3e6",automargin:true},
       yaxis:{title:"Price index (first shared month = 100)",
-        gridcolor:"#edf1f2",range:axis.slice(),zeroline:false,automargin:true},
+        gridcolor:"#edf1f2",range:nominal?undefined:axis.slice(),
+        zeroline:false,automargin:true},
       shapes:rendered.shapes,annotations:[],
       meta:{commodity:primary.commodity.id,
-        commodities:state.selectedIds.slice(),comparison:true,
-        unit:"index (base 100)",observedEnd:primary.last,
-        projectedEnd:rendered.rangeX[1],
-        defaultRange:defaultRange.slice(),
+        commodities:state.selectedIds.slice(),comparison:frames.length>1,
+        mode:priceMode,unit:nominal?primary.unit:"index (base 100)",
+        observedEnd:primary.last,projectedEnd:rendered.rangeX[1],
+        defaultRange:nominal?structuredClone(defaultRange):defaultRange.slice(),
         yScale:state.range?"manual-locked":"baseline-locked",
         clipped}
     };
+    if(nominal){
+      const plan=C.nominalAxes(rendered.traces,frames,{ranges:axis,positiveOnly:true});
+      Object.assign(layout,plan.axes);
+      if(plan.xDomain)layout.xaxis.domain=plan.xDomain;
+      layout.margin.l=plan.units.length>1?70:62;
+      layout.margin.r=plan.units.length>1?
+        Math.min(165,68+(plan.units.length-2)*45):16;
+      layout.meta.axesByUnit=plan.units.slice();
+    }
     el("chart-footnote").textContent=clipped?
-      "Some indexed projections exceed the fixed scale. Click Fit projection to inspect them.":
-      "All prices indexed to 100; hover for each commodity's original price and units.";
+      "Some projections exceed the fixed scale. Click Fit projection to inspect them.":
+      nominal?"Actual, original commodity units; differing units use separate labeled axes.":
+      "Prices indexed to 100; hover for the original price and units.";
     if(state.canvas.visible("commodity-chart")){
       state.pending={traces:rendered.traces,layout};
       void paint();
     }
     for(const id of state.canvas.selected()){
       if(id==="commodity-chart")continue;
-      const study=C.study(frames,id,opt);
+      const mode=modeFor(id),study=C.study(frames,id,opt,mode);
       const context=el(id+"-context");
       if(context)context.textContent=study.context;
       if(!study.traces.length)continue;
@@ -609,8 +680,19 @@ function drawComparison(){
           x0:0,x1:1,y0:study.category?100:0,y1:study.category?100:0,
           line:{color:"#95a8a7",dash:"dot",width:1}}]:[],
         annotations:[],
-        meta:{commodities:state.selectedIds.slice(),comparison:true,metric:id}
+        meta:{commodities:state.selectedIds.slice(),comparison:frames.length>1,
+          metric:id,mode}
       };
+      if(mode==="nominal"){
+        const plan=C.nominalAxes(study.traces,frames,{
+          positiveOnly:id==="commodity-seasonality"||
+            id==="commodity-models"||id==="commodity-vol"});
+        Object.assign(extra,plan.axes);
+        if(plan.xDomain)extra.xaxis.domain=plan.xDomain;
+        extra.margin.r=plan.units.length>1?
+          Math.min(165,68+(plan.units.length-2)*45):14;
+        extra.meta.axesByUnit=plan.units.slice();
+      }
       if(id==="commodity-models"||id==="commodity-shock"){
         extra.xaxis.range=[rendered.shapes[1].x0,rendered.rangeX[1]];
       }
@@ -619,52 +701,7 @@ function drawComparison(){
   }catch(ex){error(ex);}
 }
 
-function choose(){
-  const selected=state.snapshot.commodities.find(c=>c.id===el("commodity").value);
-  if(!selected)return;
-  // The primary selector replaces only the focus slot. Independently chosen
-  // overlays persist when changing a category or switching the focus asset.
-  const oldPrimary=state.selectedIds[0];
-  if(state.selectedIds.includes(selected.id)){
-    state.selectedIds=[selected.id,...state.selectedIds.filter(
-      id=>id!==selected.id&&id!==oldPrimary)];
-  }else{
-    state.selectedIds=[selected.id,...state.selectedIds.slice(1)];
-  }
-  state.commodity=selected;
-  state.context=null;state.range=null;state.plotHeight=null;
-  updateComparisonPicker();draw();
-}
-function renderChoices(preferred){
-  if(!state.snapshot)return;
-  const category=el("commodity-category").value;
-  const term=el("commodity-search").value.trim().toLowerCase();
-  const eligible=state.snapshot.commodities
-    .filter(c=>(category==="all"||categoryOf(c)===category)&&
-      (!term||[c.label,categoryOf(c),c.source].join(" ").toLowerCase().includes(term)))
-    .sort((a,b)=>CATEGORIES.indexOf(categoryOf(a))-
-                   CATEGORIES.indexOf(categoryOf(b))||a.label.localeCompare(b.label));
-  const select=el("commodity"),previous=preferred||select.value;
-  select.replaceChildren();
-  let lastGroup=null,group=null;
-  for(const item of eligible){
-    const label=categoryOf(item);
-    if(label!==lastGroup){
-      group=document.createElement("optgroup");group.label=label;
-      select.append(group);lastGroup=label;
-    }
-    const op=document.createElement("option");op.value=item.id;
-    op.textContent=item.label;group.append(op);
-  }
-  select.disabled=eligible.length===0;
-  el("commodity-count").textContent=eligible.length+" verified benchmark"+
-    (eligible.length===1?"":"s")+
-    (category==="all"?" across "+new Set(eligible.map(categoryOf)).size+" categories":"")+
-    (eligible.length===0?" · Clear the search or change category.":"");
-  if(!eligible.length)return;
-  select.value=eligible.some(c=>c.id===previous)?previous:eligible[0].id;
-  choose();
-}
+
 function buildCatalog(snapshot){
   const picker=el("commodity-category");
   const categories=[...new Set(snapshot.commodities.map(categoryOf))]
@@ -680,7 +717,7 @@ function buildCatalog(snapshot){
   }
   picker.value="all";picker.disabled=false;
   el("commodity-search").disabled=false;
-  buildComparisonPicker();
+  buildCommodityPicker();
   const gaps=snapshot.unavailable||[];
   el("catalog-gaps").hidden=gaps.length===0;
   el("gap-count").textContent=gaps.length?"("+gaps.length+")":"";
@@ -701,9 +738,19 @@ async function init(){
       }
     });
     state.canvas.setAvailable([]); // No chart before a verified multi-source snapshot loads.
-    el("commodity").addEventListener("change",choose);
     el("commodity-category").addEventListener("change",()=>renderChoices());
     el("commodity-search").addEventListener("input",()=>renderChoices());
+    el("chart-stage").addEventListener("click",event=>{
+      const button=event.target.closest(".chart-scale-toggle button[data-mode]");
+      if(!button)return;
+      const group=button.closest(".chart-scale-toggle");
+      if(!group)return;
+      state.modes[group.dataset.chartMode]=button.dataset.mode;
+      if(group.dataset.chartMode==="commodity-chart"){
+        state.context=null;state.range=null;state.axisValues=null;
+      }
+      syncModes();schedule();
+    });
     for(const id of ["model","horizon","half-life","vol","history"])
       el(id).addEventListener("change",schedule);
     el("shock").addEventListener("input",schedule);
@@ -712,7 +759,11 @@ async function init(){
     el("fit-projection").addEventListener("click",()=>{
       if(!state.values)return;
       if(el("fit-projection").textContent==="Restore scale")state.range=null;
-      else{
+      else if(modeFor("commodity-chart")==="nominal"&&
+        (state.selectedIds.length>1||needsUnifiedSingle())&&state.axisValues){
+        // Each original unit has its own axis and explicit fit envelope.
+        state.range=structuredClone(state.axisValues);
+      }else{
         const lo=Math.min(...state.values),hi=Math.max(...state.values);
         const pad=Math.max((hi-lo)*.14,hi*.04,.05);
         state.range=[Math.max(0,lo-pad),hi+pad];
@@ -737,7 +788,10 @@ async function init(){
     el("commodity-empty").hidden=true;
     buildCatalog(data);
     const requested=new URLSearchParams(location.search).get("asset");
-    renderChoices(data.commodities.some(c=>c.id===requested)?requested:"wti");
+    const first=data.commodities.find(c=>c.id===requested)||
+      data.commodities.find(c=>c.id==="wti")||data.commodities[0];
+    state.selectedIds=[first.id];state.commodity=first;
+    renderChoices();syncModes();draw();
   }catch(ex){
     el("source-period").textContent="Unavailable";
     el("commodity-empty").hidden=false;error(ex);

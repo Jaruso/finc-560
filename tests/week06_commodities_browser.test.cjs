@@ -57,7 +57,9 @@ async function slide(page,n,value){
       "Commodities");
     assert.equal(await page.locator("#controls-heading").textContent(),"Forecast controls");
     assert.equal(await page.locator("#reset").textContent(),"Reset");
-    assert.equal(await page.locator("#commodity option").count(),3);
+    assert.equal(await page.locator("#commodity-options input").count(),3);
+    assert.equal(await page.locator("#commodity-summary").textContent(),"WTI crude oil");
+    assert.equal(await page.locator("#commodity-selection-count").textContent(),"1 of 4");
     const picker=page.locator("#chart-picker");
     assert.equal(await picker.locator('input[type="checkbox"]').count(),8);
     assert.equal(await picker.locator("input:checked").count(),4);
@@ -73,7 +75,7 @@ async function slide(page,n,value){
       }));
     assert.ok(four[0].y===four[1].y&&four[2].y===four[3].y);
     assert.ok(four[1].x>four[0].x&&four[2].y>four[0].y);
-    assert.equal(await page.locator("#commodity").inputValue(),"wti");
+    assert.equal(await page.locator("#commodity-summary").textContent(),"WTI crude oil");
     assert.equal(await page.locator("#source-period").textContent(),"Through 2026-08");
     assert.equal(await page.locator("#data-error").isVisible(),false);
     const initial=await page.locator("#commodity-chart").evaluate(g=>({
@@ -140,7 +142,9 @@ async function slide(page,n,value){
     await page.selectOption("#history","120");
     await page.waitForFunction(()=>document.querySelector("#commodity-chart")
       ?.data?.[0]?.x?.length===120);
-    await page.selectOption("#commodity","gas");
+    await page.locator("#commodity-picker summary").click();
+    await page.locator("#commodity-clear").click();
+    await page.locator('#commodity-options input[value="gas"]').check();
     await page.waitForFunction(()=>document.querySelector("#commodity-chart")
       ?.layout?.meta?.commodity==="gas");
     assert.equal(await page.locator("#kpi-unit").textContent(),"USD/MMBtu");
@@ -181,7 +185,7 @@ async function slide(page,n,value){
     await page.locator("#reset").click();
     await page.waitForFunction(()=>document.querySelector("#shock-value")
       ?.textContent==="0%");
-    assert.equal(await page.locator("#commodity").inputValue(),"gas");
+    assert.equal(await page.locator("#commodity-summary").textContent(),"Natural gas");
     assert.equal(await page.locator("#model").inputValue(),"mean");
     assert.equal(await page.locator("#history").inputValue(),"60");
     assert.equal(await page.locator("#horizon").inputValue(),"6");
