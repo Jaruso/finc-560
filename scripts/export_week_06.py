@@ -8,7 +8,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from src.assignments.week_06 import build_snapshot  # noqa: E402
+from src.assignments.week_06_forecast import build_snapshot  # noqa: E402
 
 
 def main() -> None:
@@ -20,7 +20,7 @@ def main() -> None:
     temp.write_text(json.dumps(snapshot, indent=2, allow_nan=False) + "\n", encoding="utf-8")
     temp.replace(output)
     print(
-        "Published", len(snapshot["observations"]), "months;",
+        "Published", len(snapshot["observations"]), "months, Diebold–Li 24-month baseline;",
         "latest synchronized observation:", snapshot["latest_synchronized_daily_observation"]
     )
 
