@@ -48,9 +48,19 @@
     if(amounts.some(x=>x===null))return null;
     return amounts.reduce((sum,x)=>sum+x,0);
   }
+  // Finnhub uses 'YYYY-MM-DD 00:00:00' on real 10-K records, whereas
+  // our curated SEC fixtures use 'YYYY-MM-DD'. Normalize the date portion
+  // strictly: never truncate arbitrary strings or permit invalid calendar days.
+  function filingDate(value){
+    if(typeof value!=="string")return null;
+    const matched=/^(\d{4}-\d{2}-\d{2})(?:[ T](?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?Z?)?$/.exec(value);
+    if(!matched)return null;
+    const iso=matched[1],date=new Date(iso+"T00:00:00.000Z");
+    return !Number.isNaN(date.getTime())&&date.toISOString().slice(0,10)===iso?iso:null;
+  }
   function annualRow(r,cik){
     if(!r||!/^10-K(?:\/A)?$/.test(r.form||"")||
-      !/^\d{4}-\d\d-\d\d$/.test(r.endDate||"")||
+      !filingDate(r.endDate)||
       !/^\d{10}-\d{2}-\d{6}$/.test(r.accessNumber||"")||
       !/^\d{1,10}$/.test(String(cik||"")))return null;
     const ic=r.report?.ic,bs=r.report?.bs,cf=r.report?.cf;
@@ -82,11 +92,11 @@
     const url="https://www.sec.gov/Archives/edgar/data/"+
       String(Number(cik))+"/"+r.accessNumber.replace(/-/g,"")+"/";
     return {
-      fiscal_end:r.endDate,
+      fiscal_end:filingDate(r.endDate),
       revenue_musd:revenue,operating_income_musd:operating,net_income_musd:net,
       cfo_musd:cfo,capex_musd:capex,fcf_musd:sumIfKnown(cfo,capex===null?null:-capex),
       interest_musd:interest, cash_musd:cash,total_debt_musd:totalDebt,
-      da_musd:da, tax_musd:tax, filed_date:r.filedDate||null,
+      da_musd:da, tax_musd:tax, filed_date:filingDate(r.filedDate),
       form:r.form,accession:r.accessNumber,source_url:url,
       filings:{revenue:{source_url:url},operating:{source_url:url},net:{source_url:url}}
     };
@@ -103,9 +113,21 @@
     if(!Array.isArray(reported?.data)||!cik.match(/^\d{1,10}$/))
       return {ticker,annual:[],warning:"No verifiable US annual as-reported filings were returned."};
     const dedup=new Map();
+    const validation={received:reported.data.length,unsupportedForm:0,invalidMetadata:0,
+      incompleteStatements:0,missingCoreConcepts:0,accepted:0};
     for(const filing of reported.data){
+      if(!/^10-K(?:\/A)?$/.test(filing?.form||"")){
+        validation.unsupportedForm++;continue;
+      }
+      if(!filingDate(filing?.endDate)||!/^\d{10}-\d{2}-\d{6}$/.test(filing?.accessNumber||"")){
+        validation.invalidMetadata++;continue;
+      }
+      if(!["ic","bs","cf"].every(k=>Array.isArray(filing?.report?.[k]))){
+        validation.incompleteStatements++;continue;
+      }
       const row=annualRow(filing,cik);
-      if(!row)continue;
+      if(!row){validation.missingCoreConcepts++;continue;}
+      validation.accepted++;
       const previous=dedup.get(row.fiscal_end);
       if(!previous||(row.filed_date||"")>(previous.filed_date||"")||
         ((row.filed_date||"")===(previous.filed_date||"")&&row.form==="10-K/A")){
@@ -113,6 +135,16 @@
       }
     }
     const annual=[...dedup.values()].sort((a,b)=>a.fiscal_end.localeCompare(b.fiscal_end));
+    const warning=annual.length<5
+      ?(reported.data.length?"Received "+validation.received+" filings; "+
+        validation.accepted+" passed required annual US-GAAP checks ("+
+        validation.unsupportedForm+" non-10-K, "+validation.invalidMetadata+
+        " invalid metadata, "+validation.incompleteStatements+
+        " missing statement sections, "+validation.missingCoreConcepts+
+        " missing revenue/operating/net-income concepts).":
+        "No financial filings returned by Finnhub.")+
+        " "+annual.length+" distinct usable fiscal years; five required for historical forecasts."
+      :null;
     const name=typeof profile?.name==="string"&&profile.name.trim()?profile.name:ticker;
     const shares=numeric(profile?.shareOutstanding);
     const marketCap=numeric(profile?.marketCapitalization);
@@ -122,8 +154,7 @@
       retrieved_utc:new Date().toISOString(),
       data_source:annual.at(-1)?.source_url||null,
       refresh_mode:"finnhub-as-reported",schema_version:1,status:"ready",
-      warning:annual.length<5?"Only "+annual.length+
-        " comparable annual filings found; five are required for the existing revenue forecasts.":null};
+      validation,warning};
   }
   function health(annual){
     const rows=annual.map(r=>{

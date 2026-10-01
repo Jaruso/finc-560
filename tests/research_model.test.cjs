@@ -1,6 +1,7 @@
 const test=require("node:test");
 const assert=require("node:assert/strict");
 const R=require("../docs/week-06/companies/research.js");
+const Forecast=require("../docs/week-06/companies/model.js");
 const money=(concept,value)=>({concept:"us-gaap_"+concept,unit:"USD",value:value*1e6});
 function makeYear(year,opts={}){
   const endDate=year+"-09-30",accessNumber="0000320193-"+String(year).slice(-2)+"-000001";
@@ -34,6 +35,42 @@ test("seven distinct actual annual 10-K filing years are normalized in USD milli
   assert.ok(d.annual.every(x=>x.filings.revenue.source_url===x.source_url));
 });
 
+
+test("real Finnhub timestamped 10-Ks normalize and activate revenue forecast, not just quote",()=>{
+  // Matches the real finnhub endpoint's date fields shown for NVDA,
+  // rather than only the previous fixture's YYYY-MM-DD dates.
+  const data=Array.from({length:6},(_,index)=>{
+    const year=2021+index;
+    const filing=makeYear(year);
+    return {...filing,accessNumber:"0001045810-"+String(year).slice(-2)+"-000021",
+      startDate:(year-1)+"-01-27 00:00:00",
+      endDate:year+"-01-25 00:00:00",
+      filedDate:year+"-02-25 00:00:00",
+      acceptedDate:year+"-02-25 16:42:19"};
+  });
+  const p={...profile,ticker:"NVDA",name:"NVIDIA Corp"};
+  const normalized=R.normalize({cik:"1045810",symbol:"NVDA",data},p,"NVDA");
+  assert.equal(normalized.annual.length,6);
+  assert.equal(normalized.annual.at(-1).fiscal_end,"2026-01-25");
+  assert.equal(normalized.annual.at(-1).filed_date,"2026-02-25");
+  assert.equal(normalized.validation.invalidMetadata,0);
+  assert.equal(normalized.validation.accepted,6);
+  assert.equal(normalized.warning,null);
+  assert.equal(Forecast.verify(normalized),normalized);
+  const f=Forecast.forecast(normalized);
+  assert.equal(f.projected.length,4);
+  assert.equal(f.historical.length,6);
+});
+test("malformed timestamp or impossible dates are rejected without silent truncation",()=>{
+  const cases=["2026-02-30 00:00:00","2026-01-25 25:00:00",
+    "2026-01-25 00:00:00 extra","2026-01-25T00:00:00+06:00"];
+  for(const endDate of cases){
+    const payload=R.normalize({cik:"320193",symbol:"AAPL",
+      data:[makeYear(2026,{endDate})]},profile,"AAPL");
+    assert.equal(payload.annual.length,0,endDate);
+    assert.equal(payload.validation.invalidMetadata,1,endDate);
+  }
+});
 test("amendments replace earlier filings without double-counting, non-10-K excluded",()=>{
   const original=makeYear(2024);
   const amended=makeYear(2024,{form:"10-K/A",filedDate:"2025-02-01",

@@ -320,7 +320,9 @@
         ?(details.reason||"Finnhub's financial statement request failed.")+
         " This is a request failure, not proof the company's filings are missing. "+
         "Market quotes and company profile can still work."
-        :"Finnhub returned "+details.years+" usable fiscal years. Historical forecasts require at least five comparable annual reports.";
+        :details.validationWarning||
+          ("Finnhub returned "+details.years+
+          " usable fiscal years. Historical forecasts require at least five comparable annual reports.");
     el("source-period").textContent="No comparable annual filings";
     el("data-refresh").textContent="Quote and company profile available";
     el("model-note").textContent="Financial forecasts require five comparable verified annual filings; unavailable figures are never estimated.";

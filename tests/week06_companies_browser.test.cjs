@@ -89,8 +89,10 @@ async function slide(page,id,value){
       });
       const d=fixture("NVDA");
       const data=d.annual.map((r,i)=>({
-        year:2019+i,endDate:r.fiscal_end,
-        startDate:r.fiscal_start,filedDate:(2019+i)+"-08-01",
+        year:2019+i,endDate:r.fiscal_end+" 00:00:00",
+        startDate:r.fiscal_start+" 00:00:00",
+        filedDate:(2019+i)+"-08-01 00:00:00",
+        acceptedDate:(2019+i)+"-08-01 16:42:19",
         accessNumber:"0000123456-"+String(2019+i).slice(-2)+"-000001",form:"10-K",
         report:{
           ic:[
