@@ -94,8 +94,16 @@
   const metricKey=()=>M.METRICS[el("metric").value];
   const settings=()=>({
     method:el("method").value,horizon:Number(el("horizon").value),
-    growth:Number(el("growth").value),margin:Number(el("margin").value)
+    growth:Number(el("growth").value),margin:Number(el("margin").value),
+    projectionsEnabled:el("projections-enabled").checked
   });
+  function updateProjectionControls(){
+    const enabled=el("projections-enabled").checked;
+    for(const control of document.querySelectorAll(".projection-dependent")){
+      control.hidden=!enabled;
+    }
+    el("method").disabled=!enabled;
+  }
   // Pill edits remain staged. No chart, news or API request runs before Analyze.
   const tickerPattern=/^[A-Z][A-Z.]{0,9}$/;
   const sameTickers=(a,b)=>a.length===b.length&&a.every((ticker,i)=>ticker===b[i]);
@@ -279,7 +287,9 @@
     comparisonContext.hidden=false;
     comparisonContext.textContent=frames.map((frame,index)=>
       frame.ticker+(index===0?" (primary)":"")).join(" · ")+
-      " · Actual fiscal dates are preserved; dashed lines and shading mark each company's forecast period.";
+      (assumptions.projectionsEnabled
+        ?" · Actual fiscal dates are preserved; dashed lines and shading mark each company's forecast period."
+        :" · Only reported annual results; projections hidden.");
     const available=new Set(C.available(frames));
     canvas.setAvailable([...available]);
     const selected=new Set(canvas.selected());
@@ -288,7 +298,7 @@
     el("fit-company-projection").hidden=true;
     el("chart-footnote").hidden=!focused;
     el("revenue-margin-guidance").hidden=
-      !focused||el("metric").value!=="revenue";
+      !assumptions.projectionsEnabled||!focused||el("metric").value!=="revenue";
     // The quote card names only the primary equity; comparative context
     // and legends already identify the remaining selected companies.
     el("company-name").textContent=frames[0].name;
@@ -307,8 +317,9 @@
       el(id+"-context").textContent=chart.context;
       if(id==="company-chart"){
         el("chart-heading").textContent=labels[el("metric").value];
-        el("chart-footnote").textContent=
-          "Color = equity · Solid = reported · Dashed = forecast · Shading = projection period.";
+        el("chart-footnote").textContent=assumptions.projectionsEnabled
+          ?"Color = equity · Solid = reported · Dashed = forecast · Shading = projection period."
+          :"Color = equity · Solid = reported annual results; projections hidden.";
         lastRenderedValues=null;
         queuedPlot={traces:chart.traces,layout:chart.layout};
         void plotLatest();
@@ -702,13 +713,18 @@
       // impact discoverable without silently changing the historical graph
       // or y-axis when the user turns a dial.
       el("revenue-margin-guidance").hidden=
-        !canvas.visible("company-chart")||el("metric").value!=="revenue";
+        !assumptions.projectionsEnabled||!canvas.visible("company-chart")||
+        el("metric").value!=="revenue";
       el("kpi-revenue").textContent=USD(last.revenue_musd);
       el("kpi-profit").textContent=USD(last.net_income_musd);
-      el("kpi-forecast-revenue").textContent=USD(finish.revenue_musd);
-      el("kpi-forecast-profit").textContent=USD(finish.net_income_musd);
-      el("preview-revenue").textContent=USD(finish.revenue_musd);
-      el("preview-profit").textContent=USD(finish.net_income_musd);
+      el("kpi-forecast-revenue").textContent=assumptions.projectionsEnabled
+        ?USD(finish.revenue_musd):"—";
+      el("kpi-forecast-profit").textContent=assumptions.projectionsEnabled
+        ?USD(finish.net_income_musd):"—";
+      el("preview-revenue").textContent=assumptions.projectionsEnabled
+        ?USD(finish.revenue_musd):"—";
+      el("preview-profit").textContent=assumptions.projectionsEnabled
+        ?USD(finish.net_income_musd):"—";
       el("model-note").textContent=assumptions.growth===0&&assumptions.margin===0?
         "Historical "+(assumptions.method==="cagr"?"CAGR":"OLS trend")+
         " revenue with recent weighted profit margins.":
@@ -733,7 +749,7 @@
       // imply debt or interest data exists for curated earnings-only snapshots.
       canvas.setAvailable(availableEquityCharts(history));
       const focused=canvas.visible("company-chart");
-      el("fit-company-projection").hidden=!focused;
+      el("fit-company-projection").hidden=!focused||!assumptions.projectionsEnabled;
       el("chart-footnote").hidden=!focused;
       if(focused)financialCharts(history,result);
       else el("fit-company-projection").disabled=true;
@@ -899,6 +915,13 @@
           stageTicker(button.dataset.researchExample);
         });
       });
+      el("projections-enabled").addEventListener("change",()=>{
+        updateProjectionControls();
+        scaleContext=null;
+        manualYRange=null;
+        queueRender();
+      });
+      updateProjectionControls();
       for(const id of ["method","horizon","metric","history"]){
         el(id).addEventListener("change",queueRender);
       }
@@ -937,6 +960,8 @@
         el("method").value="cagr";el("horizon").value="3";
         el("growth").value="0";el("margin").value="0";
         el("metric").value="net";el("history").value="5";
+        el("projections-enabled").checked=true;
+        updateProjectionControls();
         canvas.reset();queueRender();
       });
       let timer;
