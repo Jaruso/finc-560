@@ -8,11 +8,12 @@
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="../../assets/styles.css?v=20260906-week3-redesign">
 <link rel="stylesheet" href="../../assets/site-transitions.css?v=20261001">
-<link rel="stylesheet" href="../dashboard.css?v=sidebar-titles-202610">
-<link rel="stylesheet" href="./commodities.css?v=20261001">
+<link rel="stylesheet" href="../dashboard.css?v=multi-chart-commodities-20261001">
+<link rel="stylesheet" href="./commodities.css?v=multi-chart-20261001">
 <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 <script defer src="./model.js?v=20261001"></script>
-<script defer src="./app.js?v=20261001"></script>
+<script defer src="../chart-canvas.js?v=20261001"></script>
+<script defer src="./app.js?v=multi-chart-20261001"></script>
 </head>
 <body>
 <header class="site-header week-06-header commodity-header">
@@ -97,13 +98,29 @@
       </section>
     </aside>
     <section class="analysis-pane" aria-label="Commodity spot-price history and forecast">
-      <section aria-label="Commodity price summary" class="kpis">
-        <div class="kpi card"><span>Latest monthly average</span><strong id="kpi-latest">—</strong></div>
-        <div class="kpi card"><span>12-month change</span><strong id="kpi-change">—</strong></div>
-        <div class="kpi card"><span>Model baseline</span><strong id="kpi-baseline">—</strong></div>
-        <div class="kpi card prominent"><span>Scenario terminal price</span><strong id="kpi-scenario">—</strong><small id="kpi-unit">—</small></div>
-      </section>
+      <!-- Programmatic values retained for compatibility; visible values live in
+           individual chart headings and point hovers, not duplicated KPI cards. -->
+      <div hidden aria-hidden="true" id="legacy-price-values">
+        <span id="kpi-latest"></span><span id="kpi-change"></span>
+        <span id="kpi-baseline"></span><span id="kpi-scenario"></span>
+        <span id="kpi-unit"></span>
+      </div>
       <div class="chart-toolbar card">
+        <details class="chart-picker" id="chart-picker">
+          <summary aria-label="Choose up to four commodity charts">Charts <strong id="chart-count">4 of 4</strong></summary>
+          <fieldset class="chart-options" aria-label="Select up to four related commodity visualizations">
+            <legend>Choose 1–4 charts</legend>
+            <label><input type="checkbox" value="commodity-chart" checked> Spot price and scenario</label>
+            <label><input type="checkbox" value="commodity-yoy" checked> Year-over-year price change</label>
+            <label><input type="checkbox" value="commodity-returns" checked> Monthly price returns</label>
+            <label><input type="checkbox" value="commodity-vol" checked> Rolling price volatility</label>
+            <label><input type="checkbox" value="commodity-seasonality"> Monthly seasonal averages</label>
+            <label><input type="checkbox" value="commodity-models"> Model comparison</label>
+            <label><input type="checkbox" value="commodity-shock"> Conditional shock sensitivity</label>
+            <label><input type="checkbox" value="commodity-drawdown"> Historical price drawdowns</label>
+            <p class="chart-picker-help" id="chart-selection-status" role="status" aria-live="polite">Four related charts selected.</p>
+          </fieldset>
+        </details>
         <label class="chart-choice chart-context"><span>History shown</span>
           <select id="history" aria-label="Months of historical prices shown">
             <option value="24">2 years</option><option value="60" selected>5 years</option>
@@ -112,19 +129,72 @@
           </select>
         </label>
         <button id="fit-projection" class="secondary" type="button" disabled>Scale locked</button>
-        <span class="chart-badge">One chronological axis · Monthly spot averages</span>
+        <span class="chart-badge">Monthly FRED observations and conditional models · Values in chart hovers</span>
       </div>
-      <article class="chart-card card commodity-chart-card" aria-label="Unified commodity history and projection">
-        <header class="chart-heading">
-          <h2 id="chart-heading">Commodity price</h2>
-          <p id="chart-subtitle">Solid observations · Dashed projection · Shaded forecast period</p>
-        </header>
-        <div id="commodity-chart" class="plot" role="img" aria-label="Historical commodity spot prices flowing into a hypothetical projection on a calendar axis"></div>
-        <div id="commodity-empty" class="commodity-empty" hidden>
-          <strong>Awaiting verified FRED prices</strong>
-          <p>The automated data refresh must finish before publishing a historical chart. No substitute prices are generated.</p>
-        </div>
-      </article>
+      <div id="chart-stage" class="chart-grid" data-count="4"
+        aria-label="Configurable multi-chart commodity dashboard">
+        <article class="chart-card card commodity-chart-card" data-chart="commodity-chart"
+          aria-label="Unified commodity price history and projection">
+          <header class="chart-heading">
+            <h2 id="chart-heading">Commodity spot price</h2>
+            <p id="chart-subtitle">Observed averages and modeled price scenarios</p>
+          </header>
+          <div id="commodity-chart" class="plot" role="img" aria-label="Verified monthly spot history and modeled conditional projection"></div>
+        </article>
+        <article class="chart-card card" data-chart="commodity-yoy">
+          <header class="chart-heading">
+            <h2>Year-over-year price change</h2>
+            <p id="commodity-yoy-context">Percentage change from the comparable prior year</p>
+          </header>
+          <div id="commodity-yoy" class="plot" role="img" aria-label="Year-over-year change in actual commodity prices"></div>
+        </article>
+        <article class="chart-card card" data-chart="commodity-returns">
+          <header class="chart-heading">
+            <h2>Monthly price returns</h2>
+            <p id="commodity-returns-context">Observed monthly percentage changes</p>
+          </header>
+          <div id="commodity-returns" class="plot" role="img" aria-label="Observed month-over-month percentage changes in commodity spot prices"></div>
+        </article>
+        <article class="chart-card card" data-chart="commodity-vol">
+          <header class="chart-heading">
+            <h2>Rolling price volatility</h2>
+            <p id="commodity-vol-context">Trailing 12-month realized volatility of monthly returns</p>
+          </header>
+          <div id="commodity-vol" class="plot" role="img" aria-label="Trailing historical monthly-return volatility"></div>
+        </article>
+        <article class="chart-card card is-view-hidden" data-chart="commodity-seasonality" aria-hidden="true">
+          <header class="chart-heading">
+            <h2>Monthly seasonal averages</h2>
+            <p id="commodity-seasonality-context">Historical calendar-month averages, descriptive only</p>
+          </header>
+          <div id="commodity-seasonality" class="plot" role="img" aria-label="Mean observed spot prices grouped by calendar month"></div>
+        </article>
+        <article class="chart-card card is-view-hidden" data-chart="commodity-models" aria-hidden="true">
+          <header class="chart-heading">
+            <h2>Compare forecasting models</h2>
+            <p id="commodity-models-context">Mean reversion, recent trend and unchanged-price paths</p>
+          </header>
+          <div id="commodity-models" class="plot" role="img" aria-label="Comparison of three assumption-driven commodity price models"></div>
+        </article>
+        <article class="chart-card card is-view-hidden" data-chart="commodity-shock" aria-hidden="true">
+          <header class="chart-heading">
+            <h2>Conditional price-shock sensitivity</h2>
+            <p id="commodity-shock-context">Difference from the selected no-shock model baseline</p>
+          </header>
+          <div id="commodity-shock" class="plot" role="img" aria-label="Percentage difference between the selected scenario and the fitted baseline"></div>
+        </article>
+        <article class="chart-card card is-view-hidden" data-chart="commodity-drawdown" aria-hidden="true">
+          <header class="chart-heading">
+            <h2>Historical price drawdowns</h2>
+            <p id="commodity-drawdown-context">Declines from the preceding observed price peak</p>
+          </header>
+          <div id="commodity-drawdown" class="plot" role="img" aria-label="Historical commodity price declines relative to preceding observed peaks"></div>
+        </article>
+      </div>
+      <div id="commodity-empty" class="commodity-empty" hidden>
+        <strong>Awaiting verified FRED prices</strong>
+        <p>The automated refresh must finish before publishing historical charts. No substitute prices are generated.</p>
+      </div>
       <p id="chart-footnote" class="chart-footnote">The projection is conditional and is not an investment recommendation.</p>
       <a id="commodity-source" class="commodity-source" href="https://fred.stlouisfed.org/" target="_blank" rel="noopener noreferrer">View FRED series</a>
     </section>
