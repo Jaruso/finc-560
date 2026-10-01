@@ -144,7 +144,7 @@ function draw(){
       (opt.vol?opt.vol+"× historical volatility":"bounds off");
     el("source-period").textContent="Through "+last.date.slice(0,7);
     el("data-refresh").textContent="Verified snapshot · "+state.snapshot.retrieved_utc.slice(0,10);
-    el("market-description").textContent=c.label+" · "+c.unit+" · "+c.source+
+    el("market-description").textContent=c.unit+" · "+c.source+
       " · Last verified month "+c.last_observation.slice(0,7);
     el("chart-heading").textContent=c.label;
     el("chart-subtitle").textContent="Observed "+dollars(actual)+" · "+

@@ -185,7 +185,7 @@ async function slide(page,n,value){
     await page.locator("#reset").click();
     await page.waitForFunction(()=>document.querySelector("#shock-value")
       ?.textContent==="0%");
-    assert.equal(await page.locator("#commodity-summary").textContent(),"Natural gas");
+    assert.equal(await page.locator("#commodity-summary").textContent(),"Henry Hub natural gas");
     assert.equal(await page.locator("#model").inputValue(),"mean");
     assert.equal(await page.locator("#history").inputValue(),"60");
     assert.equal(await page.locator("#horizon").inputValue(),"6");
