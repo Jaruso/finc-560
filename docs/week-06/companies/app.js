@@ -522,6 +522,7 @@
     })();
   }
   function renderExtraEquity(history,result,assumptions){
+    const showProjection=assumptions.projectionsEnabled;
     const selected=new Set(canvas.selected());
     const xs=history.map(r=>r.fiscal_end);
     const xp=result.projected.map(r=>r.fiscal_end);
@@ -563,7 +564,8 @@
         "<extra>"+name+"</extra>"
     });
     const addBoundary=(layout)=>{
-      layout.xaxis.range=[xs[0],end];
+      layout.xaxis.range=[xs[0],showProjection?end:boundary];
+      if(!showProjection)return;
       layout.shapes.push(
         {type:"rect",xref:"x",yref:"paper",x0:boundary,x1:end,
           y0:0,y1:1,fillcolor:"rgba(11,127,115,.045)",line:{width:0},layer:"below"},
@@ -579,29 +581,33 @@
       if(!selected.has(spec.id))continue;
       const actual=history.map(r=>value(r[spec.key]));
       const forecast=result.projected.map(r=>value(r[spec.key]));
-      const showBase=assumptions.growth!==0||assumptions.margin!==0;
+      const showBase=showProjection&&(assumptions.growth!==0||assumptions.margin!==0);
       const traces=[line("Reported "+spec.label,xs,actual,spec.color,{markers:true})];
       if(showBase){
         traces.push(line("Unadjusted baseline",xp,
           result.baseline.map(r=>value(r[spec.key])),bcolor,{dash:"dot"}));
       }
-      traces.push(line(showBase?"Adjusted scenario":"Modeled forecast",
+      if(showProjection)traces.push(line(showBase?"Adjusted scenario":"Modeled forecast",
         xp,forecast,spec.color,{dash:"dash",markers:true}));
       const cfg=base(spec.id);
       addBoundary(cfg);
       // Reference range includes the current scenario, so optional charts
       // never clip a meaningful forecast without warning.
-      const values=actual.concat(forecast,showBase?
-        result.baseline.map(r=>value(r[spec.key])):[]);
+      const values=showProjection
+        ?actual.concat(forecast,showBase?result.baseline.map(r=>value(r[spec.key])):[])
+        :actual;
       const lo=Math.min(...values),hi=Math.max(...values);
       const pad=Math.max(.5,(hi-lo)*.13);
       cfg.yaxis.range=[lo-pad,hi+pad];
-      cfg.meta={...cfg.meta,projectionStart:boundary,projectionEnd:end,
-        method:result.method,conditioned:true};
+      cfg.meta={...cfg.meta,projectionStart:showProjection?boundary:null,
+        projectionEnd:showProjection?end:null,projectionsEnabled:showProjection,
+        method:result.method,conditioned:showProjection};
       note(spec.id,"Latest reported "+USD(latest[spec.key])+
-        " · "+assumptions.horizon+"-year modeled "+
-        USD(result.projected.at(-1)[spec.key])+
-        " · "+(result.method==="cagr"?"Historical CAGR":"OLS trend"));
+        (showProjection
+          ?" · "+assumptions.horizon+"-year modeled "+
+            USD(result.projected.at(-1)[spec.key])+
+            " · "+(result.method==="cagr"?"Historical CAGR":"OLS trend")
+          :" · Reported annual results only"));
       extraPlot(spec.id,traces,cfg);
     }
     if(selected.has("equity-margins")){
@@ -618,15 +624,19 @@
         scenarioMarginPp:assumptions.margin};
       const traces=[
         line("Operating margin · reported",xs,opActual,colors.operating,{percent:true}),
-        line("Net margin · reported",xs,netActual,colors.net,{percent:true}),
+        line("Net margin · reported",xs,netActual,colors.net,{percent:true})
+      ];
+      if(showProjection)traces.push(
         line("Operating margin · scenario",xp,opFuture,colors.operating,
           {percent:true,dash:"dash"}),
         line("Net margin · scenario",xp,netFuture,colors.net,
           {percent:true,dash:"dash"})
-      ];
+      );
+      cfg.meta.projectionsEnabled=showProjection;
       note("equity-margins","Latest operating margin "+
         (opActual.at(-1)).toFixed(1)+"% · Net margin "+
-        (netActual.at(-1)).toFixed(1)+"% · Future margins are assumptions.");
+        (netActual.at(-1)).toFixed(1)+"%"+
+        (showProjection?" · Future margins are assumptions.":" · Reported annual results only."));
       extraPlot("equity-margins",traces,cfg);
     }
     if(selected.has("equity-cashflows")){
