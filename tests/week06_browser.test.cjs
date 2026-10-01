@@ -44,7 +44,7 @@ async function slide(page,id,v){
       return d?.data?.length===8&&d.data[0].x.length===120&&d.data[6].x.length===13;
     });
     assert.deepEqual(await page.locator(".workspaces a").allTextContents(),
-      ["Macro","Equities"]);
+      ["Bonds","Equities","Commodities"]);
     assert.equal(await page.locator(".hero").count(),0,
       "No redundant Treasury yields headline or hero");
     assert.equal(await page.locator(

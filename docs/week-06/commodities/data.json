@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "status": "pending",
+  "retrieved_utc": null,
+  "commodities": [],
+  "note": "The verified FRED commodity snapshot has not been generated. No synthetic prices are shown."
+}

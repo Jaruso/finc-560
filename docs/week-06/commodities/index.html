@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Real FRED commodity spot-price histories and browser-calculated forecasting scenarios">
+<title>Week 6 · Commodities | Financial Visualization Lab</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../../assets/styles.css?v=20260906-week3-redesign">
+<link rel="stylesheet" href="../../assets/site-transitions.css?v=20261001">
+<link rel="stylesheet" href="../dashboard.css?v=sidebar-titles-202610">
+<link rel="stylesheet" href="./commodities.css?v=20261001">
+<script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+<script defer src="./model.js?v=20261001"></script>
+<script defer src="./app.js?v=20261001"></script>
+</head>
+<body>
+<header class="site-header week-06-header commodity-header">
+  <a class="lab-home" href="../../#week-05" aria-label="Return to Financial Visualization Lab">
+    <span class="back-arrow" aria-hidden="true">←</span>
+    <span class="lab-shared-title">Financial Visualization Lab</span>
+  </a>
+  <nav class="workspaces" aria-label="Week 6 dashboards">
+    <a href="../">Bonds</a><a href="../companies/">Equities</a><a href="./" aria-current="page">Commodities</a>
+  </nav>
+  <div class="source-stamp" aria-live="polite">
+    <span class="stamp-label">Spot-price history</span>
+    <strong id="source-period">Loading…</strong>
+    <span id="data-refresh">FRED monthly averages</span>
+  </div>
+  <div class="course-side"><span class="course course-mark">FINC 560</span><span class="week-mark">/ WEEK 06</span></div>
+</header>
+<main class="dashboard">
+  <div id="data-error" class="error" role="alert" hidden></div>
+  <div class="workspace">
+    <aside class="controls-rail" aria-label="Commodity scenario input controls">
+      <section class="controls card" aria-labelledby="controls-heading">
+        <div class="section-line forecast-heading">
+          <h2 id="controls-heading">Forecast controls</h2>
+          <button id="reset" class="secondary" type="button">Reset</button>
+        </div>
+        <div class="control-grid">
+          <label class="control"><span>Commodity</span>
+            <select id="commodity" disabled><option>Loading verified prices…</option></select>
+          </label>
+          <p id="market-description" class="commodity-description">Monthly spot prices, not exchange futures quotes.</p>
+          <label class="control"><span>Price model</span>
+            <select id="model">
+              <option value="mean">Mean reversion (log AR1)</option>
+              <option value="trend">Recent log-price trend</option>
+              <option value="unchanged">Unchanged price</option>
+            </select>
+          </label>
+          <label class="control"><span>Projection</span>
+            <select id="horizon">
+              <option value="3">3 months</option>
+              <option value="6" selected>6 months</option>
+              <option value="12">12 months</option>
+            </select>
+          </label>
+          <label class="control slider-control">
+            <span>Conditional price shock <output id="shock-value" for="shock">0%</output></span>
+            <input id="shock" type="range" min="-30" max="30" step="5" value="0">
+            <span class="endpoints"><span>−30%</span><span>0</span><span>+30%</span></span>
+          </label>
+          <label class="control"><span>Shock half-life</span>
+            <select id="half-life">
+              <option value="3">3 months</option>
+              <option value="6" selected>6 months</option>
+              <option value="12">12 months</option>
+            </select>
+          </label>
+          <label class="control"><span>Volatility corridor</span>
+            <select id="vol">
+              <option value="0">Off</option>
+              <option value="1" selected>1× realized volatility</option>
+              <option value="2">2× realized volatility</option>
+            </select>
+          </label>
+        </div>
+        <div class="scenario-impact commodity-preview" aria-live="polite">
+          <div><span>Baseline</span><strong id="preview-baseline">—</strong></div>
+          <div><span>Scenario</span><strong id="preview-scenario">—</strong></div>
+          <div><span>Difference</span><strong id="preview-difference">—</strong></div>
+          <p id="scenario-status" class="scenario-status">Historical data loading…</p>
+        </div>
+        <details class="fit-disclosure">
+          <summary>Forecast methodology</summary>
+          <div class="methods-body">
+            <p>Real, monthly averaged daily spot prices from EIA through FRED; not real-time futures or live tradable quotes. The current incomplete month is excluded.</p>
+            <p><strong>Mean reversion:</strong> A bounded log-price AR(1) fitted to up to 60 historical months. <strong>Trend:</strong> Recent 36-month log-linear OLS trend with a ±3.5% monthly slope cap. <strong>Unchanged:</strong> The latest observed monthly average.</p>
+            <p><strong>Scenario:</strong> The price shock is a hypothetical immediate percentage adjustment. It decays by half over the selected number of months. This is a sensitivity calculation, not a supply-demand forecast.</p>
+            <p><strong>Corridor:</strong> Trailing monthly realized log-return volatility multiplied by the square root of the forecast horizon. Displayed bounds are illustrative, not a calibrated confidence interval or empirically validated forecast errors.</p>
+            <p>Source links and reporting currency belong to each selected commodity. Forecast calculations run locally in your browser.</p>
+          </div>
+        </details>
+      </section>
+    </aside>
+    <section class="analysis-pane" aria-label="Commodity spot-price history and forecast">
+      <section aria-label="Commodity price summary" class="kpis">
+        <div class="kpi card"><span>Latest monthly average</span><strong id="kpi-latest">—</strong></div>
+        <div class="kpi card"><span>12-month change</span><strong id="kpi-change">—</strong></div>
+        <div class="kpi card"><span>Model baseline</span><strong id="kpi-baseline">—</strong></div>
+        <div class="kpi card prominent"><span>Scenario terminal price</span><strong id="kpi-scenario">—</strong><small id="kpi-unit">—</small></div>
+      </section>
+      <div class="chart-toolbar card">
+        <label class="chart-choice chart-context"><span>History shown</span>
+          <select id="history" aria-label="Months of historical prices shown">
+            <option value="24">2 years</option><option value="60" selected>5 years</option>
+            <option value="120">10 years</option><option value="240">20 years</option>
+            <option value="all">All available</option>
+          </select>
+        </label>
+        <button id="fit-projection" class="secondary" type="button" disabled>Scale locked</button>
+        <span class="chart-badge">One chronological axis · Monthly spot averages</span>
+      </div>
+      <article class="chart-card card commodity-chart-card" aria-label="Unified commodity history and projection">
+        <header class="chart-heading">
+          <h2 id="chart-heading">Commodity price</h2>
+          <p id="chart-subtitle">Solid observations · Dashed projection · Shaded forecast period</p>
+        </header>
+        <div id="commodity-chart" class="plot" role="img" aria-label="Historical commodity spot prices flowing into a hypothetical projection on a calendar axis"></div>
+        <div id="commodity-empty" class="commodity-empty" hidden>
+          <strong>Awaiting verified FRED prices</strong>
+          <p>The automated data refresh must finish before publishing a historical chart. No substitute prices are generated.</p>
+        </div>
+      </article>
+      <p id="chart-footnote" class="chart-footnote">The projection is conditional and is not an investment recommendation.</p>
+      <a id="commodity-source" class="commodity-source" href="https://fred.stlouisfed.org/" target="_blank" rel="noopener noreferrer">View FRED series</a>
+    </section>
+  </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,50 @@
+name: Refresh Week 6 commodity spot prices
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 15 * * 1-5"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/export_week_06_commodities.py"
+      - "docs/week-06/commodities/**"
+      - ".github/workflows/refresh-week06-commodities.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-week06-commodities-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install FRED provider dependencies
+        run: python -m pip install "pandas>=2.2,<3" "pandas-datareader>=0.10,<0.11" "pyarrow>=17,<30" "setuptools>=70"
+      - name: Verify snapshot normalization
+        run: python -m unittest discover -s tests -p 'test_week06_commodities.py'
+      - name: Retrieve real EIA prices via FRED
+        run: python scripts/export_week_06_commodities.py
+      - name: Check full verified commodity coverage
+        run: |
+          python -c "import json; d=json.load(open('docs/week-06/commodities/data.json')); assert d['status']=='ready' and len(d['commodities'])==3 and all(len(c['observations'])>=60 for c in d['commodities'])"
+      - name: Commit complete data snapshot only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/week-06/commodities/data.json
+          if git diff --cached --quiet; then
+            echo "Verified commodity prices unchanged."
+            exit 0
+          fi
+          git commit -m "data: refresh real EIA/FRED commodity monthly spot averages"
+          git push
