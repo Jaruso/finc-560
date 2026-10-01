@@ -223,7 +223,8 @@
     if(!curated&&years<5&&typeof onUnavailable==="function"){
       onUnavailable({ticker,profile:current.profile,years,
         failed:reported.status==="rejected",
-        reason:reported.status==="rejected"?reported.reason?.message:null});
+        reason:reported.status==="rejected"?reported.reason?.message:null,
+        validationWarning:current.normalized?.warning||null});
     }
     const issues=[
       profile.status==="rejected"?"profile unavailable":null,
