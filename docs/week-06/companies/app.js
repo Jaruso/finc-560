@@ -247,7 +247,34 @@
       }
     }
   }
+  function renderComparisonSources(frames){
+    const host=el("equity-comparison-sources");
+    host.replaceChildren();
+    const title=document.createElement("strong");
+    title.textContent="Compared reporting periods and primary disclosures:";
+    host.append(title);
+    for(const frame of frames){
+      const co=frame.company,entry=document.createElement("span");
+      const label=frame.ticker+" · FY "+co.annual.at(-1).fiscal_end+
+        (co.refresh_mode==="curated"?" · Verified snapshot":" · As-reported data");
+      const source=String(co.data_source||"");
+      // Only display trusted issuer/SEC or provider links taken from
+      // verified metadata; do not let arbitrary remote text become a URL.
+      if(/^https:\/\/(?:www\.sec\.gov|data\.sec\.gov|www\.microsoft\.com|microsoft\.com|finnhub\.io)\//.test(source)){
+        const link=document.createElement("a");
+        link.href=source;
+        link.target="_blank";
+        link.rel="noopener noreferrer";
+        link.textContent=label;
+        entry.append(link);
+      }else entry.textContent=label;
+      if(co.as_reported_note)entry.title=co.as_reported_note;
+      host.append(entry);
+    }
+    host.hidden=false;
+  }
   function renderComparisons(frames,assumptions){
+    renderComparisonSources(frames);
     const available=new Set(C.available(frames));
     canvas.setAvailable([...available]);
     const selected=new Set(canvas.selected());
@@ -693,6 +720,7 @@
         return;
       }
       setScaleControls(false);
+      el("equity-comparison-sources").hidden=true;
       // The selected chart set changes with actual statement coverage. Do not
       // imply debt or interest data exists for curated earnings-only snapshots.
       canvas.setAvailable(availableEquityCharts(history));
@@ -737,6 +765,7 @@
   function clearAnnual(ticker){
     company=null;
     canvas.setAvailable([]);
+    el("equity-comparison-sources").hidden=true;
     el("company-name").textContent=ticker+" · Checking financial statements";
     el("company-empty").hidden=false;
     el("company-chart").hidden=true;
@@ -774,6 +803,8 @@
     el("data-refresh").textContent="Quote and company profile available";
     el("model-note").textContent="Financial forecasts require five comparable verified annual filings; unavailable figures are never estimated.";
     el("backtest").textContent="Unavailable without sufficient annual reports.";
+    if(appliedTickers[0]===details.ticker)
+      pillStatus("Primary "+details.ticker+" lacks usable annual statements. Choose another primary and click Analyze.");
     el("chart-footnote").textContent="The historical chart is unavailable for this ticker; market data and profile may still be available.";
   }
   async function loadCompany(ticker){
