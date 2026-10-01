@@ -7,7 +7,7 @@
     "10y": "https://fred.stlouisfed.org/series/DGS10",
     "policy": "https://fred.stlouisfed.org/series/DFF"
   },
-  "retrieved_utc": "2026-10-01T01:21:31+00:00",
+  "retrieved_utc": "2026-10-01T01:32:47+00:00",
   "latest_synchronized_daily_observation": "2026-09-29",
   "frequency": "Monthly latest available observations; latest month may be partial.",
   "unit": "Percent per annum",
