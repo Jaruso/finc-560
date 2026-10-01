@@ -262,6 +262,29 @@ async function slide(page,id,v){
     await page.screenshot({path:"test-artifacts/week06-fitted-model.png",fullPage:false});
     await page.setViewportSize({width:390,height:844});
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));
+    assert.equal(await page.locator(".mobile-controls-toggle").isVisible(),true);
+    await page.waitForFunction(()=>getComputedStyle(
+      document.querySelector(".controls-rail")).visibility==="hidden");
+    assert.ok(await page.locator(".controls-rail").evaluate(n=>
+      n.getBoundingClientRect().right<=1),"Closed controls stay outside the mobile viewport");
+    await page.locator(".mobile-controls-toggle").click();
+    await page.waitForFunction(()=>document.querySelector(".controls-rail")
+      ?.classList.contains("is-open"));
+    assert.equal(await page.locator(".mobile-controls-toggle").getAttribute("aria-expanded"),"true");
+    assert.equal(await page.evaluate(()=>document.body.classList
+      .contains("controls-drawer-open")),true);
+    assert.equal(await page.locator(".mobile-controls-close").isFocused(),true);
+    await page.keyboard.press("Shift+Tab");
+    assert.equal(await page.evaluate(()=>document.querySelector(".controls-rail")
+      .contains(document.activeElement)),true,"Keyboard focus stays inside the drawer");
+    await page.keyboard.press("Tab");
+    assert.equal(await page.locator(".mobile-controls-close").isFocused(),true);
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(()=>!document.querySelector(".controls-rail")
+      ?.classList.contains("is-open"));
+    await page.waitForFunction(()=>getComputedStyle(
+      document.querySelector(".controls-rail")).visibility==="hidden");
+    assert.equal(await page.locator(".mobile-controls-toggle").getAttribute("aria-expanded"),"false");
     await page.screenshot({path:"test-artifacts/week06-fitted-mobile.png",fullPage:true});
     assert.deepEqual(errors,[],"No browser exceptions");
     onSimulator=false;

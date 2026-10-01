@@ -13,7 +13,9 @@
 @media(max-width:800px){
   .company-timeline{min-height:400px}
   .company-preview{grid-template-columns:1fr 1fr}
-  .company-preview>div{display:block}
+  .company-preview>div{display:flex;flex-direction:column;align-items:flex-start;
+    justify-content:flex-start;gap:3px;min-width:0}
+  .company-preview strong{line-height:1.15;white-space:normal;overflow-wrap:anywhere}
 }
 
 /* Stable visual geometry when the scenario adds lines or clipping notices. */

@@ -8,19 +8,20 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="../../assets/styles.css?v=20260906-week3-redesign">
   <link rel="stylesheet" href="../../assets/site-transitions.css?v=20261001">
-  <link rel="stylesheet" href="../dashboard.css?v=multi-chart-equities-20261001">
-  <link rel="stylesheet" href="./company.css?v=company-news-20261001">
+  <link rel="stylesheet" href="../dashboard.css?v=mobile-controls-20261001">
+  <link rel="stylesheet" href="./company.css?v=mobile-controls-20261001">
   <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
   <script defer src="./model.js?v=1"></script>
   <script defer src="./research.js?v=finnhub-timestamps-20261001"></script>
   <script defer src="./research-ui.js?v=company-news-loader-20261001"></script>
   <script defer src="./news.js?v=company-news-20261001"></script>
   <script defer src="../chart-canvas.js?v=20261001"></script>
+  <script defer src="../mobile-controls.js?v=20261001"></script>
   <script defer src="./app.js?v=company-news-20261001"></script>
 </head>
 <body>
   <header class="site-header week-06-header company-header">
-    <a class="lab-home" href="../../#week-05" aria-label="Return to Financial Visualization Lab">
+    <a class="lab-home" href="../../" aria-label="Return to Financial Visualization Lab overview">
       <span class="back-arrow" aria-hidden="true">←</span>
       <span class="lab-shared-title">Financial Visualization Lab</span>
     </a>
@@ -37,7 +38,7 @@
   <main class="dashboard">
     <div id="data-error" class="error" role="alert" hidden></div>
     <div class="workspace">
-      <aside class="controls-rail">
+      <aside class="controls-rail" aria-label="Company forecast controls">
         <section class="controls card" aria-labelledby="controls-heading">
           <div class="section-line forecast-heading">
             <h2 id="controls-heading">Forecast controls</h2>

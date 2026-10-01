@@ -376,3 +376,56 @@ input[type="range"] { display: block; width: 100%; height: 19px; margin: 0;
   .chart-options{width:min(320px,calc(100vw - 44px))}
   .chart-grid[data-count] .chart-card{min-height:290px}
 }
+
+/* Mobile workspace: charts remain primary while the dense forecast controls
+   move into an accessible, dismissible off-canvas drawer. */
+.mobile-controls-toggle,.mobile-controls-close,.controls-drawer-backdrop{display:none}
+@media(max-width:800px){
+  body.controls-drawer-open.controls-drawer-open{overflow:hidden!important}
+  .site-header.week-06-header{z-index:40}
+  .workspace{display:block;min-height:0}
+  .controls-rail{
+    position:fixed;inset:0 auto 0 0;z-index:1001;
+    width:min(88vw,380px);max-width:100%;height:100dvh;
+    overflow-y:auto;overscroll-behavior:contain;background:var(--paper);
+    box-shadow:14px 0 36px rgba(22,39,47,.2);
+    transform:translateX(-105%);visibility:hidden;
+    transition:transform 210ms ease,visibility 0s linear 210ms;
+  }
+  .controls-rail.is-open{transform:translateX(0);visibility:visible;
+    transition:transform 210ms ease}
+  .controls-rail .controls{min-height:100%;padding:58px 16px 22px;
+    border:0;border-radius:0;box-shadow:none}
+  .mobile-controls-close{display:inline-flex;position:absolute;right:14px;top:13px;
+    z-index:2;min-height:34px;align-items:center;justify-content:center;padding:7px 12px}
+  .controls-drawer-backdrop{display:block;position:fixed;inset:0;z-index:1000;
+    width:100%;height:100%;border:0;background:rgba(15,30,37,.42);cursor:pointer}
+  .controls-drawer-backdrop[hidden]{display:none}
+  .mobile-controls-toggle{display:inline-flex;align-items:center;justify-content:center;
+    gap:7px;min-height:38px;padding:8px 11px;white-space:nowrap}
+  .analysis-pane{min-height:520px}
+}
+@media(max-width:650px){
+  .site-header.week-06-header{height:128px;min-height:128px;padding:8px 12px}
+  .week-06-header .lab-home{font-size:.84rem;max-width:calc(100vw - 132px)}
+  .week-06-header .course-side{position:absolute;top:12px;right:12px;margin:0}
+  .week-06-header .workspaces{top:43px;bottom:auto;transform:translateX(-50%)}
+  .week-06-header .source-stamp{left:50%;right:auto;bottom:5px;
+    transform:translateX(-50%);width:240px;max-width:calc(100vw - 24px)}
+  .dashboard{min-height:calc(100dvh - 128px)}
+}
+@media(max-width:520px){
+  .chart-toolbar{gap:7px}
+  .chart-toolbar>.mobile-controls-toggle,
+  .chart-toolbar>.chart-picker{flex:1 1 calc(50% - 4px);min-width:0}
+  .chart-picker>summary{width:100%;justify-content:space-between}
+  .chart-choice{flex:1 1 100%}
+  .focus-button{min-height:38px}
+}
+@media(max-width:370px){
+  .week-06-header .course-side .week-mark{display:none}
+  .week-06-header .lab-home{max-width:calc(100vw - 94px)}
+}
+@media(prefers-reduced-motion:reduce){
+  .controls-rail,.controls-rail.is-open{transition:none}
+}

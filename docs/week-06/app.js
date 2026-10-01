@@ -33,7 +33,7 @@
         if(!visible(id))continue;
         await window.Plotly.react(id,next.traces,
           {...next.layout,height:plotHeight(id)},{
-          responsive:true,displayModeBar:true,displaylogo:false,scrollZoom:false,
+          responsive:true,displayModeBar:false,displaylogo:false,scrollZoom:false,
           modeBarButtonsToRemove:["select2d","lasso2d","hoverCompareCartesian"]
         });
       }

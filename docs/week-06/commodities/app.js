@@ -600,10 +600,11 @@ function drawComparison(){
       primary.commodity.label+" · "+primary.unit+" · "+primary.commodity.source;
     el("chart-heading").textContent=frames.length>1?
       frames.length+"-commodity price comparison":primary.commodity.label;
-    el("chart-subtitle").textContent=rendered.context+" · "+
-      (nominal?"Actual units (labeled by axis and in hover)":
-        "Hover for original units")+
-      " · Solid observed, dashed forecasts.";
+    el("chart-subtitle").textContent=frames.length>1?
+      (nominal?frames.length+" series · Original units on separate axes · Dashed = forecast.":
+        frames.length+" series · Index 100 at first shared month · Hover for original units."):
+      rendered.context+" · "+(nominal?"Actual units":"Hover for original units")+
+        " · Solid observed, dashed forecasts.";
     el("commodity-source").hidden=frames.length>1;
     el("commodity-source").href=primary.commodity.source_url;
     el("commodity-source").textContent=primary.commodity.source+" · "+primary.commodity.source_id;
