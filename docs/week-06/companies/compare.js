@@ -51,7 +51,7 @@
       line:{color:frame.color,width,dash},marker:{color:frame.color,size:4},
       customdata:raw,
       hovertemplate:"FY ending %{x|%b %Y}<br>"+
-        (mode==="indexed"?"Index %{y:,.2f} · underlying %{customdata:,.0f}":
+        (mode==="indexed"?"Index %{y:,.2f} · underlying $%{customdata:,.0f}M":
           prefix+"%{y:,.2f}"+suffix)+"<extra>"+name+"</extra>"};
   }
   function study(frames,id,metric="net",mode="indexed",settings={}){
