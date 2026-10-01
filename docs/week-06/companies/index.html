@@ -9,13 +9,13 @@
   <link rel="stylesheet" href="../../assets/styles.css?v=20260906-week3-redesign">
   <link rel="stylesheet" href="../../assets/site-transitions.css?v=20261001">
   <link rel="stylesheet" href="../dashboard.css?v=20261003-workspaces">
-  <link rel="stylesheet" href="./company.css?v=locked-y-202610">
+  <link rel="stylesheet" href="./company.css?v=company-header-202610">
   <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
   <script defer src="./model.js?v=1"></script>
-  <script defer src="./app.js?v=locked-y-202610"></script>
+  <script defer src="./app.js?v=company-header-202610"></script>
 </head>
 <body>
-  <header class="site-header week-06-header">
+  <header class="site-header week-06-header company-header">
     <a class="lab-home" href="../../#week-05" aria-label="Return to Financial Visualization Lab">
       <span class="back-arrow" aria-hidden="true">←</span>
       <span class="lab-shared-title">Financial Visualization Lab</span>
@@ -23,17 +23,14 @@
     <nav class="workspaces" aria-label="Week 6 dashboards">
       <a href="../">Macro</a><a href="./" aria-current="page">Companies</a>
     </nav>
+    <div class="source-stamp" aria-live="polite">
+      <span class="stamp-label">Annual financial reports</span>
+      <strong id="source-period">Loading…</strong>
+      <span id="data-refresh">Featured-company snapshots</span>
+    </div>
     <div class="course-side"><span class="course course-mark">FINC 560</span><span class="week-mark">/ WEEK 06</span></div>
   </header>
   <main class="dashboard">
-    <header class="hero">
-      <div><h1>Company forecasts</h1></div>
-      <div class="source-stamp">
-        <span class="stamp-label">Annual financial reports</span>
-        <strong id="source-period">Loading…</strong>
-        <span id="data-refresh">Featured-company snapshots</span>
-      </div>
-    </header>
     <div id="data-error" class="error" role="alert" hidden></div>
     <div class="workspace">
       <aside class="controls-rail">

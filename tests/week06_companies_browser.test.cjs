@@ -75,7 +75,15 @@ async function slide(page,id,value){
     assert.equal(await page.locator(".company-timeline").count(),1);
     assert.equal(await page.locator("#history-chart, #projection-chart").count(),0);
     assert.equal(await page.locator(".workspaces [aria-current=page]").textContent(),"Companies");
-    assert.equal(await page.locator(".hero h1").textContent(),"Company forecasts");
+    assert.equal(await page.locator(".hero").count(),0,
+      "The redundant Company forecasts title/hero must be gone");
+    assert.equal(await page.locator(
+      ".company-header > .workspaces + .source-stamp + .course-side").count(),1,
+      "Annual financial reports must appear between workspace tabs and course label");
+    assert.match(await page.locator(".company-header .source-stamp").textContent(),
+      /Annual financial reports.*FY ending 2025-06-30.*Verified annual snapshot/s);
+    assert.equal(await page.locator("#data-error").isVisible(),false,
+      "Rendering a forecast must not show the old undefined .catch error");
     assert.equal(await page.locator("#ticker option").count(),4);
     assert.equal(await page.locator("#ticker").inputValue(),"MSFT");
 
@@ -141,6 +149,8 @@ async function slide(page,id,value){
     assert.deepEqual(changed.boundary,first.meta.cutoffFraction,
       "Changing financial assumptions cannot move the historical boundary");
     assert.notEqual(await page.locator("#kpi-forecast-profit").textContent(),priorProfit);
+    assert.equal(await page.locator("#data-error").isVisible(),false,
+      "Slider updates must not show the former undefined .catch banner");
     assert.deepEqual(changed.yRange,first.yRange,
       "Growth dial must not change the historical financial y-scale");
     assert.ok(Math.abs(changed.historicalPixel-first.historicalPixel)<.001,
@@ -200,6 +210,8 @@ async function slide(page,id,value){
     await page.waitForFunction(()=>document.querySelector("#company-name")?.textContent==="Another Test Corporation");
     assert.notEqual(await page.locator("#kpi-revenue").textContent(),"—");
     assert.equal(await page.locator("#source-period").textContent(),"FY ending 2025-06-30");
+    assert.equal(await page.locator("#data-error").isVisible(),false,
+      "Switching companies must retain a clean error-free dashboard");
     await page.locator("#reset").click();
     await page.waitForFunction(()=>document.querySelector("#growth-value")?.textContent==="0 pp");
     assert.equal(await page.locator("#method").inputValue(),"cagr");

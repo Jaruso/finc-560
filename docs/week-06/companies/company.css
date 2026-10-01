@@ -20,3 +20,29 @@
 #fit-company-projection{min-width:116px;flex:0 0 116px}
 .chart-footnote{height:16px;min-height:16px;white-space:nowrap;overflow:hidden;
   text-overflow:ellipsis;line-height:16px}
+
+/* Compact report timestamp belongs in the header between workspace tabs and course. */
+.company-header .workspaces { margin-left:auto; margin-right:0; }
+.company-header .source-stamp {
+  flex:0 1 222px; min-width:160px; max-width:none;
+  flex-direction:column; align-items:center; text-align:center;
+  line-height:1.23; gap:1px; font-size:.59rem;
+}
+.company-header .source-stamp strong { font-size:.72rem; }
+.company-header .source-stamp .stamp-label,
+.company-header #data-refresh { white-space:nowrap; }
+.company-header .course-side { margin-left:0; flex:0 0 auto; }
+@media (max-width:1100px) {
+  .site-header.company-header {
+    height:auto; min-height:64px; padding:8px 14px;
+    flex-wrap:wrap; row-gap:8px; column-gap:12px;
+  }
+  .company-header .lab-home { order:0; flex:1 1 100%; }
+  .company-header .workspaces { order:1; margin:0; width:auto; }
+  .company-header .source-stamp { order:2; flex:1 1 162px; min-width:0; }
+  .company-header .course-side { order:3; margin-left:auto; }
+}
+@media (max-width:670px) {
+  .company-header .workspaces { width:auto; margin:0; }
+  .company-header .source-stamp { flex:1 1 148px; }
+}

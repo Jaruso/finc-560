@@ -189,7 +189,8 @@
       el("backtest").textContent="Model $"+(back.model_rmse_musd/1000).toFixed(1)+
         "B / no-change $"+(back.naive_rmse_musd/1000).toFixed(1)+
         "B ("+back.n+" historical one-year origins).";
-      void financialCharts(history,result).catch(error=>showError(error));
+      // Builds traces synchronously; Plotly failures are handled in plotLatest().
+      financialCharts(history,result);
     }catch(error){showError(error);}
   }
   function queueRender(){
