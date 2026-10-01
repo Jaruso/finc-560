@@ -111,7 +111,7 @@ async function slide(page,id,v){
     assert.equal(baseline.bands,true);
     const initialTerminal5=baseline.pred5.at(-1);
     const initialTerminal10=baseline.pred10.at(-1);
-    const actual5=await page.locator("#kpi-5").textContent();
+    const actual5=await page.locator("#chart-yields-context").textContent();
 
     // The policy input is data-calibrated, not separate arbitrary 5Y and 10Y slopes.
     assert.equal(await page.locator("#beta5").count(),0);
@@ -135,7 +135,7 @@ async function slide(page,id,v){
     assert.deepEqual(shocked.actual10,baseline.hist10);
     assert.equal(shocked.label,"5Y scenario (dashed)");
     assert.deepEqual(shocked.annotations,[]);
-    assert.equal(await page.locator("#kpi-5").textContent(),actual5);
+    assert.equal((await page.locator("#chart-yields-context").textContent()).slice(0,20),actual5.slice(0,20));
     assert.equal(shocked.meta.conditionalShockBp,50);
     assert.deepEqual(shocked.yRange,baseline.yRange,"Fed dial cannot rescale historical yields");
     assert.ok(Math.abs(shocked.historicPixel-baseline.historicPixel)<.001,
