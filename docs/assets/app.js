@@ -259,7 +259,7 @@ function addAssignmentTab(assignment) {
   tab.type = "button";
   tab.dataset.tab = assignment.id;
   tab.textContent = assignment.label;
-  tabsContainer.insertBefore(tab, tabsContainer.lastElementChild);
+  tabsContainer.insertBefore(tab, tabsContainer.querySelector(".week-06-nav") || tabsContainer.lastElementChild);
   tab.addEventListener("click", () => setActiveTab(tab.dataset.tab));
   return tab;
 }
