@@ -99,11 +99,8 @@ export default {
     const params = parseParams(url, route);
     if (!params) return json({ error: 'Invalid ticker or query parameters' }, 400, cors);
 
-    // Cloudflare rate-limit binding is local to each location, not global accounting.
-    const { success } = await env.FINNHUB_RATE_LIMITER.limit({ key: 'finc-560-public' });
-    if (!success) return json({ error: 'Too many requests' }, 429, { ...cors, 'Retry-After': '60' });
-
     // Normalize cache keys. The Finnhub token is never included in cache keys.
+    // Cache hits do not spend our limited outbound Finnhub request budget.
     const cacheUrl = new URL(url.origin);
     cacheUrl.pathname = url.pathname;
     cacheUrl.search = params.toString();
@@ -114,6 +111,13 @@ export default {
       const body = await cached.text();
       return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Cache': 'HIT', ...cors } });
     }
+
+    // Cloudflare's per-location limiter protects actual Finnhub fetches, not
+    // cached dashboard reads. Still not a strict global provider quota.
+    const { success } = await env.FINNHUB_RATE_LIMITER.limit({ key: 'finc-560-public' });
+    if (!success) return json({ error: 'Too many requests', source: 'gateway' }, 429, {
+      ...cors, 'Retry-After': '60',
+    });
 
     const upstreamUrl = new URL('https://finnhub.io/api/v1' + config.path);
     upstreamUrl.search = params.toString();
@@ -129,7 +133,7 @@ export default {
     }
     if (!upstream.ok) {
       const status = upstream.status === 429 ? 429 : upstream.status === 403 ? 403 : 502;
-      return json({ error: 'Finnhub rejected the request', upstreamStatus: upstream.status }, status, {
+      return json({ error: 'Finnhub rejected the request', source: 'provider', upstreamStatus: upstream.status }, status, {
         ...cors,
         ...(status === 429 ? { 'Retry-After': upstream.headers.get('Retry-After') || '60' } : {}),
       });

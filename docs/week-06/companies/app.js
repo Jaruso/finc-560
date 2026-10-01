@@ -313,7 +313,9 @@
         ". Our annual models require five comparable USD SEC 10-K filings. "+
         "Finnhub's international standardized financial statements require premium access."
       :details.failed
-        ?"Finnhub's financial statement request failed. Market quotes and company profile can still work."
+        ?(details.reason||"Finnhub's financial statement request failed.")+
+        " This is a request failure, not proof the company's filings are missing. "+
+        "Market quotes and company profile can still work."
         :"Finnhub returned "+details.years+" usable fiscal years. Historical forecasts require at least five comparable annual reports.";
     el("source-period").textContent="No comparable annual filings";
     el("data-refresh").textContent="Quote and company profile available";
