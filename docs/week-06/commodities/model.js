@@ -44,7 +44,7 @@
   }
   function fittedPrice(history,model,months){
     const current=Math.log(history.at(-1).value);
-    if(model==="unchanged")return Array(months).fill(Math.exp(current));
+    if(model==="unchanged")return Array(months).fill(history.at(-1).value);
     if(model==="trend"){
       const rows=history.slice(-Math.min(36,history.length)),logs=rows.map(x=>Math.log(x.value));
       const n=rows.length,mid=(n-1)/2,avg=logs.reduce((a,b)=>a+b,0)/n;

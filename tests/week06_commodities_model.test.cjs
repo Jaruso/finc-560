@@ -18,7 +18,7 @@ test("rejects missing, fabricated or unordered public commodity datasets",()=>{
   assert.throws(()=>M.verify({...snap,commodities:snap.commodities.slice(0,2)}),/not available/);
   const altered=structuredClone(snap);
   altered.commodities[0].observations[3].value=NaN;
-  assert.throws(()=>M.verify(altered),/Invalid commodity/);
+  assert.throws(()=>M.verify(altered),/invalid commodity/i);
 });
 test("all three methods anchor to observed history and remain distinct",()=>{
   const c=commodity();
