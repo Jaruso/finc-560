@@ -37,16 +37,13 @@ function modeFor(id){
   return state.modes[id]||(state.selectedIds.length<=1&&SINGLE_NOMINAL.has(id)?
     "nominal":"indexed");
 }
+function singleDefaultMode(id){return SINGLE_NOMINAL.has(id)?"nominal":"indexed";}
 function syncModes(){
   for(const group of document.querySelectorAll(".chart-scale-toggle")){
     for(const button of group.querySelectorAll("button[data-mode]"))
       button.setAttribute("aria-pressed",
         String(modeFor(group.dataset.chartMode)===button.dataset.mode));
   }
-}
-function needsUnifiedSingle(){
-  return OPTIONS.some(id=>Object.hasOwn(state.modes,id)&&
-    modeFor(id)!==(SINGLE_NOMINAL.has(id)?"nominal":"indexed"));
 }
 function updateEmptyVisibility(){
   const blank=!state.selectedIds.length;
@@ -105,7 +102,7 @@ function draw(){
   syncHalfLife();
   const c=state.commodity;if(!c)return;
   syncModes();
-  if(state.selectedIds.length>1||needsUnifiedSingle()){
+  if(state.selectedIds.length>1){
     drawComparison();return;
   }
   el("comparison-preview").hidden=true;
@@ -217,7 +214,8 @@ function draw(){
         {type:"line",xref:"x",yref:"paper",x0:last.date,x1:last.date,
           y0:0,y1:1,line:{color:"#92aba7",width:1.25,dash:"dash"}}
       ],annotations:[],
-      meta:{commodity:c.id,unit:c.unit,source:c.source_url,scale:"continuous-monthly",
+      meta:{commodity:c.id,comparison:false,unit:c.unit,source:c.source_url,
+        scale:"continuous-monthly",mode:modeFor("commodity-chart"),
         yScale:state.range?"manual-locked":"baseline-locked",
         observedEnd:last.date,projectedStart:f.scenario[0].date,
         projectedEnd:end,clipped,defaultRange:defaultRange.slice()}
@@ -229,6 +227,7 @@ function draw(){
       state.pending={traces,layout};void paint();
     }
     renderExtras(c,history,f,opt);
+    renderSingleScaleOverrides(c,opt);
   }catch(ex){error(ex);}
 }
 
@@ -274,8 +273,8 @@ function renderExtras(c,history,f,opt){
         ticksuffix:percent?"%":fmt==="cents/sheet"?"¢":"",
         tickprefix:percent||fmt==="cents/sheet"?"":"$",
         gridcolor:"#edf1f2",automargin:true},
-      shapes:[],annotations:[],meta:{commodity:c.id,metric:id,
-        source:c.source_url,modeled:horizon}
+      shapes:[],annotations:[],meta:{commodity:c.id,comparison:false,metric:id,
+        source:c.source_url,modeled:horizon,mode:modeFor(id)}
     };
     if(zero)cfg.shapes=[{type:"line",xref:"paper",yref:"y",x0:0,x1:1,
       y0:0,y1:0,line:{color:"#9aabb2",dash:"dot",width:1}}];
@@ -434,6 +433,103 @@ function renderExtras(c,history,f,opt){
         name:"Observed drawdown",
         hovertemplate:"%{x|%b %Y}: %{y:.2f}%<extra>Peak-relative decline</extra>"}
     ],cfg);
+  }
+}
+
+/* A single benchmark keeps its familiar spot-price dashboard by default. An
+   individual scale toggle is still allowed to use the shared comparison math,
+   but only for that one card. Do not route the whole page through the
+   comparison renderer: it replaces the other cards' copy and chart types. */
+function renderSingleScaleOverrides(c,opt){
+  const overrides=state.canvas.selected().filter(id=>
+    modeFor(id)!==singleDefaultMode(id));
+  if(!overrides.length)return;
+  const frames=C.prepare([c],el("history").value,opt);
+  for(const id of overrides){
+    const mode=modeFor(id);
+    if(id==="commodity-chart"){
+      const rendered=C.prices(frames,opt,mode);
+      const defaultRange=C.commonRange(frames);
+      const currentRange=C.projectedRange(frames,opt);
+      const range=state.range||defaultRange;
+      const values=frames.flatMap(frame=>frame.history.map(row=>frame.toIndex(row.value))
+        .concat(frame.forecast.scenario.map(row=>frame.toIndex(row.price)),
+          opt.shock?frame.forecast.baseline.map(row=>frame.toIndex(row.price)):[],
+          opt.vol?frame.forecast.low.concat(frame.forecast.high)
+            .map(row=>frame.toIndex(row.price)):[]));
+      const clipped=currentRange[0]<range[0]||currentRange[1]>range[1];
+      state.values=values;state.axisValues=null;
+      const fit=el("fit-projection");
+      fit.textContent=clipped?"Fit projection":state.range?"Restore scale":"Scale locked";
+      fit.hidden=!state.canvas.visible(id);
+      fit.disabled=fit.hidden||(!clipped&&!state.range);
+      el("chart-footnote").hidden=fit.hidden;
+      el("chart-subtitle").textContent=rendered.context+
+        " · Hover for original units · Solid observed, dashed forecasts.";
+      el("chart-footnote").textContent=clipped?
+        "Scenario extends beyond the fixed scale. Click Fit projection to inspect it.":
+        "Prices indexed to 100; hover for the original price and units.";
+      if(state.canvas.visible(id)){
+        state.pending={traces:rendered.traces,layout:{
+          autosize:true,height:height(),
+          margin:compactPlot()?{l:53,r:8,t:mobileLegendTop(),b:35,autoexpand:false}:
+            {l:62,r:16,t:76,b:48,autoexpand:false},
+          paper_bgcolor:"#fff",plot_bgcolor:"#fff",
+          font:{family:"Inter,system-ui,sans-serif",size:10,color:"#465865"},
+          showlegend:true,hovermode:"closest",
+          legend:{orientation:"h",x:.5,xanchor:"center",
+            y:compactPlot()?1.04:1.18,font:{size:compactPlot()?9:10},autoexpand:false},
+          xaxis:{type:"date",range:rendered.rangeX,showgrid:false,
+            tickformat:"%b %Y",dtick:frames[0].history.length>36?"M12":"M3",
+            linecolor:"#dfe3e6",automargin:true},
+          yaxis:{title:"Price index (first visible month = 100)",
+            gridcolor:"#edf1f2",range:range.slice(),zeroline:false,automargin:true},
+          shapes:rendered.shapes,annotations:[],
+          meta:{commodity:c.id,commodities:[c.id],comparison:false,mode,
+            unit:"index (base 100)",defaultRange:defaultRange.slice(),
+            yScale:state.range?"manual-locked":"baseline-locked",clipped}
+        }};
+        void paint();
+      }
+      continue;
+    }
+    const study=C.study(frames,id,opt,mode);
+    if(!study.traces.length)continue;
+    const legend=study.traces.filter(trace=>trace.showlegend!==false).length>1;
+    const layout={
+      autosize:true,height:chartHeight(id),
+      margin:compactPlot()?{l:51,r:8,t:legend?34:12,b:35,autoexpand:false}:
+        {l:60,r:14,t:72,b:47,autoexpand:false},
+      paper_bgcolor:"#fff",plot_bgcolor:"#fff",
+      font:{family:"Inter,system-ui,sans-serif",size:10,color:"#465865"},
+      showlegend:true,hovermode:"closest",
+      legend:{orientation:"h",x:.5,xanchor:"center",y:compactPlot()?1.04:1.18,
+        font:{size:compactPlot()?9:9},autoexpand:false},
+      xaxis:{type:study.category?"category":"date",showgrid:false,
+        linecolor:"#dfe3e6",automargin:true},
+      yaxis:{title:study.index?"Index points (base = 100)":
+        study.price?"Price index (base = 100)":"Change (%)",
+        ticksuffix:study.price||study.index?"":"%",gridcolor:"#edf1f2",
+        automargin:true},
+      shapes:study.zero?[{type:"line",xref:"paper",yref:"y",x0:0,x1:1,
+        y0:study.category?100:0,y1:study.category?100:0,
+        line:{color:"#95a8a7",dash:"dot",width:1}}]:[],
+      annotations:[],meta:{commodity:c.id,commodities:[c.id],comparison:false,
+        metric:id,mode}
+    };
+    if(mode==="nominal"){
+      const plan=C.nominalAxes(study.traces,frames,{positiveOnly:
+        id==="commodity-seasonality"||id==="commodity-models"||id==="commodity-vol"});
+      Object.assign(layout,plan.axes);
+      if(plan.xDomain)layout.xaxis.domain=plan.xDomain;
+      layout.meta.axesByUnit=plan.units.slice();
+    }
+    if(id==="commodity-models"||id==="commodity-shock"){
+      const forecast=frames[0].forecast;
+      layout.xaxis.range=[forecast.scenario[0].date,forecast.scenario.at(-1).date];
+    }
+    el(id+"-context").textContent=study.context;
+    plotAdditional(id,study.traces,layout);
   }
 }
 
@@ -860,7 +956,7 @@ async function init(){
       if(!state.values)return;
       if(el("fit-projection").textContent==="Restore scale")state.range=null;
       else if(modeFor("commodity-chart")==="nominal"&&
-        (state.selectedIds.length>1||needsUnifiedSingle())&&state.axisValues){
+        state.selectedIds.length>1&&state.axisValues){
         // Each original unit has its own axis and explicit fit envelope.
         state.range=structuredClone(state.axisValues);
       }else{

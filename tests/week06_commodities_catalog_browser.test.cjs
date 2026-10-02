@@ -103,6 +103,25 @@ async function switchMode(page,id,mode){
    assert.equal(await page.locator("#catalog-gaps").isHidden(),false);
    assert.match(await page.locator("#catalog-gap-list").textContent(),/Gallium/);
 
+   // A secondary scale switch must not turn a one-commodity dashboard into
+   // the comparison dashboard. The target card changes units; its neighbors
+   // retain their original chart type, description, and source treatment.
+   await switchMode(page,"commodity-yoy","nominal");
+   assert.equal(await page.locator("#commodity-chart").evaluate(g=>
+     g.layout.meta.comparison),false);
+   assert.match(await page.locator("#chart-subtitle").textContent(),/^Observed /,
+     "Spot-price copy must remain the single-benchmark copy");
+   assert.match(await page.locator("#commodity-yoy-context").textContent(),
+     /YoY difference in original units/);
+   assert.equal(await page.locator("#commodity-returns").evaluate(g=>
+     g.layout.meta.mode),"indexed",
+     "Changing YoY must not alter the monthly-return card");
+   await switchMode(page,"commodity-yoy","indexed");
+   assert.equal(await page.locator("#commodity-chart").evaluate(g=>
+     g.layout.meta.comparison),false);
+   assert.match(await page.locator("#commodity-yoy-context").textContent(),
+     /^Latest observed YoY /);
+
    // Filtering must NEVER alter the selected primary automatically.
    await page.selectOption("#commodity-category","Precious metals");
    assert.equal(await page.locator("#commodity-summary").textContent(),"WTI crude oil");
