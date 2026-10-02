@@ -465,3 +465,69 @@ input[type="range"] { display: block; width: 100%; height: 19px; margin: 0;
 @media(prefers-reduced-motion:reduce){
   .controls-rail,.controls-rail.is-open{transition:none}
 }
+
+/* Mobile: prioritize data ink over desktop-sized plot shells.
+   The four-panel canvas should scroll naturally, without the former 290–390px
+   minimum-height cascade or an empty 520px analysis area for one chart. */
+@media (max-width:650px) {
+  .dashboard {
+    height:auto;
+    min-height:0;
+    padding:5px 6px 10px;
+    gap:5px;
+  }
+  .workspace, .analysis-pane, #chart-stage.chart-grid {
+    min-height:0;
+    min-width:0;
+  }
+  .analysis-pane {gap:5px;}
+  #chart-stage.chart-grid {
+    flex:0 0 auto;
+    gap:6px;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:none;
+    align-content:start;
+  }
+  /* An explicit chart-card size keeps Plotly's measured viewport consistent
+     as the user toggles between one and four visible charts. */
+  #chart-stage.chart-grid[data-count] > .chart-card {
+    box-sizing:border-box;
+    height:clamp(258px,68vw,294px);
+    min-height:0;
+    padding:7px 7px 4px;
+    border-radius:8px;
+    flex:none;
+  }
+  #chart-stage.chart-grid .chart-heading h2{
+    font-size:.88rem;
+    line-height:1.2;
+    margin:0 0 2px;
+  }
+  #chart-stage.chart-grid .chart-heading p {
+    font-size:.67rem;
+    line-height:1.23;
+    margin:0 0 2px;
+    overflow-wrap:anywhere;
+  }
+  #chart-stage.chart-grid .plot {
+    min-height:0;
+    width:100%;
+    max-width:100%;
+    overflow:hidden;
+  }
+  .chart-toolbar {
+    min-height:0;
+    padding:5px 6px;
+    gap:5px;
+  }
+  .chart-grid .chart-card + .chart-card {margin:0;}
+  .chart-picker>summary,.mobile-controls-toggle,.mobile-controls-close {
+    min-height:44px;
+  }
+  .chart-options label {min-height:40px;}
+  /* The label itself stays visually small, but the hit area is finger-sized. */
+  .sidebar-model-control .model-help>summary {
+    width:40px;height:40px;
+  }
+  .axis-explanation {margin:0 2px;font-size:.65rem;line-height:1.22;}
+}

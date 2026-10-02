@@ -3,6 +3,7 @@
   "use strict";
   const Model=window.ForecastModel;
   const el=id=>document.getElementById(id);
+  const compactPlot=()=>window.matchMedia("(max-width:650px)").matches;
   const COLOR={five:"#365977",ten:"#0b7f73",historical:"#314b5c",bound:"#81939e",red:"#b84253"};
   const DEFAULT=["chart-yields","chart-spread","chart-policy","chart-accuracy"];
   const IDS=[...DEFAULT,"chart-five","chart-ten","chart-shock","chart-policy-gap"];
@@ -188,11 +189,14 @@
     const boundary=(Date.parse(base)-Date.parse(rangeStart))/(Date.parse(end)-Date.parse(rangeStart));
     const layout={
       autosize:true,height:plotHeight(id),
-      margin:{l:55,r:16,t:62,b:49,autoexpand:false},paper_bgcolor:"#fff",plot_bgcolor:"#fff",
+      margin:compactPlot()
+        ?{l:47,r:8,t:46,b:34,autoexpand:false}
+        :{l:55,r:16,t:62,b:49,autoexpand:false},paper_bgcolor:"#fff",plot_bgcolor:"#fff",
       font:{family:"Inter, system-ui, sans-serif",size:11,color:"#465865"},
       hovermode:"closest",showlegend:true,
-      legend:{orientation:"h",x:.5,xanchor:"center",y:1.14,
-        font:{size:10},itemwidth:32,autoexpand:false},
+      legend:{orientation:"h",x:.5,xanchor:"center",
+        y:compactPlot()?1.035:1.14,
+        font:{size:compactPlot()?9:10},itemwidth:32,autoexpand:false},
       xaxis:{type:"date",range:[rangeStart,end],showgrid:false,
         tickformat:focused?"%b '%y":"%Y",nticks:focused?8:10,
         linecolor:"#dfe3e6",tickfont:{size:10},automargin:true},
@@ -235,12 +239,15 @@
     const sourceNote=el(id+"-context");
     const base={
       autosize:true,height:plotHeight(id),
-      margin:{l:55,r:20,t:55,b:47,autoexpand:false},
+      margin:compactPlot()
+        ?{l:47,r:8,t:43,b:34,autoexpand:false}
+        :{l:55,r:20,t:55,b:47,autoexpand:false},
       paper_bgcolor:"#fff",plot_bgcolor:"#fff",showlegend:true,
       font:{family:"Inter, system-ui, sans-serif",size:10,color:"#465865"},
       hovermode:"closest",
-      legend:{orientation:"h",x:.5,xanchor:"center",y:1.16,
-        font:{size:10},itemwidth:30},
+      legend:{orientation:"h",x:.5,xanchor:"center",
+        y:compactPlot()?1.035:1.16,
+        font:{size:compactPlot()?9:10},itemwidth:30},
       xaxis:{type:"date",range:[historicalStart,end],
         tickformat:focused?"%b '%y":"%Y",nticks:8,
         linecolor:"#dfe3e6"},
