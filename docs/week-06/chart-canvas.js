@@ -71,16 +71,16 @@
         (selected.length===1?" chart":" charts")+" selected.";
       redraw();
     });
-    function setAvailable(next){
+    function setAvailable(next,preferred=defaults,replace=false){
       available=new Set(next.filter(id=>allowed.has(id)));
       const previous=selected.slice();
-      selected=selected.filter(id=>available.has(id));
+      selected=replace?[]:selected.filter(id=>available.has(id));
       // Replenish default studies ONLY when coverage removed a selected study,
       // or when source data first becomes available. Routine render calls
       // must preserve an intentional one-, two- or three-chart selection.
       const lost=selected.length<previous.length;
       if((lost||selected.length===0)&&available.size){
-        for(const id of defaults){
+        for(const id of preferred){
           if(selected.length>=Math.min(4,available.size))break;
           if(available.has(id)&&!selected.includes(id))selected.push(id);
         }

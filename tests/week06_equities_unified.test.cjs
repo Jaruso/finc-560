@@ -19,10 +19,25 @@ const base={method:"cagr",horizon:3,growth:0,margin:0,projectionsEnabled:true};
 const companies=names.map((ticker,i)=>company(ticker,[1,.7,.8,.45][i]));
 const frames=(options=base)=>C.prepare(companies,options,5);
 const metricKeys=["revenue_musd","operating_income_musd","net_income_musd"];
-test("duplicated forecast choices are gone; six genuinely distinct chart types remain",()=>{
+test("comparison exposes separate financial measure charts",()=>{
   assert.deepEqual(C.available(frames()).slice(0,2),["company-chart","equity-margins"]);
-  assert.equal(C.ABSOLUTE.includes("equity-revenue"),false);
-  assert.equal(C.ABSOLUTE.includes("equity-operating"),false);
+  assert.ok(C.ABSOLUTE.includes("equity-revenue"));
+  assert.ok(C.ABSOLUTE.includes("equity-operating"));
+  assert.ok(C.ABSOLUTE.includes("equity-net"));
+});
+test("split comparison charts contain only their selected financial measure",()=>{
+  for(const [id,metric,label] of [
+    ["equity-revenue","revenue_musd","Revenue"],
+    ["equity-operating","operating_income_musd","Operating income"],
+    ["equity-net","net_income_musd","Net income"]
+  ]){
+    const chart=C.study(frames(),id,"net","indexed",base);
+    assert.equal(chart.traces.length,8,
+      id+" has one reported and one modeled trace per company");
+    assert.ok(chart.traces.every(t=>t.name.includes(label)));
+    assert.deepEqual(chart.layout.meta.measures,null);
+    assert.equal(chart.layout.meta.tickerMarkers.MSFT,"circle");
+  }
 });
 test("one combined chart contains all three metrics for four companies",()=>{
   const chart=C.study(frames(),"company-chart","net","indexed",base);

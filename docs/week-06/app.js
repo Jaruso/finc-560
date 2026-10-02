@@ -9,7 +9,7 @@
   const IDS=[...DEFAULT,"chart-policy","chart-five","chart-ten","chart-shock","chart-policy-gap"];
   const latest=new Map(),queue=new Map(),drawing=new Set();
   let selectedCharts=[...DEFAULT];
-  let data=null,focused=false,frame=null;
+  let data=null,focused=false,showKeys=false,frame=null;
   const pct=n=>Number(n).toFixed(2)+"%";
   const bps=n=>(n<0?"−":"+")+Math.abs(n*100).toFixed(0)+" bps";
   const plotHeight=id=>{
@@ -20,8 +20,14 @@
   const state=()=>({
     delta:Number(el("delta").value),
     horizon:Number(el("horizon").value),
-    bands:el("show-bands").checked
+    bands:el("show-bands").checked,
+    showKeys
   });
+  function updateKeyButton(){
+    const button=el("toggle-keys");
+    button.setAttribute("aria-pressed",String(showKeys));
+    button.textContent=showKeys?"Hide key":"Show key";
+  }
   const visible=id=>!el(id).closest(".chart-card").classList.contains("is-view-hidden");
 
   async function drain(id){
@@ -193,7 +199,7 @@
         ?{l:47,r:8,t:46,b:34,autoexpand:false}
         :{l:55,r:16,t:62,b:49,autoexpand:false},paper_bgcolor:"#fff",plot_bgcolor:"#fff",
       font:{family:"Inter, system-ui, sans-serif",size:11,color:"#465865"},
-      hovermode:"closest",showlegend:true,
+      hovermode:"closest",showlegend:st.showKeys,
       legend:{orientation:"h",x:.5,xanchor:"center",
         y:compactPlot()?1.035:1.14,
         font:{size:compactPlot()?9:10},itemwidth:32,autoexpand:false},
@@ -242,7 +248,7 @@
       margin:compactPlot()
         ?{l:47,r:8,t:43,b:34,autoexpand:false}
         :{l:55,r:20,t:55,b:47,autoexpand:false},
-      paper_bgcolor:"#fff",plot_bgcolor:"#fff",showlegend:true,
+      paper_bgcolor:"#fff",plot_bgcolor:"#fff",showlegend:st.showKeys,
       font:{family:"Inter, system-ui, sans-serif",size:10,color:"#465865"},
       hovermode:"closest",
       legend:{orientation:"h",x:.5,xanchor:"center",
@@ -512,6 +518,7 @@
     el("show-bands").checked=true;
     el("chart-context").value="120";
     focused=false;
+    showKeys=false;
     selectedCharts=[...DEFAULT];
     for(const input of el("chart-picker").querySelectorAll('input[type="checkbox"]')){
       input.checked=selectedCharts.includes(input.value);
@@ -520,6 +527,7 @@
     showCharts();
     el("focus-projection").setAttribute("aria-pressed","false");
     el("focus-projection").textContent="Focus projection";
+    updateKeyButton();
     render();
   }
   async function initialize(){
@@ -537,6 +545,12 @@
       el("focus-projection").textContent=focused?"Show full timeline":"Focus projection";
       render();
     });
+    el("toggle-keys").addEventListener("click",()=>{
+      showKeys=!showKeys;
+      updateKeyButton();
+      render();
+    });
+    updateKeyButton();
     let resizing;
     window.addEventListener("resize",()=>{
       clearTimeout(resizing);resizing=setTimeout(showCharts,150);

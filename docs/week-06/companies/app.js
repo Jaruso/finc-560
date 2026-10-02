@@ -6,9 +6,9 @@
   const colors={revenue:"#0b7f73",operating:"#365977",net:"#aa7840",baseline:"#8c9ba4"};
   const labels={revenue:"Revenue",operating:"Operating income",net:"Net income"};
   const cache=new Map();
-  const CHART_IDS=["company-chart","equity-margins","equity-cashflows",
-    "equity-fcf","equity-coverage","equity-balance"];
-  const CHART_DEFAULTS=CHART_IDS.slice(0,4);
+  const CHART_IDS=["company-chart","equity-revenue","equity-operating","equity-net",
+    "equity-margins","equity-cashflows","equity-fcf","equity-coverage","equity-balance"];
+  const CHART_DEFAULTS=["company-chart","equity-margins","equity-cashflows","equity-fcf"];
   const FINANCIAL_METRICS=["revenue","operating","net"];
   const otherPlots=new Map(),otherPainting=new Set();
   let canvas=null;
@@ -290,13 +290,19 @@
       (assumptions.projectionsEnabled
         ?" · Actual fiscal dates are preserved; dashed lines and shading mark each company's forecast period."
         :" · Only reported annual results; projections hidden.");
-    const available=new Set(C.available(frames));
-    canvas.setAvailable([...available]);
+    const replacingUnified=canvas.selected().includes("company-chart");
+    const available=new Set(C.available(frames).filter(id=>
+      id!=="company-chart"));
+    canvas.setAvailable([...available],
+      ["equity-revenue","equity-operating","equity-net"],replacingUnified);
     const selected=new Set(canvas.selected());
     setScaleControls(true);
     const focused=selected.has("company-chart");
     el("fit-company-projection").hidden=true;
-    el("chart-footnote").hidden=!focused;
+    el("chart-footnote").hidden=false;
+    el("chart-footnote").textContent=focused
+      ?"Each equity: revenue, operating income & net income · Solid = reported · Dashed = modeled."
+      :"Compared equities use separate revenue, operating income, and net income charts · Marker = ticker.";
     // The quote card names only the primary equity; comparative context
     // and legends already identify the remaining selected companies.
     el("company-name").textContent=frames[0].name;

@@ -105,6 +105,15 @@ test("each of eight charts independently supports genuinely nominal and indexed 
         Math.abs(v-index.traces[j].y[k])>1e-6)),id+" has no nominal difference");
   }
 });
+test("monthly price returns use bars in both display modes",()=>{
+  const frames=C.prepare(choices.slice(0,4),60,opt);
+  const indexed=C.study(frames,"commodity-returns",opt,"indexed");
+  const nominal=C.study(frames,"commodity-returns",opt,"nominal");
+  assert.ok(indexed.traces.every(trace=>trace.type==="bar"));
+  assert.ok(nominal.traces.every(trace=>trace.type==="bar"));
+  assert.ok(indexed.traces.every(trace=>trace.marker?.color));
+  assert.ok(nominal.traces.every(trace=>trace.marker?.color));
+});
 test("multiple nominal unit groups receive independent labeled axes",()=>{
   const frames=C.prepare(choices.slice(0,4),60,opt);
   const traces=C.prices(frames,opt,"nominal").traces;

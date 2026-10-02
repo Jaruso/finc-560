@@ -144,7 +144,10 @@
             <summary aria-label="Choose up to four equity charts">Charts <strong id="chart-count">4 of 4</strong></summary>
             <fieldset class="chart-options" aria-label="Select one to four equity visualizations">
               <legend>Choose 1–4 charts</legend>
-              <label><input type="checkbox" value="company-chart" checked> Financial forecasts (revenue, operating &amp; net income)</label>
+              <label><input type="checkbox" value="company-chart" checked> Financial performance &amp; forecast</label>
+              <label><input type="checkbox" value="equity-revenue"> Revenue comparison</label>
+              <label><input type="checkbox" value="equity-operating"> Operating income comparison</label>
+              <label><input type="checkbox" value="equity-net"> Net income comparison</label>
               <label><input type="checkbox" value="equity-margins" checked> Profit margins</label>
               <label><input type="checkbox" value="equity-cashflows" checked> Operating cash flow vs. capex</label>
               <label><input type="checkbox" value="equity-fcf" checked> Free cash flow</label>
@@ -177,6 +180,33 @@
             </header>
             <div id="company-chart" class="plot" role="img"
               aria-label="Annual revenue, operating income, and net income, with optional modeled forecasts"></div>
+          </article>
+          <article class="chart-card card is-view-hidden" data-chart="equity-revenue"
+            aria-label="Compared annual revenue and forecast">
+            <header class="chart-heading">
+              <h2>Revenue comparison</h2>
+              <p id="equity-revenue-context">Compared annual revenue and modeled forecast</p>
+            </header>
+            <div id="equity-revenue" class="plot" role="img"
+              aria-label="Compared annual revenue with optional modeled forecasts"></div>
+          </article>
+          <article class="chart-card card is-view-hidden" data-chart="equity-operating"
+            aria-label="Compared annual operating income and forecast">
+            <header class="chart-heading">
+              <h2>Operating income comparison</h2>
+              <p id="equity-operating-context">Compared annual operating income and modeled forecast</p>
+            </header>
+            <div id="equity-operating" class="plot" role="img"
+              aria-label="Compared annual operating income with optional modeled forecasts"></div>
+          </article>
+          <article class="chart-card card is-view-hidden" data-chart="equity-net"
+            aria-label="Compared annual net income and forecast">
+            <header class="chart-heading">
+              <h2>Net income comparison</h2>
+              <p id="equity-net-context">Compared annual net income and modeled forecast</p>
+            </header>
+            <div id="equity-net" class="plot" role="img"
+              aria-label="Compared annual net income with optional modeled forecasts"></div>
           </article>
           <article class="chart-card card" data-chart="equity-margins">
             <header class="chart-heading">

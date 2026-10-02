@@ -85,6 +85,13 @@
     }
     return trace;
   }
+  function barize(trace,color){
+    trace.type="bar";
+    delete trace.mode;
+    delete trace.line;
+    trace.marker={color};
+    return trace;
+  }
   function prices(frames,opt){
     const traces=[];
     for(const frame of frames){
@@ -203,6 +210,7 @@
       const isSeason=id==="commodity-seasonality",isShock=id==="commodity-shock";
       const trace=line(frame,rows,frame.commodity.label,
         {showlegend:true,width:2.2});
+      if(id==="commodity-returns")barize(trace,frame.color);
       if(isSeason){
         trace.hovertemplate="%{x}: seasonality index %{y:,.1f}"+
           "<extra>"+frame.commodity.label+"</extra>";
@@ -317,10 +325,14 @@
           value:g.length>=2?g.reduce((a,v)=>a+v,0)/g.length:null}));
       }else throw Error("Unsupported nominal chart "+id);
       const trace={
-        type:"scatter",mode:"lines",x:rows.map(o=>o.date),y:rows.map(o=>o.value),
+        type:id==="commodity-returns"?"bar":"scatter",
+        ...(id==="commodity-returns"?{}:{mode:"lines"}),
+        x:rows.map(o=>o.date),y:rows.map(o=>o.value),
         line:{color:frame.color,width:2.2},name:frame.commodity.label,
+        ...(id==="commodity-returns"?{marker:{color:frame.color}}:{}),
         meta:{commodity:frame.commodity.id,unit:frame.unit,kind:"solid"}
       };
+      if(id==="commodity-returns")delete trace.line;
       trace.hovertemplate=(id==="commodity-seasonality"?"%{x}":"%{x|%b %Y}")+
         ": %{y:,.3f} "+frame.unit+"<extra>"+frame.commodity.label+"</extra>";
       traces.push(trace);
