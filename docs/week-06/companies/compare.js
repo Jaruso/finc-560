@@ -241,7 +241,7 @@
         paper_bgcolor:"#fff",plot_bgcolor:"#fff",
         shapes:forecastShapes,
         font:{family:"Inter,system-ui,sans-serif",size:10,color:"#465865"},
-        showlegend:true,hovermode:"closest",
+        showlegend:settings.showKeys!==false,hovermode:"closest",
         legend:{orientation:"h",x:.5,xanchor:"center",y:1.16,
           font:{size:9},groupclick:"togglegroup"},
         xaxis:{type:"date",range:[starts[0],starts.at(-1)],

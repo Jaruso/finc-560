@@ -3,7 +3,8 @@
 "use strict";
 const M=window.CommodityForecast,C=window.CommodityComparison,el=id=>document.getElementById(id);
 const state={snapshot:null,commodity:null,context:null,range:null,values:null,
-  plotHeight:null,pending:null,painting:false,tick:false,canvas:null,selectedIds:[],modes:{},axisValues:null};
+  plotHeight:null,pending:null,painting:false,tick:false,canvas:null,selectedIds:[],modes:{},axisValues:null,
+  showKeys:false};
 const OPTIONS=["commodity-chart","commodity-yoy","commodity-returns","commodity-vol",
   "commodity-seasonality","commodity-models","commodity-shock","commodity-drawdown"];
 const DEFAULT=OPTIONS.slice(0,4);
@@ -32,6 +33,11 @@ function updateProjectionControls(){
   const enabled=el("projections-enabled").checked;
   for(const control of document.querySelectorAll(".projection-dependent"))
     control.hidden=!enabled;
+}
+function updateKeyButton(){
+  const button=el("toggle-keys");
+  button.setAttribute("aria-pressed",String(state.showKeys));
+  button.textContent=state.showKeys?"Hide key":"Show key";
 }
 
 /* Each panel has its own explicit Indexed / Nominal preference. Single
@@ -205,7 +211,7 @@ function draw(){
         :{l:70,r:18,t:66,b:50,autoexpand:false},
       paper_bgcolor:"#fff",plot_bgcolor:"#fff",
       font:{family:"Inter,system-ui,sans-serif",size:11,color:"#465865"},
-      showlegend:true,hovermode:"closest",
+      showlegend:state.showKeys,hovermode:"closest",
       legend:{orientation:"h",x:.5,xanchor:"center",
         y:compactPlot()?1.04:1.14,
         font:{size:compactPlot()?9:10},autoexpand:false},
@@ -275,7 +281,7 @@ function renderExtras(c,history,f,opt){
       font:{family:"Inter,system-ui,sans-serif",size:10,color:"#465865"},
       legend:{orientation:"h",x:.5,xanchor:"center",
         y:compactPlot()?1.04:1.17,font:{size:compactPlot()?9:10}},
-      showlegend:bars,hovermode:"closest",
+      showlegend:state.showKeys&&bars,hovermode:"closest",
       xaxis:{type:category?"category":"date",showgrid:false,
         linecolor:"#dfe3e6",automargin:true},
       yaxis:{title:percent?"Change (%)":fmt,
@@ -334,7 +340,7 @@ function renderExtras(c,history,f,opt){
         (terminal.value>=0?"+":"")+safeNumber(terminal.value)+"%.":"Projected YoY needs an exact prior-year month.")+
       " Solid = observed; dashed = scenario; dotted = unshocked baseline when applicable.");
     const cfg=layout("commodity-yoy",{percent:true,zero:true});
-    cfg.showlegend=true;
+    cfg.showlegend=state.showKeys;
     cfg.margin.t=compactPlot()?34:57;
     cfg.yaxis.title="12-month change (%)";
     cfg.shapes.push({type:"line",xref:"x",yref:"paper",
@@ -410,7 +416,7 @@ function renderExtras(c,history,f,opt){
     context("commodity-models",opt.horizon+"-month model comparison from latest verified "+
       currency(last.value)+" · No price shock applied.");
     const cfg=layout("commodity-models",{horizon:true});
-    cfg.showlegend=true;cfg.yaxis.title=fmt;
+    cfg.showlegend=state.showKeys;cfg.yaxis.title=fmt;
     plotAdditional("commodity-models",traces,cfg);
   }
   if(chosen.has("commodity-shock")&&opt.shock!==0){
@@ -485,7 +491,7 @@ function renderSingleScaleOverrides(c,opt){
             {l:62,r:16,t:76,b:48,autoexpand:false},
           paper_bgcolor:"#fff",plot_bgcolor:"#fff",
           font:{family:"Inter,system-ui,sans-serif",size:10,color:"#465865"},
-          showlegend:true,hovermode:"closest",
+          showlegend:state.showKeys,hovermode:"closest",
           legend:{orientation:"h",x:.5,xanchor:"center",
             y:compactPlot()?1.04:1.18,font:{size:compactPlot()?9:10},autoexpand:false},
           xaxis:{type:"date",range:rendered.rangeX,showgrid:false,
@@ -511,7 +517,7 @@ function renderSingleScaleOverrides(c,opt){
         {l:60,r:14,t:72,b:47,autoexpand:false},
       paper_bgcolor:"#fff",plot_bgcolor:"#fff",
       font:{family:"Inter,system-ui,sans-serif",size:10,color:"#465865"},
-      showlegend:true,hovermode:"closest",
+      showlegend:state.showKeys,hovermode:"closest",
       legend:{orientation:"h",x:.5,xanchor:"center",y:compactPlot()?1.04:1.18,
         font:{size:compactPlot()?9:9},autoexpand:false},
       xaxis:{type:study.category?"category":"date",showgrid:false,
@@ -552,6 +558,7 @@ function reset(){
   el("shock").value="0";el("half-life").value="6";
   el("vol").value="1";el("history").value="60";
   el("projections-enabled").checked=true;
+  state.showKeys=false;updateKeyButton();
   updateProjectionControls();
   state.context=null;state.range=null;state.axisValues=null;
   state.plotHeight=null;state.modes={};syncModes();state.canvas.reset();schedule();
@@ -829,7 +836,7 @@ function drawComparison(){
         :{l:62,r:16,t:76,b:48,autoexpand:false},
       paper_bgcolor:"#fff",plot_bgcolor:"#fff",
       font:{family:"Inter,system-ui,sans-serif",size:10,color:"#465865"},
-      showlegend:true,hovermode:"closest",
+      showlegend:state.showKeys,hovermode:"closest",
       legend:{orientation:"h",x:.5,xanchor:"center",
         y:compactPlot()?1.04:1.18,font:{size:compactPlot()?9:10},
         autoexpand:false},
@@ -885,7 +892,7 @@ function drawComparison(){
           :{l:60,r:14,t:72,b:47,autoexpand:false},
         paper_bgcolor:"#fff",plot_bgcolor:"#fff",
         font:{family:"Inter,system-ui,sans-serif",size:10,color:"#465865"},
-        showlegend:true,hovermode:"closest",
+      showlegend:state.showKeys,hovermode:"closest",
         legend:{orientation:"h",x:.5,xanchor:"center",
           y:compactPlot()?1.04:1.18,
           font:{size:compactPlot()?9:9},autoexpand:false},
@@ -975,6 +982,11 @@ async function init(){
     el("projections-enabled").addEventListener("change",()=>{
       updateProjectionControls();schedule();
     });
+    el("toggle-keys").addEventListener("click",()=>{
+      state.showKeys=!state.showKeys;
+      updateKeyButton();schedule();
+    });
+    updateKeyButton();
     el("shock").addEventListener("input",schedule);
     el("shock").addEventListener("change",schedule);
     el("reset").addEventListener("click",reset);

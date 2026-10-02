@@ -95,8 +95,15 @@
   const settings=()=>({
     method:el("method").value,horizon:Number(el("horizon").value),
     growth:Number(el("growth").value),margin:Number(el("margin").value),
-    projectionsEnabled:el("projections-enabled").checked
+    projectionsEnabled:el("projections-enabled").checked,
+    showKeys
   });
+  let showKeys=false;
+  function updateKeyButton(){
+    const button=el("toggle-keys");
+    button.setAttribute("aria-pressed",String(showKeys));
+    button.textContent=showKeys?"Hide key":"Show key";
+  }
   function updateProjectionControls(){
     const enabled=el("projections-enabled").checked;
     for(const control of document.querySelectorAll(".projection-dependent")){
@@ -502,7 +509,7 @@
         :{l:66,r:18,t:65,b:47,autoexpand:false},
       paper_bgcolor:"#fff",plot_bgcolor:"#fff",
       font:{family:"Inter,system-ui,sans-serif",size:11,color:"#465865"},
-      showlegend:true,hovermode:"closest",
+      showlegend:assumptions.showKeys,hovermode:"closest",
       legend:{orientation:"h",x:.5,xanchor:"center",
         y:compactPlot()?1.045:1.12,font:{size:compactPlot()?9:10},
         groupclick:"togglegroup",autoexpand:false},
@@ -600,7 +607,7 @@
           :{l:61,r:12,t:45,b:43,autoexpand:false},
         paper_bgcolor:"#fff",plot_bgcolor:"#fff",
         font:{family:"Inter,system-ui,sans-serif",size:10,color:"#465865"},
-        showlegend:true,hovermode:"closest",
+        showlegend:assumptions.showKeys,hovermode:"closest",
         legend:{orientation:"h",x:.5,xanchor:"center",
           y:compactPlot()?1.04:1.16,
           font:{size:compactPlot()?9:10},itemwidth:30},
@@ -966,6 +973,12 @@
         manualYRange=null;
         queueRender();
       });
+      el("toggle-keys").addEventListener("click",()=>{
+        showKeys=!showKeys;
+        updateKeyButton();
+        queueRender();
+      });
+      updateKeyButton();
       updateProjectionControls();
       for(const id of ["method","horizon","history"]){
         el(id).addEventListener("change",queueRender);
@@ -1000,6 +1013,8 @@
         el("growth").value="0";el("margin").value="0";
         el("history").value="5";
         el("projections-enabled").checked=true;
+        showKeys=false;
+        updateKeyButton();
         updateProjectionControls();
         canvas.reset();queueRender();
       });
