@@ -1,15 +1,23 @@
-/* Shared-title navigation between the course hub and the Week 6 lab.
+/* Shared-label navigation between the course hub and the Week 6 lab.
    Progressive enhancement: browsers without cross-document View Transitions
    retain the matching typography/colors and normal navigation. */
 @view-transition { navigation: auto; }
 .site-header:not(.week-06-header) h1 { view-transition-name: lab-title; }
 .week-06-header .lab-shared-title { view-transition-name: lab-title; }
+.site-header:not(.week-06-header) .course,
+.week-06-header .course-mark {
+  view-transition-name: course-label;
+  display: inline-block;
+  line-height: 1;
+}
+.site-header:not(.week-06-header) .course { width: fit-content; }
 @supports (view-transition-name: lab-title) {
   ::view-transition-old(root),::view-transition-new(root) {
     animation-duration: .28s;
     animation-timing-function: ease-in-out;
   }
-  ::view-transition-group(lab-title) {
+  ::view-transition-group(lab-title),
+  ::view-transition-group(course-label) {
     animation-duration: .66s;
     animation-timing-function: cubic-bezier(.22,.61,.36,1);
   }
