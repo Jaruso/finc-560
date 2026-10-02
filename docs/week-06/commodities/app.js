@@ -8,6 +8,8 @@ const OPTIONS=["commodity-chart","commodity-yoy","commodity-returns","commodity-
   "commodity-seasonality","commodity-models","commodity-shock","commodity-drawdown"];
 const DEFAULT=OPTIONS.slice(0,4);
 const plotQueue=new Map(),plotting=new Set();
+const compactPlot=()=>window.matchMedia("(max-width:650px)").matches;
+const mobileLegendTop=()=>state.selectedIds.length>1?62:38;
 const safeNumber=(v,n=1)=>(Number.isFinite(v)?v.toFixed(n):"—");
 function chartHeight(id){
   const card=el(id).closest(".chart-card"),header=card.querySelector(".chart-heading");
@@ -193,12 +195,15 @@ function draw(){
       "Model forecast (dashed)",{color:"#0b7f73",width:2.65,dash:"dash"},30));
     const layout={
       autosize:true,height:height(),
-      margin:{l:70,r:18,t:66,b:50,autoexpand:false},
+      margin:compactPlot()
+        ?{l:53,r:8,t:mobileLegendTop(),b:35,autoexpand:false}
+        :{l:70,r:18,t:66,b:50,autoexpand:false},
       paper_bgcolor:"#fff",plot_bgcolor:"#fff",
       font:{family:"Inter,system-ui,sans-serif",size:11,color:"#465865"},
       showlegend:true,hovermode:"closest",
-      legend:{orientation:"h",x:.5,xanchor:"center",y:1.14,
-        font:{size:10},autoexpand:false},
+      legend:{orientation:"h",x:.5,xanchor:"center",
+        y:compactPlot()?1.04:1.14,
+        font:{size:compactPlot()?9:10},autoexpand:false},
       xaxis:{type:"date",range:[first,end],dtick:history.length>36?"M12":"M3",
         tickformat:"%b %Y",showgrid:false,linecolor:"#dfe3e6",automargin:true},
       yaxis:{title:{text:c.unit,font:{size:11}},
@@ -254,10 +259,13 @@ function renderExtras(c,history,f,opt){
   function layout(id,{percent=false,category=false,bars=false,zero=false,horizon=false}={}){
     const cfg={
       autosize:true,height:chartHeight(id),
-      margin:{l:60,r:12,t:45,b:46,autoexpand:false},
+      margin:compactPlot()
+        ?{l:51,r:8,t:mobileLegendTop(),b:34,autoexpand:false}
+        :{l:60,r:12,t:45,b:46,autoexpand:false},
       paper_bgcolor:"#fff",plot_bgcolor:"#fff",
       font:{family:"Inter,system-ui,sans-serif",size:10,color:"#465865"},
-      legend:{orientation:"h",x:.5,xanchor:"center",y:1.17,font:{size:10}},
+      legend:{orientation:"h",x:.5,xanchor:"center",
+        y:compactPlot()?1.04:1.17,font:{size:compactPlot()?9:10}},
       showlegend:bars,hovermode:"closest",
       xaxis:{type:category?"category":"date",showgrid:false,
         linecolor:"#dfe3e6",automargin:true},
@@ -679,11 +687,14 @@ function drawComparison(){
     }
     const layout={
       autosize:true,height:height(),
-      margin:{l:62,r:16,t:76,b:48,autoexpand:false},
+      margin:compactPlot()
+        ?{l:53,r:8,t:mobileLegendTop(),b:35,autoexpand:false}
+        :{l:62,r:16,t:76,b:48,autoexpand:false},
       paper_bgcolor:"#fff",plot_bgcolor:"#fff",
       font:{family:"Inter,system-ui,sans-serif",size:10,color:"#465865"},
       showlegend:true,hovermode:"closest",
-      legend:{orientation:"h",x:.5,xanchor:"center",y:1.18,font:{size:10},
+      legend:{orientation:"h",x:.5,xanchor:"center",
+        y:compactPlot()?1.04:1.18,font:{size:compactPlot()?9:10},
         autoexpand:false},
       xaxis:{type:"date",range:rendered.rangeX,showgrid:false,
         tickformat:"%b %Y",dtick:frames[0].history.length>36?"M12":"M3",
@@ -725,12 +736,15 @@ function drawComparison(){
       if(!study.traces.length)continue;
       const extra={
         autosize:true,height:chartHeight(id),
-        margin:{l:60,r:14,t:72,b:47,autoexpand:false},
+        margin:compactPlot()
+          ?{l:51,r:8,t:mobileLegendTop(),b:35,autoexpand:false}
+          :{l:60,r:14,t:72,b:47,autoexpand:false},
         paper_bgcolor:"#fff",plot_bgcolor:"#fff",
         font:{family:"Inter,system-ui,sans-serif",size:10,color:"#465865"},
         showlegend:true,hovermode:"closest",
-        legend:{orientation:"h",x:.5,xanchor:"center",y:1.18,
-          font:{size:9},autoexpand:false},
+        legend:{orientation:"h",x:.5,xanchor:"center",
+          y:compactPlot()?1.04:1.18,
+          font:{size:compactPlot()?9:9},autoexpand:false},
         xaxis:{type:study.category?"category":"date",showgrid:false,
           linecolor:"#dfe3e6",automargin:true},
         yaxis:{title:study.index?"Index points (base = 100)":
