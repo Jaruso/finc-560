@@ -62,6 +62,25 @@ async function slide(page,id,v){
     assert.equal(await page.locator("#model-status").textContent(),
       "Fitted Diebold–Li style · 189 training months · 8 Treasury maturities");
     assert.equal(await page.locator("#controls-heading").textContent(),"Controls");
+    assert.equal(await page.locator(".treasury-quote").count(),4);
+    const observedCurve=makeFixture().latest_treasury_yields;
+    for(const [series,id] of [
+      ["DGS1","yield-one"],["DGS2","yield-two"],
+      ["DGS5","yield-five"],["DGS10","yield-ten"]
+    ]){
+      assert.equal(await page.locator("#"+id).textContent(),
+        observedCurve[series].toFixed(2)+"%",
+        "Sidebar values must come from synchronized OBSERVED yield series");
+    }
+    assert.match(await page.locator("#yield-quote-status").textContent(),
+      /Federal Reserve \/ FRED.*2023-10-20/);
+    assert.equal(await page.locator("#treasury-model option").count(),1);
+    assert.equal(await page.locator("#treasury-model").isDisabled(),true);
+    assert.equal(await page.locator("#treasury-model").inputValue(),"Diebold–Li");
+    await page.locator(".sidebar-model-control .model-help summary").click();
+    assert.match(await page.locator(".sidebar-model-control .model-help-panel").textContent(),
+      /separate historical AR\(1\)/i);
+    await page.locator(".sidebar-model-control .model-help summary").click();
     assert.equal(await page.locator("#reset").textContent(),"Reset");
     assert.equal(await page.locator(".controls .eyebrow").count(),0,
       "Redundant heading copy must not take sidebar space");
@@ -260,6 +279,14 @@ async function slide(page,id,v){
     fs.mkdirSync("test-artifacts",{recursive:true});
     await page.screenshot({path:"test-artifacts/week06-fitted-model.png",fullPage:false});
     await page.setViewportSize({width:390,height:844});
+    await page.waitForFunction(()=>
+      document.querySelector("#chart-yields")?.layout?.margin?.t===46);
+    const compactBonds=await page.evaluate(()=>({
+      card:document.querySelector('[data-chart="chart-yields"]').getBoundingClientRect().height,
+      top:document.querySelector("#chart-yields").layout.margin.t
+    }));
+    assert.ok(compactBonds.card<295&&compactBonds.top<=46,
+      "Mobile Bonds cards and Plotly legends must remain compact");
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));
     assert.equal(await page.locator(".mobile-controls-toggle").isVisible(),true);
     await page.waitForFunction(()=>getComputedStyle(

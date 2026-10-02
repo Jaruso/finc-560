@@ -334,6 +334,7 @@
       }else extraPlot(id,chart.traces,chart.layout);
     }
   }
+  const compactPlot=()=>window.matchMedia("(max-width:650px)").matches;
   // Compute the plot viewport from the chart CARD, not the Plotly div
   // itself. The div includes Plotly's previous inline height and a flex
   // header; measuring it recursively would shrink the plot ~45px after
@@ -438,11 +439,14 @@
       ?(Date.parse(boundary)-Date.parse(xObserved[0]))/total:1;
     const layout={
       autosize:true,height:fullChartHeight(),
-      margin:{l:66,r:18,t:68,b:47,autoexpand:false},
+      margin:compactPlot()
+        ?{l:53,r:8,t:36,b:35,autoexpand:false}
+        :{l:66,r:18,t:68,b:47,autoexpand:false},
       paper_bgcolor:"#fff",plot_bgcolor:"#fff",
       font:{family:"Inter,system-ui,sans-serif",size:11,color:"#465865"},
       showlegend:true,hovermode:"closest",
-      legend:{orientation:"h",x:.5,xanchor:"center",y:1.14,font:{size:10},autoexpand:false},
+      legend:{orientation:"h",x:.5,xanchor:"center",
+        y:compactPlot()?1.04:1.14,font:{size:compactPlot()?9:10},autoexpand:false},
       xaxis:{
         type:"date",range:[xObserved[0],showProjection?endDate:boundary],
         tickformat:"%Y",dtick:"M12",showgrid:false,
@@ -543,12 +547,15 @@
     function base(id,{unit="USD billions",percent=false,zero=false,bar=false}={}){
       const cfg={
         autosize:true,height:extraHeight(id),
-        margin:{l:61,r:12,t:45,b:43,autoexpand:false},
+        margin:compactPlot()
+          ?{l:52,r:8,t:39,b:34,autoexpand:false}
+          :{l:61,r:12,t:45,b:43,autoexpand:false},
         paper_bgcolor:"#fff",plot_bgcolor:"#fff",
         font:{family:"Inter,system-ui,sans-serif",size:10,color:"#465865"},
         showlegend:true,hovermode:"closest",
-        legend:{orientation:"h",x:.5,xanchor:"center",y:1.16,
-          font:{size:10},itemwidth:30},
+        legend:{orientation:"h",x:.5,xanchor:"center",
+          y:compactPlot()?1.04:1.16,
+          font:{size:compactPlot()?9:10},itemwidth:30},
         xaxis:{type:"date",tickformat:"%Y",
           showgrid:false,linecolor:"#dfe3e6",automargin:true},
         yaxis:{title:percent?"Margin (%)":unit,

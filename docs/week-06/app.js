@@ -3,6 +3,7 @@
   "use strict";
   const Model=window.ForecastModel;
   const el=id=>document.getElementById(id);
+  const compactPlot=()=>window.matchMedia("(max-width:650px)").matches;
   const COLOR={five:"#365977",ten:"#0b7f73",historical:"#314b5c",bound:"#81939e",red:"#b84253"};
   const DEFAULT=["chart-yields","chart-spread","chart-policy","chart-accuracy"];
   const IDS=[...DEFAULT,"chart-five","chart-ten","chart-shock","chart-policy-gap"];
@@ -188,11 +189,14 @@
     const boundary=(Date.parse(base)-Date.parse(rangeStart))/(Date.parse(end)-Date.parse(rangeStart));
     const layout={
       autosize:true,height:plotHeight(id),
-      margin:{l:55,r:16,t:62,b:49,autoexpand:false},paper_bgcolor:"#fff",plot_bgcolor:"#fff",
+      margin:compactPlot()
+        ?{l:47,r:8,t:46,b:34,autoexpand:false}
+        :{l:55,r:16,t:62,b:49,autoexpand:false},paper_bgcolor:"#fff",plot_bgcolor:"#fff",
       font:{family:"Inter, system-ui, sans-serif",size:11,color:"#465865"},
       hovermode:"closest",showlegend:true,
-      legend:{orientation:"h",x:.5,xanchor:"center",y:1.14,
-        font:{size:10},itemwidth:32,autoexpand:false},
+      legend:{orientation:"h",x:.5,xanchor:"center",
+        y:compactPlot()?1.035:1.14,
+        font:{size:compactPlot()?9:10},itemwidth:32,autoexpand:false},
       xaxis:{type:"date",range:[rangeStart,end],showgrid:false,
         tickformat:focused?"%b '%y":"%Y",nticks:focused?8:10,
         linecolor:"#dfe3e6",tickfont:{size:10},automargin:true},
@@ -235,12 +239,15 @@
     const sourceNote=el(id+"-context");
     const base={
       autosize:true,height:plotHeight(id),
-      margin:{l:55,r:20,t:55,b:47,autoexpand:false},
+      margin:compactPlot()
+        ?{l:47,r:8,t:43,b:34,autoexpand:false}
+        :{l:55,r:20,t:55,b:47,autoexpand:false},
       paper_bgcolor:"#fff",plot_bgcolor:"#fff",showlegend:true,
       font:{family:"Inter, system-ui, sans-serif",size:10,color:"#465865"},
       hovermode:"closest",
-      legend:{orientation:"h",x:.5,xanchor:"center",y:1.16,
-        font:{size:10},itemwidth:30},
+      legend:{orientation:"h",x:.5,xanchor:"center",
+        y:compactPlot()?1.035:1.16,
+        font:{size:compactPlot()?9:10},itemwidth:30},
       xaxis:{type:"date",range:[historicalStart,end],
         tickformat:focused?"%b '%y":"%Y",nticks:8,
         linecolor:"#dfe3e6"},
@@ -416,6 +423,29 @@
     if(frame!==null)return;
     frame=window.requestAnimationFrame(()=>{frame=null;render();});
   }
+  function renderYieldCards(){
+    // Latest observed constant-maturity yields, never inferred spot prices
+    // or fitted model values. Older snapshots only contain 5Y and 10Y.
+    const latest=data.observations.at(-1);
+    const observed=data.latest_treasury_yields||{};
+    const cards=[
+      ["DGS1","yield-one",null],
+      ["DGS2","yield-two",null],
+      ["DGS5","yield-five",latest.dgs5],
+      ["DGS10","yield-ten",latest.dgs10]
+    ];
+    for(const [series,id,legacy] of cards){
+      const value=observed[series]??legacy;
+      el(id).textContent=Number.isFinite(value)?pct(value):"—";
+      el(id).closest(".treasury-quote").setAttribute("aria-label",
+        series.slice(3)+"-year Treasury yield: "+
+        (Number.isFinite(value)?pct(value):"awaiting verified data"));
+    }
+    el("yield-quote-status").textContent="Federal Reserve / FRED · "+
+      data.latest_synchronized_daily_observation+
+      (cards.some(([series,,legacy])=>!Number.isFinite(observed[series]??legacy))?
+        " · 1Y/2Y pending verified refresh":" · Synchronized observed yields");
+  }
   function fillValidation(){
     const body=el("backtest-table");body.replaceChildren();
     for(const row of data.backtest.metrics){
@@ -477,6 +507,7 @@
         (data.latest_month_is_partial?" (partial month)":"");
       el("data-refresh").textContent="FRED model refreshed "+data.retrieved_utc.slice(0,16).replace("T"," ")+" UTC";
       fillValidation();
+      renderYieldCards();
       render();
     }catch(e){
       el("data-date").textContent="Unavailable";
@@ -484,6 +515,7 @@
       el("data-error").textContent=String(e.message||e)+
         " The dashboard will not substitute illustrative projections for missing fitted model data.";
       el("model-status").textContent="Awaiting verified fitted-model snapshot.";
+      el("yield-quote-status").textContent="Verified Treasury yields unavailable.";
     }
   }
   initialize();

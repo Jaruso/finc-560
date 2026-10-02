@@ -678,6 +678,20 @@ async function selectPrimary(page,ticker){
     await page.screenshot({path:"test-artifacts/week06-company-dashboard.png",fullPage:false});
     await page.setViewportSize({width:390,height:844});
     await page.waitForFunction(()=>
+      document.querySelector("#company-chart")?.layout?.margin?.t===36);
+    const mobileDensity=await page.evaluate(()=>{
+      const card=document.querySelector('[data-chart="company-chart"]');
+      const heading=card.querySelector(".chart-heading");
+      const legend=card.querySelector(".legend");
+      return {height:card.getBoundingClientRect().height,
+        legendGap:legend?
+          legend.getBoundingClientRect().top-heading.getBoundingClientRect().bottom:null};
+    });
+    assert.ok(mobileDensity.height<295,
+      "Equities mobile charts must not retain a desktop-sized shell");
+    assert.ok(mobileDensity.legendGap!==null&&mobileDensity.legendGap<63,
+      "Reduce blank mobile space between Equity chart context and legend");
+    await page.waitForFunction(()=>
       document.querySelector("#company-chart")?.data?.length===2);
     const mobile=await page.evaluate(()=>({
       scroll:document.documentElement.scrollWidth,width:innerWidth,

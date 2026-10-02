@@ -8,14 +8,14 @@
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="../../assets/styles.css?v=20260906-week3-redesign">
 <link rel="stylesheet" href="../../assets/site-transitions.css?v=20261001">
-<link rel="stylesheet" href="../dashboard.css?v=header-stack-20261001">
-<link rel="stylesheet" href="./commodities.css?v=shock-half-life-20261001">
+<link rel="stylesheet" href="../dashboard.css?v=mobile-density-20261001">
+<link rel="stylesheet" href="./commodities.css?v=commodity-quote-half-life-20261001">
 <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 <script defer src="./model.js?v=commodity-catalog-20261001"></script>
 <script defer src="./comparison.js?v=full-nominal-domain-20261001"></script>
 <script defer src="../chart-canvas.js?v=20261001"></script>
 <script defer src="../mobile-controls.js?v=20261001"></script>
-<script defer src="./app.js?v=shock-half-life-20261001"></script>
+<script defer src="./app.js?v=mobile-density-20261001"></script>
 </head>
 <body>
 <header class="site-header week-06-header commodity-header">
@@ -66,15 +66,39 @@
               </div>
             </div>
           </details>
-          <p id="commodity-count" class="commodity-count" role="status" aria-live="polite"></p>
-          <p id="market-description" class="commodity-description">Verified monthly benchmarks, not exchange futures quotes.</p>
-          <label class="control"><span>Price model</span>
+          <p id="commodity-count" hidden aria-hidden="true"></p>
+          <section id="commodity-quote" class="commodity-spot-card" aria-label="Latest primary commodity monthly price" hidden>
+            <div class="commodity-spot-heading">
+              <strong id="commodity-quote-name">—</strong>
+              <span>Monthly spot</span>
+            </div>
+            <div class="commodity-spot-value" aria-live="polite">
+              <strong id="commodity-quote-price">—</strong>
+              <span id="commodity-quote-change" class="commodity-spot-change">—</span>
+            </div>
+            <p id="market-description" class="commodity-spot-status">Loading verified monthly price…</p>
+            <a id="commodity-quote-source" class="commodity-spot-source" target="_blank" rel="noopener noreferrer">View source</a>
+          </section>
+          <div class="control sidebar-model-control">
+            <div class="model-method-heading">
+              <label for="model">Price model</label>
+              <details class="model-help">
+                <summary aria-label="Explain commodity forecasting models" title="How the commodity price models work">i</summary>
+                <div class="model-help-panel" role="note" aria-label="Commodity forecasting models explained">
+                  <strong class="model-help-title">Commodity price models</strong>
+                  <p><strong>Mean reversion (log AR1):</strong> Fits a bounded first-order autoregression to up to 60 months of historical log prices. Projects a gradual return toward the fitted long-run level. The implied mean depends on the sample and can shift after a structural market change.</p>
+                  <p><strong>Recent log-price trend:</strong> Fits an ordinary least-squares straight line to up to 36 months of log prices, with the monthly slope capped at ±3.5%. Extrapolates recent percentage growth or decline, which may fail after a trend reversal.</p>
+                  <p><strong>Unchanged price:</strong> Holds the most recent verified monthly spot average constant. Useful as a transparent reference, not a prediction of an efficient or stable market.</p>
+                  <p><strong>Shared scenario controls:</strong> The percentage price shock is hypothetical and decays by the selected half-life. A realized-volatility corridor illustrates sensitivity, but is not a statistically calibrated prediction interval. These models use monthly benchmarks, not live futures quotes.</p>
+                </div>
+              </details>
+            </div>
             <select id="model">
               <option value="mean">Mean reversion (log AR1)</option>
               <option value="trend">Recent log-price trend</option>
               <option value="unchanged">Unchanged price</option>
             </select>
-          </label>
+          </div>
           <label class="control"><span>Projection</span>
             <select id="horizon">
               <option value="3">3 months</option>

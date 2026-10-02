@@ -8,6 +8,8 @@ const OPTIONS=["commodity-chart","commodity-yoy","commodity-returns","commodity-
   "commodity-seasonality","commodity-models","commodity-shock","commodity-drawdown"];
 const DEFAULT=OPTIONS.slice(0,4);
 const plotQueue=new Map(),plotting=new Set();
+const compactPlot=()=>window.matchMedia("(max-width:650px)").matches;
+const mobileLegendTop=()=>state.selectedIds.length>1?62:32;
 const safeNumber=(v,n=1)=>(Number.isFinite(v)?v.toFixed(n):"—");
 function chartHeight(id){
   const card=el(id).closest(".chart-card"),header=card.querySelector(".chart-heading");
@@ -59,6 +61,7 @@ function updateEmptyVisibility(){
     el("comparison-sources").hidden=true;
     el("commodity-source").hidden=true;
     state.canvas.setAvailable([]);
+    el("commodity-quote").hidden=true;
   }
 }
 
@@ -139,6 +142,7 @@ function draw(){
     fit.disabled=fit.hidden||(!clipped&&!state.range);
     el("chart-footnote").hidden=fit.hidden;
     const actual=last.value,base=f.baseline.at(-1).price,forecast=f.scenario.at(-1).price;
+    showSpot(c,last);
     const oneYearBack=c.observations.find(p=>p.date===M.shiftMonth(last.date,-12));
     el("shock-value").textContent=(opt.shock>0?"+":"")+opt.shock+"%";
     el("kpi-latest").textContent=dollars(actual);
@@ -159,8 +163,6 @@ function draw(){
       (opt.vol?opt.vol+"× historical volatility":"bounds off");
     el("source-period").textContent="Through "+last.date.slice(0,7);
     el("data-refresh").textContent="Verified snapshot · "+state.snapshot.retrieved_utc.slice(0,10);
-    el("market-description").textContent=c.unit+" · "+c.source+
-      " · Last verified month "+c.last_observation.slice(0,7);
     el("chart-heading").textContent=c.label;
     el("chart-subtitle").textContent="Observed "+dollars(actual)+" · "+
       (oneYearBack?"12-month "+safeNumber((actual/oneYearBack.value-1)*100)+"% · ":"")+
@@ -175,30 +177,34 @@ function draw(){
         "<extra>"+name+"</extra>",...extra
     });
     const traces=[{x:history.map(p=>p.date),y:observed,type:"scatter",
-      mode:"lines",name:"Reported (solid)",legendrank:10,
+      mode:"lines",name:compactPlot()?"Observed":"Reported (solid)",legendrank:10,
       line:{color:"#314b5c",width:2.6},
       hovertemplate:"%{x|%b %Y}: "+(c.unit==="cents/sheet"?"":"$")+
         "%{y:,.2f}"+(c.unit==="cents/sheet"?"¢":"")+
         "<extra>Observed physical benchmark</extra>"}];
-    if(showBase)traces.push(series(f.baseline,"Unadjusted baseline (dotted)",
+    if(showBase)traces.push(series(f.baseline,compactPlot()?"Baseline":"Unadjusted baseline (dotted)",
       {color:"#91a2ab",width:1.65,dash:"dot"},20));
     if(opt.vol){
-      traces.push(series(f.low,"Volatility guide (dotted)",
+      traces.push(series(f.low,compactPlot()?"Volatility":"Volatility guide (dotted)",
         {color:"#9aabb2",width:1.1,dash:"dot"},40));
       traces.push(series(f.high,"Upper volatility guide",
         {color:"#9aabb2",width:1.1,dash:"dot"},41,
         {showlegend:false,fill:"tonexty",fillcolor:"rgba(11,127,115,.08)"}));
     }
-    traces.push(series(f.scenario,showBase?"Conditional scenario (dashed)":
-      "Model forecast (dashed)",{color:"#0b7f73",width:2.65,dash:"dash"},30));
+    traces.push(series(f.scenario,compactPlot()?
+      (showBase?"Scenario":"Forecast"):
+      (showBase?"Conditional scenario (dashed)":"Model forecast (dashed)"),{color:"#0b7f73",width:2.65,dash:"dash"},30));
     const layout={
       autosize:true,height:height(),
-      margin:{l:70,r:18,t:66,b:50,autoexpand:false},
+      margin:compactPlot()
+        ?{l:53,r:8,t:mobileLegendTop(),b:35,autoexpand:false}
+        :{l:70,r:18,t:66,b:50,autoexpand:false},
       paper_bgcolor:"#fff",plot_bgcolor:"#fff",
       font:{family:"Inter,system-ui,sans-serif",size:11,color:"#465865"},
       showlegend:true,hovermode:"closest",
-      legend:{orientation:"h",x:.5,xanchor:"center",y:1.14,
-        font:{size:10},autoexpand:false},
+      legend:{orientation:"h",x:.5,xanchor:"center",
+        y:compactPlot()?1.04:1.14,
+        font:{size:compactPlot()?9:10},autoexpand:false},
       xaxis:{type:"date",range:[first,end],dtick:history.length>36?"M12":"M3",
         tickformat:"%b %Y",showgrid:false,linecolor:"#dfe3e6",automargin:true},
       yaxis:{title:{text:c.unit,font:{size:11}},
@@ -254,10 +260,13 @@ function renderExtras(c,history,f,opt){
   function layout(id,{percent=false,category=false,bars=false,zero=false,horizon=false}={}){
     const cfg={
       autosize:true,height:chartHeight(id),
-      margin:{l:60,r:12,t:45,b:46,autoexpand:false},
+      margin:compactPlot()
+        ?{l:51,r:8,t:state.selectedIds.length>1?62:bars?34:12,b:34,autoexpand:false}
+        :{l:60,r:12,t:45,b:46,autoexpand:false},
       paper_bgcolor:"#fff",plot_bgcolor:"#fff",
       font:{family:"Inter,system-ui,sans-serif",size:10,color:"#465865"},
-      legend:{orientation:"h",x:.5,xanchor:"center",y:1.17,font:{size:10}},
+      legend:{orientation:"h",x:.5,xanchor:"center",
+        y:compactPlot()?1.04:1.17,font:{size:compactPlot()?9:10}},
       showlegend:bars,hovermode:"closest",
       xaxis:{type:category?"category":"date",showgrid:false,
         linecolor:"#dfe3e6",automargin:true},
@@ -431,6 +440,37 @@ function formatNative(value,commodity){
   return commodity.unit==="cents/sheet"?number+"¢":
     "$"+number+" "+commodity.unit.replace(/^USD\//,"/");
 }
+/* The primary price card uses published monthly observations, never model
+   scenarios or intraday prices. A comparison does not change its identity. */
+function showSpot(commodity,last){
+  if(!commodity||!last){el("commodity-quote").hidden=true;return;}
+  el("commodity-quote").hidden=false;
+  el("commodity-quote-name").textContent=commodity.label;
+  const num=Number(last.value);
+  const displayed=num.toLocaleString("en-US",{
+    minimumFractionDigits:2,maximumFractionDigits:commodity.unit==="USD/kg"?3:2
+  });
+  el("commodity-quote-price").textContent=
+    commodity.unit==="cents/sheet"?displayed+"¢":
+      (commodity.unit.startsWith("USD")?"$":"")+displayed;
+  const previous=commodity.observations.find(row=>
+    row.date===M.shiftMonth(last.date,-12));
+  const change=el("commodity-quote-change");
+  change.classList.remove("is-up","is-down");
+  if(previous&&previous.value>0){
+    const percent=(last.value/previous.value-1)*100;
+    change.textContent=(percent>0?"+":"")+percent.toFixed(1)+"% / 12 mo";
+    if(percent>0)change.classList.add("is-up");
+    else if(percent<0)change.classList.add("is-down");
+  }else{
+    change.textContent="12-mo change unavailable";
+  }
+  el("market-description").textContent=commodity.unit+" · "+
+    commodity.source+" · "+last.date.slice(0,7)+" monthly average";
+  const source=el("commodity-quote-source");
+  source.href=commodity.source_url;
+  source.textContent="View "+commodity.source+" source";
+}
 function updateSelection(next){
   state.selectedIds=next.slice(0,4);
   state.commodity=state.snapshot.commodities.find(c=>c.id===state.selectedIds[0])||null;
@@ -539,6 +579,7 @@ function drawComparison(){
       state.snapshot.commodities.find(c=>c.id===id));
     const opt=input(),frames=C.prepare(commodities,el("history").value,opt);
     const primary=frames[0],observed=primary.history.at(-1);
+    showSpot(primary.commodity,observed);
     const priceMode=modeFor("commodity-chart");
     state.canvas.setAvailable(OPTIONS.filter(id=>
       id!=="commodity-shock"||opt.shock!==0));
@@ -621,10 +662,6 @@ function drawComparison(){
     el("source-period").textContent=frames.length>1?
       "Multiple monthly series":"Through "+primary.last.slice(0,7);
     el("data-refresh").textContent="Verified snapshot · "+state.snapshot.retrieved_utc.slice(0,10);
-    el("market-description").textContent=frames.length>1?
-      frames.length+" selected benchmarks · "+primary.commodity.label+
-      " is primary. Dates and original units may differ.":
-      primary.commodity.label+" · "+primary.unit+" · "+primary.commodity.source;
     el("chart-heading").textContent=frames.length>1?
       frames.length+"-commodity price comparison":primary.commodity.label;
     el("chart-subtitle").textContent=frames.length>1?
@@ -651,11 +688,14 @@ function drawComparison(){
     }
     const layout={
       autosize:true,height:height(),
-      margin:{l:62,r:16,t:76,b:48,autoexpand:false},
+      margin:compactPlot()
+        ?{l:53,r:8,t:mobileLegendTop(),b:35,autoexpand:false}
+        :{l:62,r:16,t:76,b:48,autoexpand:false},
       paper_bgcolor:"#fff",plot_bgcolor:"#fff",
       font:{family:"Inter,system-ui,sans-serif",size:10,color:"#465865"},
       showlegend:true,hovermode:"closest",
-      legend:{orientation:"h",x:.5,xanchor:"center",y:1.18,font:{size:10},
+      legend:{orientation:"h",x:.5,xanchor:"center",
+        y:compactPlot()?1.04:1.18,font:{size:compactPlot()?9:10},
         autoexpand:false},
       xaxis:{type:"date",range:rendered.rangeX,showgrid:false,
         tickformat:"%b %Y",dtick:frames[0].history.length>36?"M12":"M3",
@@ -695,14 +735,19 @@ function drawComparison(){
       const context=el(id+"-context");
       if(context)context.textContent=study.context;
       if(!study.traces.length)continue;
+      const studyLegend=frames.length>1||
+        study.traces.filter(trace=>trace.showlegend!==false).length>1;
       const extra={
         autosize:true,height:chartHeight(id),
-        margin:{l:60,r:14,t:72,b:47,autoexpand:false},
+        margin:compactPlot()
+          ?{l:51,r:8,t:frames.length>1?62:studyLegend?34:12,b:35,autoexpand:false}
+          :{l:60,r:14,t:72,b:47,autoexpand:false},
         paper_bgcolor:"#fff",plot_bgcolor:"#fff",
         font:{family:"Inter,system-ui,sans-serif",size:10,color:"#465865"},
         showlegend:true,hovermode:"closest",
-        legend:{orientation:"h",x:.5,xanchor:"center",y:1.18,
-          font:{size:9},autoexpand:false},
+        legend:{orientation:"h",x:.5,xanchor:"center",
+          y:compactPlot()?1.04:1.18,
+          font:{size:compactPlot()?9:9},autoexpand:false},
         xaxis:{type:study.category?"category":"date",showgrid:false,
           linecolor:"#dfe3e6",automargin:true},
         yaxis:{title:study.index?"Index points (base = 100)":

@@ -39,8 +39,18 @@
     "DGS30": "https://fred.stlouisfed.org/series/DGS30",
     "DFF": "https://fred.stlouisfed.org/series/DFF"
   },
-  "retrieved_utc": "2026-10-01T21:02:39+00:00",
+  "retrieved_utc": "2026-10-01T21:14:59+00:00",
   "latest_synchronized_daily_observation": "2026-09-30",
+  "latest_treasury_yields": {
+    "DGS1": 4.54,
+    "DGS2": 4.88,
+    "DGS3": 5.0,
+    "DGS5": 5.09,
+    "DGS7": 5.19,
+    "DGS10": 5.29,
+    "DGS20": 5.68,
+    "DGS30": 5.64
+  },
   "latest_month_is_partial": false,
   "frequency": "Last complete COMMON trading-date Treasury cross-section each month; latest month may be partial",
   "unit": "Percent per annum; forecast errors use basis points where marked",

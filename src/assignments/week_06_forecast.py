@@ -266,6 +266,10 @@ def build_snapshot(daily: pd.DataFrame | None = None, *, as_of: datetime | None 
         "source_urls": {s: "https://fred.stlouisfed.org/series/" + s for s in ALL_SERIES},
         "retrieved_utc": now.isoformat(timespec="seconds"),
         "latest_synchronized_daily_observation": latest_day.strftime("%Y-%m-%d"),
+        # Observed synchronized FRED yields, not model-implied bond prices.
+        "latest_treasury_yields": {
+            series: round(float(monthly.iloc[-1][series]), 4) for series in TENORS
+        },
         "latest_month_is_partial": bool(partial_month),
         "frequency": "Last complete COMMON trading-date Treasury cross-section each month; latest month may be partial",
         "unit": "Percent per annum; forecast errors use basis points where marked",

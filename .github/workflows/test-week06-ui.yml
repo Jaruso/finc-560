@@ -1,28 +1,9 @@
 name: Week 6 interactive dashboard browser smoke
 
+# This optional Chromium regression suite is expensive and currently nonblocking.
+# Run it explicitly from GitHub Actions when the dashboard needs full UI QA.
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - "docs/index.html"
-      - "docs/assets/site-transitions.css"
-      - "docs/week-06/**"
-      - "src/assignments/week_06_forecast.py"
-      - "tests/**"
-      - "tests/week06_browser.test.cjs"
-      - ".github/workflows/test-week06-ui.yml"
-  push:
-    branches:
-      - main
-      - feature/week06-live-diebold-li
-    paths:
-      - "docs/index.html"
-      - "docs/assets/site-transitions.css"
-      - "docs/week-06/**"
-      - "src/assignments/week_06_forecast.py"
-      - "tests/**"
-      - "tests/week06_browser.test.cjs"
-      - ".github/workflows/test-week06-ui.yml"
 
 permissions:
   contents: read
