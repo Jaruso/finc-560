@@ -185,7 +185,7 @@ async function selectPrimary(page,ticker){
     await page.goto(base+"/week-06/",{waitUntil:"domcontentloaded"});
     assert.equal(await page.locator(".hero").count(),0);
     assert.deepEqual(await page.locator(".workspaces a").allTextContents(),
-      ["Bonds","Equities","Commodities"]);
+      ["Rates","Equities","Commodities"]);
     assert.equal(await page.locator(
       ".week-06-header > .workspaces + .source-stamp + .course-side").count(),1);
     const macroCenter=await page.locator(".workspaces").evaluate(n=>{
@@ -193,7 +193,7 @@ async function selectPrimary(page,ticker){
     });
     assert.ok(Math.abs(macroCenter-720)<1,
       "Macro tab switch must be horizontally centered regardless of page");
-    assert.equal(await page.locator(".workspaces [aria-current=page]").textContent(),"Bonds");
+    assert.equal(await page.locator(".workspaces [aria-current=page]").textContent(),"Rates");
     await page.locator(".workspaces a").nth(1).click();
     await page.waitForURL("**/week-06/companies/");
     onCompany=true;
@@ -870,7 +870,7 @@ async function selectPrimary(page,ticker){
     onCompany=false;
     await page.locator(".workspaces a").first().click();
     await page.waitForURL("**/week-06/");
-    assert.equal(await page.locator(".workspaces [aria-current=page]").textContent(),"Bonds");
+    assert.equal(await page.locator(".workspaces [aria-current=page]").textContent(),"Rates");
     console.log("PASS: two compact workspace tabs, browser-calculated model, source switch, "+
       "one continuous chronological company chart and mobile.");
   }finally{
