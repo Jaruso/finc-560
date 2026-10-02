@@ -413,7 +413,7 @@ async function selectPrimary(page,ticker){
     await page.locator("#reset").click();
     await page.waitForFunction(()=>
       document.querySelector("#company-chart")?.data?.length===6 &&
-      document.querySelector("#history")?.value==="5");
+      document.querySelector("#history")?.value==="8");
     assert.equal(await page.locator("#method").inputValue(),"cagr");
     assert.equal(await page.locator("#horizon").inputValue(),"1");
     assert.equal(await page.locator("#chart-heading").textContent(),
@@ -471,7 +471,7 @@ async function selectPrimary(page,ticker){
     assert.equal(await page.locator("#horizon").inputValue(),"1");
     assert.equal(await page.locator("#metric").count(),0);
     assert.equal(await page.locator("#ticker-pills .ticker-pill strong").textContent(),"AAPL");
-    assert.equal(await page.locator("#history").inputValue(),"5");
+    assert.equal(await page.locator("#history").inputValue(),"8");
     await page.waitForFunction(()=>
       document.querySelector("#company-chart")?.data?.length===6 &&
       document.querySelector("#company-chart")?.data?.[1]?.x.length===4);

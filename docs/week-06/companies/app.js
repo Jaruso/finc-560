@@ -1011,7 +1011,7 @@
         scaleContext=null;
         el("method").value="cagr";el("horizon").value="1";
         el("growth").value="0";el("margin").value="0";
-        el("history").value="5";
+        el("history").value="8";
         el("projections-enabled").checked=true;
         showKeys=false;
         updateKeyButton();
