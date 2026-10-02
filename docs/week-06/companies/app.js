@@ -1009,9 +1009,9 @@
       el("reset").addEventListener("click",()=>{
         manualYRange=null;
         scaleContext=null;
-        el("method").value="cagr";el("horizon").value="3";
+        el("method").value="cagr";el("horizon").value="1";
         el("growth").value="0";el("margin").value="0";
-        el("history").value="5";
+        el("history").value="10";
         el("projections-enabled").checked=true;
         showKeys=false;
         updateKeyButton();

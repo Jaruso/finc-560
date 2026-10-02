@@ -554,9 +554,9 @@ function schedule(){
   requestAnimationFrame(()=>{state.tick=false;draw();});
 }
 function reset(){
-  el("model").value="mean";el("horizon").value="6";
+  el("model").value="mean";el("horizon").value="12";
   el("shock").value="0";el("half-life").value="6";
-  el("vol").value="1";el("history").value="60";
+  el("vol").value="1";el("history").value="120";
   el("projections-enabled").checked=true;
   state.showKeys=false;updateKeyButton();
   updateProjectionControls();
