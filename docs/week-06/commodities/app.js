@@ -26,7 +26,13 @@ const CATEGORIES=["Energy","Precious metals","Industrial metals","Critical miner
   "Livestock & food","Fertilizers","Other commodities"];
 const categoryOf=c=>c.category||"Energy";
 const input=()=>({model:el("model").value,horizon:+el("horizon").value,
-  shock:+el("shock").value,halfLife:+el("half-life").value,vol:+el("vol").value});
+  shock:+el("shock").value,halfLife:+el("half-life").value,vol:+el("vol").value,
+  projectionsEnabled:el("projections-enabled").checked});
+function updateProjectionControls(){
+  const enabled=el("projections-enabled").checked;
+  for(const control of document.querySelectorAll(".projection-dependent"))
+    control.hidden=!enabled;
+}
 
 /* Each panel has its own explicit Indexed / Nominal preference. Single
    benchmarks initially retain their familiar raw spot and model prices and
@@ -115,7 +121,8 @@ function draw(){
     // without leaving an empty card when a scenario resets to baseline.
     state.canvas.setAvailable(OPTIONS.filter(id=>
       id!=="commodity-shock"||opt.shock!==0));
-    const first=history[0].date,last=history.at(-1),end=f.scenario.at(-1).date;
+    const first=history[0].date,last=history.at(-1),showProjection=opt.projectionsEnabled;
+    const end=showProjection?f.scenario.at(-1).date:last.date;
     const key=[c.id,c.last_observation,el("history").value].join("|");
     if(state.context!==key){state.context=key;state.range=null;}
     // FIXED SCALE: only reported prices and unadjusted, maximum-horizon
@@ -128,10 +135,10 @@ function draw(){
     const pad=Math.max((maximum-minimum)*.14,maximum*.04,.05);
     const defaultRange=[Math.max(0,minimum-pad),maximum+pad];
     const range=state.range||defaultRange;
-    const showBase=opt.shock!==0;
-    state.values=observed.concat(f.scenario.map(p=>p.price),
+    const showBase=showProjection&&opt.shock!==0;
+    state.values=observed.concat(showProjection?f.scenario.map(p=>p.price):[],
       showBase?f.baseline.map(p=>p.price):[],
-      opt.vol?f.low.map(p=>p.price).concat(f.high.map(p=>p.price)):[]);
+      showProjection&&opt.vol?f.low.map(p=>p.price).concat(f.high.map(p=>p.price)):[]);
     const clipped=state.values.some(v=>v<range[0]||v>range[1]);
     const fit=el("fit-projection");
     fit.textContent=clipped?"Fit projection":state.range?"Restore scale":"Scale locked";
@@ -181,14 +188,14 @@ function draw(){
         "<extra>Observed physical benchmark</extra>"}];
     if(showBase)traces.push(series(f.baseline,compactPlot()?"Baseline":"Unadjusted baseline (dotted)",
       {color:"#91a2ab",width:1.65,dash:"dot"},20));
-    if(opt.vol){
+    if(showProjection&&opt.vol){
       traces.push(series(f.low,compactPlot()?"Volatility":"Volatility guide (dotted)",
         {color:"#9aabb2",width:1.1,dash:"dot"},40));
       traces.push(series(f.high,"Upper volatility guide",
         {color:"#9aabb2",width:1.1,dash:"dot"},41,
         {showlegend:false,fill:"tonexty",fillcolor:"rgba(11,127,115,.08)"}));
     }
-    traces.push(series(f.scenario,compactPlot()?
+    if(showProjection)traces.push(series(f.scenario,compactPlot()?
       (showBase?"Scenario":"Forecast"):
       (showBase?"Conditional scenario (dashed)":"Model forecast (dashed)"),{color:"#0b7f73",width:2.65,dash:"dash"},30));
     const layout={
@@ -208,21 +215,23 @@ function draw(){
         tickprefix:c.unit==="cents/sheet"?"":"$",
         ticksuffix:c.unit==="cents/sheet"?"¢":"",
         gridcolor:"#edf1f2",range:range.slice(),zeroline:false,automargin:true},
-      shapes:[
+      shapes:showProjection?[
         {type:"rect",xref:"x",yref:"paper",x0:last.date,x1:end,
           y0:0,y1:1,fillcolor:"rgba(11,127,115,.045)",line:{width:0},layer:"below"},
         {type:"line",xref:"x",yref:"paper",x0:last.date,x1:last.date,
           y0:0,y1:1,line:{color:"#92aba7",width:1.25,dash:"dash"}}
-      ],annotations:[],
+      ]:[],annotations:[],
       meta:{commodity:c.id,comparison:false,unit:c.unit,source:c.source_url,
         scale:"continuous-monthly",mode:modeFor("commodity-chart"),
         yScale:state.range?"manual-locked":"baseline-locked",
         observedEnd:last.date,projectedStart:f.scenario[0].date,
-        projectedEnd:end,clipped,defaultRange:defaultRange.slice()}
+        projectedEnd:showProjection?end:null,clipped,defaultRange:defaultRange.slice(),
+        projectionsEnabled:showProjection}
     };
     el("chart-footnote").textContent=clipped?
       "Scenario extends beyond the fixed scale. Click Fit projection to inspect it.":
-      "Solid: observed · Dashed: forecast · Dotted: baseline/volatility guides.";
+      showProjection?"Solid: observed · Dashed: forecast · Dotted: baseline/volatility guides."
+        :"Observed monthly prices only.";
     if(state.canvas.visible("commodity-chart")){
       state.pending={traces,layout};void paint();
     }
@@ -542,6 +551,8 @@ function reset(){
   el("model").value="mean";el("horizon").value="6";
   el("shock").value="0";el("half-life").value="6";
   el("vol").value="1";el("history").value="60";
+  el("projections-enabled").checked=true;
+  updateProjectionControls();
   state.context=null;state.range=null;state.axisValues=null;
   state.plotHeight=null;state.modes={};syncModes();state.canvas.reset();schedule();
 }
@@ -709,14 +720,21 @@ function drawComparison(){
     const nominal=priceMode==="nominal";
     const defaultRange=nominal?
       C.nominalPriceRanges(frames):C.commonRange(frames);
-    const rendered=C.prices(frames,opt,priceMode);
+    let rendered=C.prices(frames,opt,priceMode);
+    if(!opt.projectionsEnabled){
+      rendered={...rendered,
+        traces:rendered.traces.filter(trace=>trace.meta?.kind==="solid"),
+        rangeX:[frames.map(frame=>frame.start).sort()[0],
+          frames.map(frame=>frame.last).sort().at(-1)],
+        shapes:[]};
+    }
     const currentRange=nominal?
-      C.nominalPriceRanges(frames,{projected:true,opt}):null;
+      C.nominalPriceRanges(frames,{projected:opt.projectionsEnabled,opt}):null;
     const visiblePrices=nominal?[]:frames.flatMap(f=>
       f.history.map(row=>f.toIndex(row.value)).concat(
-        f.forecast.scenario.map(row=>f.toIndex(row.price)),
-        opt.shock?f.forecast.baseline.map(row=>f.toIndex(row.price)):[],
-        opt.vol?f.forecast.low.concat(f.forecast.high)
+        opt.projectionsEnabled?f.forecast.scenario.map(row=>f.toIndex(row.price)):[],
+        opt.projectionsEnabled&&opt.shock?f.forecast.baseline.map(row=>f.toIndex(row.price)):[],
+        opt.projectionsEnabled&&opt.vol?f.forecast.low.concat(f.forecast.high)
           .map(row=>f.toIndex(row.price)):[]));
     state.values=visiblePrices;
     state.axisValues=currentRange;
@@ -849,7 +867,12 @@ function drawComparison(){
     }
     for(const id of state.canvas.selected()){
       if(id==="commodity-chart")continue;
-      const mode=modeFor(id),study=C.study(frames,id,opt,mode);
+      const mode=modeFor(id),rawStudy=C.study(frames,id,opt,mode);
+      const study=opt.projectionsEnabled?rawStudy:{
+        ...rawStudy,
+        traces:rawStudy.traces.filter(trace=>trace.meta?.kind==="solid"),
+        shapes:[]
+      };
       const context=el(id+"-context");
       if(context)context.textContent=study.context;
       if(!study.traces.length)continue;
@@ -949,6 +972,9 @@ async function init(){
     });
     for(const id of ["model","horizon","half-life","vol","history"])
       el(id).addEventListener("change",schedule);
+    el("projections-enabled").addEventListener("change",()=>{
+      updateProjectionControls();schedule();
+    });
     el("shock").addEventListener("input",schedule);
     el("shock").addEventListener("change",schedule);
     el("reset").addEventListener("click",reset);
@@ -987,7 +1013,7 @@ async function init(){
     const first=data.commodities.find(c=>c.id===requested)||
       data.commodities.find(c=>c.id==="wti")||data.commodities[0];
     state.selectedIds=[first.id];state.commodity=first;
-    renderChoices();syncModes();draw();
+    renderChoices();syncModes();updateProjectionControls();draw();
   }catch(ex){
     el("source-period").textContent="Unavailable";
     el("commodity-empty").hidden=false;error(ex);

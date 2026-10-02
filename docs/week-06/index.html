@@ -13,7 +13,7 @@
   
   <script defer src="./forecast_model.js?v=dns-engine"></script>
   <script defer src="./mobile-controls.js?v=20261001"></script>
-  <script defer src="./app.js?v=observed-curve-help-20261001"></script>
+<script defer src="./app.js?v=projection-toggle-20261002"></script>
 </head>
 <body>
   <header class="site-header week-06-header">
@@ -57,6 +57,11 @@
       <div class="control sidebar-model-control">
         <div class="model-method-heading">
           <label for="treasury-model">Projection model</label>
+          <label class="projection-switch" title="Show or hide projections">
+            <input id="projections-enabled" type="checkbox" role="switch"
+              aria-label="Show projections" checked>
+            <span class="projection-switch-track" aria-hidden="true"></span>
+          </label>
           <details class="model-help">
             <summary aria-label="Explain the Diebold–Li Treasury projection model" title="How the Treasury model works">i</summary>
             <div class="model-help-panel" role="note" aria-label="Treasury projection model explained">
@@ -72,29 +77,29 @@
         <p class="model-status treasury-model-status" id="model-status">Loading fitted Treasury forecast…</p>
       </div>
       <div class="control-grid">
-        <label class="control">
+        <label class="control projection-dependent">
           <span>Forecast horizon</span>
           <select id="horizon"><option value="6">6 months</option><option value="12" selected>12 months</option><option value="24">24 months</option></select>
         </label>
-        <label class="control slider-control">
+        <label class="control slider-control projection-dependent">
           <span>Next-month Fed-rate deviation <output id="delta-value" for="delta">0 bps</output></span>
           <input id="delta" type="range" min="-100" max="100" value="0" step="25">
           <span class="endpoints"><span>−100 bps</span><span>0</span><span>+100 bps</span></span>
         </label>
-        <p class="policy-note">Conditional rate shock, not a Fed prediction. <a href="#model-method" onclick="document.getElementById('model-method').open=true">Method</a></p>
-        <label class="control band-toggle">
+        <p class="policy-note projection-dependent">Conditional rate shock, not a Fed prediction. <a href="#model-method" onclick="document.getElementById('model-method').open=true">Method</a></p>
+        <label class="control band-toggle projection-dependent">
           <span>Historical-error ranges</span>
           <span class="band-inline"><input type="checkbox" id="show-bands" checked>10th–90th percentiles</span>
         </label>
       </div>
-      <div class="scenario-impact" role="group" aria-label="Live fitted model and scenario results">
+      <div class="scenario-impact projection-dependent" role="group" aria-label="Live fitted model and scenario results">
         <div><span>Forecast 5Y</span><strong id="preview-five">—</strong></div>
         <div><span>Forecast 10Y</span><strong id="preview-ten">—</strong></div>
         <div class="scenario-impact-spread"><span>Forecast spread</span><strong id="preview-spread">—</strong></div>
         <p id="scenario-status" class="scenario-status" aria-live="polite">Loading fitted baseline…</p>
       </div>
-      <p class="control-note" id="fit-message">Fitted Treasury model · conditional scenarios</p>
-      <details class="fit-disclosure">
+      <p class="control-note projection-dependent" id="fit-message">Fitted Treasury model · conditional scenarios</p>
+      <details class="fit-disclosure projection-dependent">
         <summary>Out-of-sample forecast accuracy</summary>
         <p class="validation-note">Expanding-window rolling backtest RMSE in basis points. Compare with unchanged-yield forecasts; lower is better.</p>
         <div class="validation-scroll"><table class="validation-table" aria-label="Out-of-sample forecast accuracy">

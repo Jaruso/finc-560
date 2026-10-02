@@ -15,7 +15,7 @@
 <script defer src="./comparison.js?v=commodity-yoy-projections-20261001"></script>
 <script defer src="../chart-canvas.js?v=20261001"></script>
 <script defer src="../mobile-controls.js?v=20261001"></script>
-<script defer src="./app.js?v=chart-scale-isolation-20261001"></script>
+<script defer src="./app.js?v=projection-toggle-20261002"></script>
 </head>
 <body>
 <header class="site-header week-06-header commodity-header">
@@ -82,6 +82,11 @@
           <div class="control sidebar-model-control">
             <div class="model-method-heading">
               <label for="model">Price model</label>
+              <label class="projection-switch" title="Show or hide projections">
+                <input id="projections-enabled" type="checkbox" role="switch"
+                  aria-label="Show projections" checked>
+                <span class="projection-switch-track" aria-hidden="true"></span>
+              </label>
               <details class="model-help">
                 <summary aria-label="Explain commodity forecasting models" title="How the commodity price models work">i</summary>
                 <div class="model-help-panel" role="note" aria-label="Commodity forecasting models explained">
@@ -99,19 +104,19 @@
               <option value="unchanged">Unchanged price</option>
             </select>
           </div>
-          <label class="control"><span>Projection</span>
+          <label class="control projection-dependent"><span>Projection</span>
             <select id="horizon">
               <option value="3">3 months</option>
               <option value="6" selected>6 months</option>
               <option value="12">12 months</option>
             </select>
           </label>
-          <label class="control slider-control">
+          <label class="control slider-control projection-dependent">
             <span>Conditional price shock <output id="shock-value" for="shock">0%</output></span>
             <input id="shock" type="range" min="-30" max="30" step="5" value="0">
             <span class="endpoints"><span>−30%</span><span>0</span><span>+30%</span></span>
           </label>
-          <label class="control half-life-control"><span>Shock half-life</span>
+          <label class="control half-life-control projection-dependent"><span>Shock half-life</span>
             <select id="half-life" aria-label="Shock half-life"
               aria-describedby="half-life-impact" disabled>
               <option value="3">3 months</option>
@@ -121,7 +126,7 @@
             <small id="half-life-impact" class="half-life-impact" role="status"
               aria-live="polite">Set a nonzero price shock to enable decay.</small>
           </label>
-          <label class="control"><span>Volatility corridor</span>
+          <label class="control projection-dependent"><span>Volatility corridor</span>
             <select id="vol">
               <option value="0">Off</option>
               <option value="1" selected>1× realized volatility</option>
@@ -129,7 +134,7 @@
             </select>
           </label>
         </div>
-        <div class="scenario-impact commodity-preview" aria-live="polite">
+        <div class="scenario-impact commodity-preview projection-dependent" aria-live="polite">
           <div><span>Baseline</span><strong id="preview-baseline">—</strong></div>
           <div><span>Scenario</span><strong id="preview-scenario">—</strong></div>
           <div><span>Difference</span><strong id="preview-difference">—</strong></div>

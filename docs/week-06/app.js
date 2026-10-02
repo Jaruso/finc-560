@@ -21,8 +21,14 @@
     delta:Number(el("delta").value),
     horizon:Number(el("horizon").value),
     bands:el("show-bands").checked,
-    showKeys
+    showKeys,
+    projectionsEnabled:el("projections-enabled").checked
   });
+  function updateProjectionControls(){
+    const enabled=el("projections-enabled").checked;
+    for(const control of document.querySelectorAll(".projection-dependent"))
+      control.hidden=!enabled;
+  }
   function updateKeyButton(){
     const button=el("toggle-keys");
     button.setAttribute("aria-pressed",String(showKeys));
@@ -113,6 +119,7 @@
     const observed10=history.map(r=>r.dgs10);
     const historicalSpread=history.map(r=>r.dgs10-r.dgs5);
     const st=state();
+    const showProjection=st.projectionsEnabled;
     const traces=isSpread?[
       {x:hx,y:historicalSpread,type:"scatter",mode:"lines",name:"Observed spread (solid)",legendrank:10,
         line:{color:COLOR.historical,width:2.25},
@@ -125,7 +132,7 @@
         line:{color:COLOR.ten,width:2.35},legendgroup:"ten",
         hovertemplate:"%{x|%b %Y}: %{y:.2f}%<extra>10Y observed</extra>"}
     ];
-    if(st.bands){
+    if(showProjection&&st.bands){
       if(isSpread){
         traces.push(
           {x:px,y:path.map(r=>r.lowSpread),type:"scatter",mode:"lines",
@@ -153,12 +160,12 @@
         }
       }
     }
-    if(isSpread){
+    if(showProjection&&isSpread){
       traces.push({x:px,y:path.map(r=>r.spread),type:"scatter",mode:"lines",
         name:st.delta===0?"Spread forecast (dashed)":"Spread scenario (dashed)",
         legendrank:30,line:{color:COLOR.ten,width:2.55,dash:"dash"},
         hovertemplate:"%{x|%b %Y}: %{y:.2f} pp<extra>Modeled spread</extra>"});
-    }else{
+    }else if(showProjection){
       for(const spec of [
         {name:"5Y forecast (dashed)",scenario:"5Y scenario (dashed)",key:"y5",color:COLOR.five,group:"five",rank:30},
         {name:"10Y forecast (dashed)",scenario:"10Y scenario (dashed)",key:"y10",color:COLOR.ten,group:"ten",rank:40}
@@ -188,7 +195,7 @@
       : ["y5","low5","high5","y10","low10","high10"];
     const envelope=[-100,0,100].flatMap(shock=>
       Model.forecast(data,shock,24).flatMap(r=>futureKeys.map(key=>r[key])));
-    const values=domainY.concat(envelope);
+    const values=domainY.concat(showProjection?envelope:[]);
     if(isSpread)values.push(0);
     const lo=Math.min(...values),hi=Math.max(...values);
     const pad=Math.max((hi-lo)*.11,isSpread?.07:.14);
@@ -204,7 +211,7 @@
       ...(st.showKeys?{legend:{orientation:"h",x:.5,xanchor:"center",
         y:compactPlot()?1.035:1.14,
         font:{size:compactPlot()?9:10},itemwidth:32,autoexpand:false}}:{}),
-      xaxis:{type:"date",range:[rangeStart,end],showgrid:false,
+      xaxis:{type:"date",range:[rangeStart,showProjection?end:hx.at(-1)],showgrid:false,
         tickformat:focused?"%b '%y":"%Y",nticks:focused?8:10,
         linecolor:"#dfe3e6",tickfont:{size:10},automargin:true},
       yaxis:{title:{text:isSpread?"Spread (pp)":"Yield (%)",font:{size:11}},
@@ -213,18 +220,19 @@
       // Shading marks the projection period. Legend, not labels over the
       // plot, explains solid observations, dashed forecasts and dotted bounds.
       annotations:[],
-      shapes:[
+      shapes:showProjection?[
         {type:"rect",xref:"x",yref:"paper",x0:base,x1:end,
           y0:0,y1:1,fillcolor:"rgba(11,127,115,0.04)",
           line:{width:0},layer:"below"},
         {type:"line",xref:"x",yref:"paper",x0:base,x1:base,
           y0:0,y1:1,line:{color:"#93a9a8",width:1.3,dash:"dash"}}
-      ],
-      meta:{equalTimeScale:true,boundaryFraction:boundary,
+      ]:[],
+      meta:{equalTimeScale:true,boundaryFraction:showProjection?boundary:null,
         observedStart:hx[0],forecastStart:base,forecastEnd:end,
         focused,trainedModel:"Diebold–Li AR(1)",conditionalShockBp:st.delta,
         empiricalBands:st.bands,
-        yScale:"locked-to-observed-context-and-supported-scenario-envelope"}
+        yScale:"locked-to-observed-context-and-supported-scenario-envelope",
+        projectionsEnabled:showProjection}
     };
     if(isSpread)layout.shapes.push({
       type:"line",xref:"x",yref:"y",x0:rangeStart,x1:end,
@@ -520,6 +528,8 @@
     el("focus-projection").setAttribute("aria-pressed","false");
     el("focus-projection").textContent="Focus projection";
     updateKeyButton();
+    el("projections-enabled").checked=true;
+    updateProjectionControls();
     render();
   }
   async function initialize(){
@@ -530,6 +540,9 @@
     el("delta").addEventListener("input",renderQueued);
     el("delta").addEventListener("change",renderQueued);
     el("show-bands").addEventListener("change",render);
+    el("projections-enabled").addEventListener("change",()=>{
+      updateProjectionControls();render();
+    });
     el("reset").addEventListener("click",reset);
     el("focus-projection").addEventListener("click",()=>{
       focused=!focused;
@@ -543,6 +556,7 @@
       render();
     });
     updateKeyButton();
+    updateProjectionControls();
     let resizing;
     window.addEventListener("resize",()=>{
       clearTimeout(resizing);resizing=setTimeout(showCharts,150);
