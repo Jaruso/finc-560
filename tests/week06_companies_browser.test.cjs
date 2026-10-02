@@ -469,11 +469,11 @@ async function selectPrimary(page,ticker){
     await page.waitForFunction(()=>document.querySelector("#growth-value")?.textContent==="0 pp");
     assert.equal(await page.locator("#method").inputValue(),"cagr");
     assert.equal(await page.locator("#horizon").inputValue(),"3");
-    assert.equal(await page.locator("#metric").inputValue(),"net");
+    assert.equal(await page.locator("#metric").count(),0);
     assert.equal(await page.locator("#ticker-pills .ticker-pill strong").textContent(),"AAPL");
     assert.equal(await page.locator("#history").inputValue(),"5");
     await page.waitForFunction(()=>
-      document.querySelector("#company-chart")?.data?.length===2 &&
+      document.querySelector("#company-chart")?.data?.length===6 &&
       document.querySelector("#company-chart")?.data?.[1]?.x.length===4);
     assert.equal(await page.locator(".company-timeline").count(),1);
     const defaultRange=await page.locator("#company-chart").evaluate(g=>
@@ -523,7 +523,7 @@ async function selectPrimary(page,ticker){
     await page.screenshot({path:"test-artifacts/week06-company-dashboard.png",fullPage:false});
     await page.setViewportSize({width:390,height:844});
     await page.waitForFunction(()=>
-      document.querySelector("#company-chart")?.layout?.margin?.t===36);
+      document.querySelector("#company-chart")?.layout?.margin?.t===47);
     const mobileDensity=await page.evaluate(()=>{
       const card=document.querySelector('[data-chart="company-chart"]');
       const heading=card.querySelector(".chart-heading");
@@ -537,7 +537,7 @@ async function selectPrimary(page,ticker){
     assert.ok(mobileDensity.legendGap!==null&&mobileDensity.legendGap<63,
       "Reduce blank mobile space between Equity chart context and legend");
     await page.waitForFunction(()=>
-      document.querySelector("#company-chart")?.data?.length===2);
+      document.querySelector("#company-chart")?.data?.length===6);
     const mobile=await page.evaluate(()=>({
       scroll:document.documentElement.scrollWidth,width:innerWidth,
       plots:document.querySelectorAll(".company-timeline .js-plotly-plot").length,
@@ -592,7 +592,7 @@ async function selectPrimary(page,ticker){
     assert.match(await page.locator("#news-company-title").textContent(),
       /International Research Example/);
     await selectPrimary(page,"AAPL");
-    await page.waitForFunction(()=>document.querySelector("#company-chart")?.data?.length===2 &&
+    await page.waitForFunction(()=>document.querySelector("#company-chart")?.data?.length===6 &&
       document.querySelectorAll("#news-list .news-item").length===2);
     await selectPrimary(page,"NVDA");
     await page.waitForFunction(()=>document.querySelector("#news-status")?.dataset.state==="error");
@@ -642,7 +642,7 @@ async function selectPrimary(page,ticker){
     // Staged AAPL must not affect displayed MSFT until Analyze; both
     // comparative charts use real independent statements and fiscal dates.
     await selectPrimary(page,"MSFT");
-    await page.waitForFunction(()=>document.querySelector("#company-chart")?.data?.length===2);
+    await page.waitForFunction(()=>document.querySelector("#company-chart")?.data?.length===6);
     await page.locator("#reset").click();
     await page.locator("#custom-ticker").fill("AAPL");
     await page.locator("#custom-ticker").press("Enter");
@@ -654,24 +654,25 @@ async function selectPrimary(page,ticker){
     assert.equal(await page.locator("#ticker-count").evaluate(node=>
       node.classList.contains("is-pending")),false);
     await page.waitForFunction(()=>document.querySelector("#company-chart")?.layout?.meta
-      ?.comparison===true&&document.querySelector("#company-chart")?.data?.length===4);
+      ?.comparison===true&&document.querySelector("#company-chart")?.data?.length===12);
     const comparative=await page.locator("#company-chart").evaluate(g=>({
       primary:g.layout.meta.primary,tickers:g.layout.meta.tickers,
       indexed:g.layout.meta.indexed,
-      anchor1:g.data[0].y[0],anchor2:g.data[2].y[0]
+      anchor1:g.data[0].y[0],anchor2:g.data[6].y[0],
+      measures:g.layout.meta.measures,markers:g.layout.meta.tickerMarkers
     }));
     assert.deepEqual(comparative.tickers,["MSFT","AAPL"]);
     assert.equal(comparative.primary,"MSFT");
+    assert.deepEqual(comparative.measures,["Revenue","Operating income","Net income"]);
+    assert.deepEqual(comparative.markers,{MSFT:"circle",AAPL:"square"});
     await page.locator("#projections-enabled").uncheck();
     await page.waitForFunction(()=>[
-      ["company-chart",2],["equity-revenue",2],
-      ["equity-operating",2],["equity-margins",4]
+      ["company-chart",6],["equity-margins",4]
     ].every(([id,n])=>{
       const plot=document.getElementById(id);
       return plot?.data?.length===n&&plot.layout?.shapes?.length===0;
     })&&document.querySelector("#company-chart")?.layout?.meta?.projectionsEnabled===false);
-    for(const [id,count] of [["company-chart",2],["equity-revenue",2],
-      ["equity-operating",2],["equity-margins",4]]){
+    for(const [id,count] of [["company-chart",6],["equity-margins",4]]){
       const plot=await page.locator("#"+id).evaluate(g=>({
         count:g.data.length,shapes:g.layout.shapes.length
       }));
@@ -680,7 +681,7 @@ async function selectPrimary(page,ticker){
     }
     await page.locator("#projections-enabled").check();
     await page.waitForFunction(()=>document.querySelector("#company-chart")?.layout?.meta
-      ?.projectionsEnabled===true&&document.querySelector("#company-chart")?.data?.length===4);
+      ?.projectionsEnabled===true&&document.querySelector("#company-chart")?.data?.length===12);
     assert.equal(await page.locator(".market-quote-heading #company-name").textContent(),
       "Test Corporation","Comparisons must not crowd primary quote-card heading");
     assert.equal(comparative.indexed,true);
@@ -691,7 +692,7 @@ async function selectPrimary(page,ticker){
     assert.equal(await page.locator("#equity-comparison-context").isVisible(),true);
     assert.match(await page.locator("#equity-comparison-context").textContent(),
       /MSFT \(primary\).*AAPL.*Actual fiscal dates/);
-    assert.ok((await page.locator("#company-chart-context").textContent()).length<90,
+    assert.ok((await page.locator("#company-chart-context").textContent()).length<145,
       "Each comparison chart keeps only a concise scale subtitle");
     assert.match(await page.locator("#news-company-title").textContent(),/MSFT/,
       "News still follow primary ticker during a comparison");
@@ -699,8 +700,9 @@ async function selectPrimary(page,ticker){
       'button[data-mode="nominal"]').click();
     await page.waitForFunction(()=>document.querySelector("#company-chart")
       ?.layout?.meta?.indexed===false);
-    assert.equal(await page.locator("#equity-revenue").evaluate(g=>
-      g.layout.meta.indexed),true,"Each absolute-value chart keeps its own scale");
+    assert.equal(await page.locator("#equity-margins").evaluate(g=>
+      g.layout.meta.indexed),false,
+      "The three-metric dollar chart switches growth indexing; profit margins stay percentages");
     await page.locator("#ticker-pills .ticker-pill-remove").first().click();
     assert.equal(await page.locator("#ticker-pills .ticker-pill strong").textContent(),"AAPL");
     assert.equal(await page.locator("#company-chart").evaluate(g=>g.layout.meta.primary),
