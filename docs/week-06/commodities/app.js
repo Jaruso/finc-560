@@ -9,7 +9,7 @@ const OPTIONS=["commodity-chart","commodity-yoy","commodity-returns","commodity-
 const DEFAULT=OPTIONS.slice(0,4);
 const plotQueue=new Map(),plotting=new Set();
 const compactPlot=()=>window.matchMedia("(max-width:650px)").matches;
-const mobileLegendTop=()=>state.selectedIds.length>1?62:38;
+const mobileLegendTop=()=>state.selectedIds.length>1?62:32;
 const safeNumber=(v,n=1)=>(Number.isFinite(v)?v.toFixed(n):"—");
 function chartHeight(id){
   const card=el(id).closest(".chart-card"),header=card.querySelector(".chart-heading");
@@ -177,22 +177,23 @@ function draw(){
         "<extra>"+name+"</extra>",...extra
     });
     const traces=[{x:history.map(p=>p.date),y:observed,type:"scatter",
-      mode:"lines",name:"Reported (solid)",legendrank:10,
+      mode:"lines",name:compactPlot()?"Observed":"Reported (solid)",legendrank:10,
       line:{color:"#314b5c",width:2.6},
       hovertemplate:"%{x|%b %Y}: "+(c.unit==="cents/sheet"?"":"$")+
         "%{y:,.2f}"+(c.unit==="cents/sheet"?"¢":"")+
         "<extra>Observed physical benchmark</extra>"}];
-    if(showBase)traces.push(series(f.baseline,"Unadjusted baseline (dotted)",
+    if(showBase)traces.push(series(f.baseline,compactPlot()?"Baseline":"Unadjusted baseline (dotted)",
       {color:"#91a2ab",width:1.65,dash:"dot"},20));
     if(opt.vol){
-      traces.push(series(f.low,"Volatility guide (dotted)",
+      traces.push(series(f.low,compactPlot()?"Volatility":"Volatility guide (dotted)",
         {color:"#9aabb2",width:1.1,dash:"dot"},40));
       traces.push(series(f.high,"Upper volatility guide",
         {color:"#9aabb2",width:1.1,dash:"dot"},41,
         {showlegend:false,fill:"tonexty",fillcolor:"rgba(11,127,115,.08)"}));
     }
-    traces.push(series(f.scenario,showBase?"Conditional scenario (dashed)":
-      "Model forecast (dashed)",{color:"#0b7f73",width:2.65,dash:"dash"},30));
+    traces.push(series(f.scenario,compactPlot()?
+      (showBase?"Scenario":"Forecast"):
+      (showBase?"Conditional scenario (dashed)":"Model forecast (dashed)"),{color:"#0b7f73",width:2.65,dash:"dash"},30));
     const layout={
       autosize:true,height:height(),
       margin:compactPlot()
@@ -260,7 +261,7 @@ function renderExtras(c,history,f,opt){
     const cfg={
       autosize:true,height:chartHeight(id),
       margin:compactPlot()
-        ?{l:51,r:8,t:mobileLegendTop(),b:34,autoexpand:false}
+        ?{l:51,r:8,t:state.selectedIds.length>1?62:bars?34:12,b:34,autoexpand:false}
         :{l:60,r:12,t:45,b:46,autoexpand:false},
       paper_bgcolor:"#fff",plot_bgcolor:"#fff",
       font:{family:"Inter,system-ui,sans-serif",size:10,color:"#465865"},
@@ -734,10 +735,12 @@ function drawComparison(){
       const context=el(id+"-context");
       if(context)context.textContent=study.context;
       if(!study.traces.length)continue;
+      const studyLegend=frames.length>1||
+        study.traces.filter(trace=>trace.showlegend!==false).length>1;
       const extra={
         autosize:true,height:chartHeight(id),
         margin:compactPlot()
-          ?{l:51,r:8,t:mobileLegendTop(),b:35,autoexpand:false}
+          ?{l:51,r:8,t:frames.length>1?62:studyLegend?34:12,b:35,autoexpand:false}
           :{l:60,r:14,t:72,b:47,autoexpand:false},
         paper_bgcolor:"#fff",plot_bgcolor:"#fff",
         font:{family:"Inter,system-ui,sans-serif",size:10,color:"#465865"},
