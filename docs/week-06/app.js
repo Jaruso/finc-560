@@ -290,15 +290,6 @@
         marker:{color:COLOR.ten,size:7},
         hovertemplate:"%{text} Treasury: %{y:.2f}%<extra>FRED observed</extra>"
       }];
-      const projected=path.at(-1);
-      traces.push({
-        type:"scatter",mode:"lines+markers",showlegend:false,
-        name:"Modeled 5Y/10Y yields",
-        x:[5,10],y:[projected.y5,projected.y10],
-        line:{color:COLOR.five,width:2.5,dash:"dash"},
-        marker:{color:COLOR.five,size:8,symbol:"diamond"},
-        hovertemplate:"%{x}Y modeled: %{y:.2f}%<extra>Conditional forecast</extra>"
-      });
       const ticks=compactPlot()?[1,5,10,20,30]:[1,3,5,10,20,30];
       const values=points.map(r=>r.value);
       const lo=Math.min(...values),hi=Math.max(...values);
@@ -311,14 +302,14 @@
         range:[lo-pad,hi+pad],gridcolor:"#edf1f2",zeroline:false};
       base.margin={...base.margin,t:compactPlot()?20:28,b:compactPlot()?43:52};
       base.showlegend=false;
-      base.meta={chartKind:id,observedOnly:false,
+      base.meta={chartKind:id,observedOnly:true,
         snapshotDate:data.latest_synchronized_daily_observation,
-        maturities:points.map(r=>r.years),forecastMaturities:[5,10],
-        conditionalShockBp:st.delta,forecastHorizon:st.horizon};
+        maturities:points.map(r=>r.years)};
       sourceNote.textContent="FRED observed · "+
       data.latest_synchronized_daily_observation+" · "+
       points.length+" of 8 verified maturities"+
-        " · Dashed 5Y/10Y modeled";
+        (points.length===8?" · No projection shown":
+          " · Partial curve; awaiting remaining verified yields");
     }else if(id==="chart-policy"){
       traces=[line("Effective federal funds rate (observed)",hx,
         history.map(r=>r.policy),COLOR.historical)];

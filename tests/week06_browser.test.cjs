@@ -70,13 +70,13 @@ async function slide(page,id,v){
     assert.deepEqual(currentCurve.x,[1,2,3,5,7,10,20,30],
       "Maturity axis must use actual years, not equal category spacing");
     assert.equal(currentCurve.xType,"linear");
-    assert.equal(currentCurve.observedOnly,false);
+    assert.equal(currentCurve.observedOnly,true);
     assert.equal(currentCurve.snapshot,"2023-10-20");
     assert.deepEqual(currentCurve.y,
       ["DGS1","DGS2","DGS3","DGS5","DGS7","DGS10","DGS20","DGS30"]
         .map(key=>makeFixture().latest_treasury_yields[key]));
     assert.match(await page.locator("#chart-curve-context").textContent(),
-      /observed.*8 of 8.*modeled/i);
+      /observed.*8 of 8.*No projection/i);
     await page.locator(".chart-help summary").click();
     const help=page.locator(".chart-help-panel");
     assert.equal(await help.isVisible(),true);
@@ -172,17 +172,11 @@ async function slide(page,id,v){
       historicPixel:n._fullLayout.yaxis.l2p(n.data[0].y.at(-1))
     }));
     assert.notEqual(shocked.p10,initialTerminal10);
-    const shockedCurve=await page.locator("#chart-curve").evaluate(n=>({
-      observed:{x:n.data[0].x,y:n.data[0].y,text:n.data[0].text},
-      modeled:{x:n.data[1].x,y:n.data[1].y},
-      shock:n.layout.meta.conditionalShockBp
-    }));
-    assert.deepEqual(shockedCurve.observed,{
-      x:currentCurve.x,y:currentCurve.y,text:currentCurve.text
-    },"Rate scenarios must not alter observed Treasury yields");
-    assert.notDeepEqual(shockedCurve.modeled.y,[currentCurve.y[3],currentCurve.y[5]],
-      "Rate scenarios must alter the modeled 5Y/10Y curve segment");
-    assert.equal(shockedCurve.shock,50);
+    assert.deepEqual(await page.locator("#chart-curve").evaluate(n=>({
+      x:n.data[0].x,y:n.data[0].y,text:n.data[0].text,
+      xType:n.layout.xaxis.type,
+      snapshot:n.layout.meta.snapshotDate,observedOnly:n.layout.meta.observedOnly
+    })),currentCurve,"Rate scenarios must not alter observed Treasury yields");
     assert.deepEqual(shocked.actual5,baseline.hist5);
     assert.deepEqual(shocked.actual10,baseline.hist10);
     assert.equal(shocked.label,"5Y scenario (dashed)");
