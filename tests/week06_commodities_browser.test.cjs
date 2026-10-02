@@ -52,7 +52,7 @@ async function slide(page,n,value){
     await page.waitForFunction(()=>document.querySelector("#commodity-chart")
       ?.data?.length===4);
     assert.deepEqual(await page.locator(".workspaces a").allTextContents(),
-      ["Bonds","Equities","Commodities"]);
+      ["Rates","Equities","Commodities"]);
     assert.equal(await page.locator(".workspaces [aria-current=page]").textContent(),
       "Commodities");
     assert.equal(await page.locator("#controls-heading").textContent(),"Controls");
