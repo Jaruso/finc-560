@@ -213,12 +213,14 @@ async function switchMode(page,id,mode){
      axes:g.layout.meta.axesByUnit,
      axisTitles:[g.layout.yaxis?.title?.text,
        g.layout.yaxis2?.title?.text,g.layout.yaxis3?.title?.text],
-     history:g.data[0].y.slice(),ranges:[g.layout.yaxis.range.slice(),
+     history:g.data[0].y.slice(),domain:g.layout.xaxis.domain.slice(),ranges:[g.layout.yaxis.range.slice(),
        g.layout.yaxis2.range.slice(),g.layout.yaxis3.range.slice()]
    }));
    assert.deepEqual(nominal.values,initial.originals);
    assert.deepEqual(nominal.axes,
      ["USD/barrel","USD/troy oz","USD/metric ton"]);
+   assert.deepEqual(nominal.domain,[0,1],
+     "Nominal comparison reserves only outer margins, not in-chart whitespace");
    assert.deepEqual(nominal.axisTitles,nominal.axes,
      "Unlike indexed data, mixed nominal units require independent labeled axes");
    assert.equal(await page.locator(

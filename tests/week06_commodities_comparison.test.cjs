@@ -112,7 +112,8 @@ test("multiple nominal unit groups receive independent labeled axes",()=>{
   const plan=C.nominalAxes(traces,frames,{ranges,positiveOnly:true});
   assert.deepEqual(plan.units,
     ["USD/barrel","USD/troy oz","USD/metric ton","USD/MMBtu"]);
-  assert.ok(plan.xDomain[0]<plan.xDomain[1]);
+  assert.deepEqual(plan.xDomain,[0,1],
+    "Separate nominal units keep the full horizontal data domain");
   for(let i=0;i<4;i++){
     const key=i?"yaxis"+(i+1):"yaxis";
     assert.equal(plan.axes[key].title.text,choices[i].unit);

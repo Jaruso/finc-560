@@ -373,8 +373,11 @@
     const units=unitGroups(frames);
     const merged=ranges||nominalStudyRanges(traces,{positiveOnly});
     const many=units.length>1;
-    const axisLayout={},xDomain=many?
-      (units.length===2?[.06,.85]:units.length===3?[.10,.75]:[.10,.69]):null;
+    // Free axes place their labels in Plotly's outer margins. Reserving part
+    // of the x domain for them creates a large, empty in-chart gutter, so
+    // keep the data canvas full width and let the configured margins absorb
+    // the visible unit labels instead.
+    const axisLayout={},xDomain=many?[0,1]:null;
     units.forEach((unit,i)=>{
       const id=i===0?"y":"y"+(i+1),key=i===0?"yaxis":"yaxis"+(i+1);
       const same=frames.filter(frame=>frame.unit===unit);
