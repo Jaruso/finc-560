@@ -226,7 +226,7 @@
       }
     }
     const contexts={
-      "commodity-yoy":"Solid = observed 12-month price change; dashed = modeled YoY from the selected scenario; dotted = unshocked model when a shock is set. Each benchmark uses its own exact prior-year month.",
+      "commodity-yoy":"12-month price change (%) · Solid observed · Dashed modeled · Dotted unshocked if shocked. Exact prior-year dates only.",
       "commodity-returns":"Observed adjacent-month price returns (%) · Each commodity has its own color.",
       "commodity-vol":"Trailing 12-month monthly-return standard deviation (%) · Historical observations only.",
       "commodity-drawdown":"Drawdown from each commodity's own peak within the displayed history (%).",
@@ -344,7 +344,7 @@
       }
     }
     const labels={
-      "commodity-yoy":"Solid = observed nominal year-over-year price difference; dashed = modeled annual difference; dotted = unshocked model when a shock is set. Each commodity retains its original unit.",
+      "commodity-yoy":"YoY difference in original units · Solid observed · Dashed modeled · Dotted unshocked if shocked. Exact prior-year dates only.",
       "commodity-returns":"Nominal change since the preceding reported month (each unit labeled).",
       "commodity-vol":"Rolling 12-month standard deviation of actual monthly price changes.",
       "commodity-drawdown":"Nominal decline from each asset's highest price in the visible period.",
