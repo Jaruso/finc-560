@@ -456,15 +456,6 @@
     plot("chart-yields",history,path);
     plot("chart-spread",history,path);
     for(const id of IDS.slice(2))plotAdditional(id,history,path);
-    const label=el("chart-context").selectedOptions[0].textContent.trim();
-    const date=new Date(path[0].date+"T00:00:00Z")
-      .toLocaleDateString("en-US",{month:"short",year:"numeric",timeZone:"UTC"});
-    el("axis-explanation").textContent=focused?
-      "Focused: latest "+Math.max(1,Math.min(history.length-1,Math.max(12,s.horizon)))+
-      " months observed, then "+s.horizon+" modeled months. Continuous dates.":
-      label+" of actual yields ending "+date+" → "+s.horizon+
-      " months "+(s.delta===0?"model forecast":"conditional policy scenario")+
-      ". Time-series charts preserve calendar distances; the curve shows observed tenors and the accuracy view uses backtest horizons.";
   }
   function renderQueued(){
     if(!data)return;
