@@ -4,6 +4,10 @@
   --white: #fff; --line: #dfe3e6; --navy: #314b5c;
   --teal: #0b7f73; --red: #b84253; --soft: #eef6f5;
 }
+/* Reserve the scrollbar gutter on every dashboard. Without it, a page that
+   needs vertical scrolling (notably Equities) narrows the header by a few
+   pixels and shifts the fixed course marker left. */
+html { scrollbar-gutter: stable; }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--paper); color: var(--ink);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; line-height: 1.35; }
