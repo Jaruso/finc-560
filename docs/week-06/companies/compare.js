@@ -9,8 +9,11 @@
 })(typeof window!=="undefined"?window:null,function(M){
   "use strict";
   const COLORS=["#087d76","#38577d","#b27029","#89579b"];
-  const ABSOLUTE=["company-chart","equity-revenue","equity-operating",
-    "equity-cashflows","equity-fcf","equity-balance"];
+  const ABSOLUTE=["company-chart","equity-cashflows","equity-fcf","equity-balance"];
+  const FINANCIAL=[["revenue_musd","Revenue","#0b7f73"],
+    ["operating_income_musd","Operating income","#365977"],
+    ["net_income_musd","Net income","#aa7840"]];
+  const TICKER_SYMBOLS=["circle","square","diamond","cross"];
   const metricKeys={revenue:"revenue_musd",operating:"operating_income_musd",
     net:"net_income_musd"};
   const coverage={
@@ -32,12 +35,13 @@
     });
   }
   function available(frames){
-    return ["company-chart","equity-revenue","equity-operating","equity-margins",
+    return ["company-chart","equity-margins",
       ...Object.keys(coverage).filter(id=>
         frames.every(f=>f.history.filter(coverage[id]).length>=2))];
   }
   function line(frame,name,records,value,{dash="solid",width=2.25,unit="usd",
-    mode="nominal",anchor=null,rank=10}={}){
+    mode="nominal",anchor=null,rank=10,color=frame.color,
+    showlegend=true,legendgroup=null,symbol="circle"}={}){
     const raw=records.map(value);
     if(mode==="indexed"&&(!Number.isFinite(anchor)||anchor<=0))
       throw Error("Indexed view requires positive starting values; choose Nominal.");
@@ -47,8 +51,9 @@
       unit==="percent"?"%":"×";
     const prefix=mode==="nominal"&&unit==="usd"?"$":"";
     return {type:"scatter",mode:"lines+markers",name,legendrank:rank,
+      showlegend,legendgroup,
       x:records.map(r=>r.fiscal_end),y,
-      line:{color:frame.color,width,dash},marker:{color:frame.color,size:4},
+      line:{color,width,dash},marker:{color,size:4,symbol},
       customdata:raw,
       hovertemplate:"FY ending %{x|%b %Y}<br>"+
         (mode==="indexed"?"Index %{y:,.2f} · underlying $%{customdata:,.0f}M":
@@ -62,12 +67,13 @@
       throw Error("Not all companies disclose sufficient data for this chart.");
     const numeric=ABSOLUTE.includes(id),index=numeric&&mode==="indexed";
     const projectionsEnabled=settings.projectionsEnabled!==false;
-    const focusedKey=id==="company-chart"?metricKeys[metric]:
-      id==="equity-revenue"?"revenue_musd":"operating_income_musd";
     const required=id==="equity-cashflows"?coverage["equity-cashflows"]:
       id==="equity-fcf"?coverage["equity-fcf"]:
       id==="equity-balance"?coverage["equity-balance"]:
-      r=>Number.isFinite(r[focusedKey]);
+      id==="company-chart"?
+        r=>FINANCIAL.every(([key])=>Number.isFinite(r[key])&&
+          (!index||r[key]>0)):
+        r=>Number.isFinite(r.revenue_musd);
     // Index everyone at the same fiscal-ending YEAR, not at unrelated
     // companies' first reported dates. Exact fiscal ends remain on X.
     const years=frames.map(f=>new Set(f.history.filter(required)
@@ -78,32 +84,29 @@
       throw Error("Indexed view requires a shared reported fiscal year; choose Nominal.");
     const nativeUnit=id==="equity-margins"?"percent":
       id==="equity-coverage"?"ratio":"usd";
-    const traces=[],measure=id==="company-chart"?metricKeys[metric]:
-      id==="equity-revenue"?"revenue_musd":"operating_income_musd";
-    const add=(frame,name,observed,forecast,unit="usd")=>{
-      const first=observed.find(r=>r.fiscal_end.slice(0,4)===anchorYear);
-      const anchor=index?first?.value:null;
-      const args={unit,mode:index?"indexed":"nominal",anchor};
-      // Values for financial metrics are in millions; non-USD ratios are native.
-      const rows=observed.map(r=>({fiscal_end:r.fiscal_end,value:r.value}));
-      const future=forecast?.map(r=>({fiscal_end:r.fiscal_end,value:r.value}));
-      traces.push(line(frame,frame.ticker+" · "+name,rows,r=>r.value,
-        {...args,dash:"solid",rank:10}));
-      if(future&&projectionsEnabled)traces.push(line(frame,frame.ticker+" · forecast "+name,future,r=>r.value,
-        {...args,dash:"dash",rank:20}));
-    };
-    for(const f of frames){
-      if(["company-chart","equity-revenue","equity-operating"].includes(id)){
-        const key=measure;
-        add(f,key.replace("_musd","").replaceAll("_"," "),f.history.map(r=>({
-          fiscal_end:r.fiscal_end,value:r[key]
-        })),f.forecast.projected.map(r=>({fiscal_end:r.fiscal_end,value:r[key]})));
-        if(projectionsEnabled&&(settings.growth||settings.margin)){
-          const baseline=f.forecast.baseline.map(r=>({fiscal_end:r.fiscal_end,value:r[key]}));
-          const anchor=index?f.history.find(r=>
-            r.fiscal_end.slice(0,4)===anchorYear)?.[key]:null;
-          traces.push(line(f,f.ticker+" · unadjusted baseline",baseline,r=>r.value,
-            {mode:index?"indexed":"nominal",anchor,dash:"dot",width:1.2,rank:30}));
+    const traces=[];
+    for(const [frameIndex,f] of frames.entries()){
+      if(id==="company-chart"){
+        for(const [measureIndex,[key,label,color]] of FINANCIAL.entries()){
+          // Each measure has its own shared-FY index anchor. The three metric
+          // colors remain constant across equities; ticker markers distinguish
+          // companies without multiplying the legend by each scenario line.
+          const first=index?f.history.find(r=>
+            r.fiscal_end.slice(0,4)===anchorYear):null;
+          const anchor=index?first?.[key]:null;
+          const args={mode:index?"indexed":"nominal",anchor,
+            color,symbol:TICKER_SYMBOLS[frameIndex],legendgroup:label};
+          traces.push(line(f,f.ticker+" · "+label,f.history,r=>r[key],
+            {...args,rank:measureIndex+1,showlegend:frameIndex===0}));
+          if(!projectionsEnabled)continue;
+          const adjusted=key==="revenue_musd"?settings.growth:
+            settings.growth||settings.margin;
+          if(adjusted)traces.push(line(f,f.ticker+" · "+label+" · unadjusted",
+            f.forecast.baseline,r=>r[key],{...args,dash:"dot",
+              width:1.3,rank:30,showlegend:false}));
+          traces.push(line(f,f.ticker+" · "+label+" · modeled",
+            f.forecast.projected,r=>r[key],{...args,dash:"dash",
+              rank:20,showlegend:false}));
         }
       }else if(id==="equity-margins"){
         const pct=(r,key)=>r.revenue_musd>0?100*r[key]/r.revenue_musd:null;
@@ -151,8 +154,7 @@
       }
     }
     const starts=traces.flatMap(t=>t.x).sort();
-    const forecasts=["company-chart","equity-revenue","equity-operating",
-      "equity-margins"].includes(id);
+    const forecasts=["company-chart","equity-margins"].includes(id);
     // Preserve each company's actual fiscal cutoff, just as the commodities
     // comparison preserves each benchmark's last observation. Layer one
     // translucent rectangle per company: early forecast-only territory is
@@ -177,7 +179,11 @@
     const yLabel=index?"Index (100 = shared FY "+anchorYear+")":
       nativeUnit==="percent"?"Percent (%)":nativeUnit==="ratio"?
         "Interest coverage (×)":"USD billions";
-    const context=index?"Index 100 at shared FY "+anchorYear+" · Hover for reported values.":
+    const context=id==="company-chart"?
+      (index?"All three measures indexed to shared FY "+anchorYear:
+        "Revenue, operating income & net income in USD billions")+
+      " · Color = measure; marker = ticker; hover to identify.":
+      index?"Index 100 at shared FY "+anchorYear+" · Hover for reported values.":
       nativeUnit==="usd"?"Nominal reported USD billions · Hover for exact values.":
         nativeUnit==="percent"?(projectionsEnabled?"Reported and modeled margins (%).":"Reported margins only (%)."):
           "Reported operating income / interest expense.";
@@ -190,7 +196,7 @@
         font:{family:"Inter,system-ui,sans-serif",size:10,color:"#465865"},
         showlegend:true,hovermode:"closest",
         legend:{orientation:"h",x:.5,xanchor:"center",y:1.16,
-          font:{size:9}},
+          font:{size:9},groupclick:"togglegroup"},
         xaxis:{type:"date",range:[starts[0],starts.at(-1)],
           tickformat:"%Y",dtick:"M12",showgrid:false,
           linecolor:"#dfe3e6",automargin:true},
@@ -199,7 +205,10 @@
           gridcolor:"#edf1f2",automargin:true},
         meta:{comparison:true,tickers:frames.map(f=>f.ticker),primary:frames[0].ticker,
           indexed:index,anchorFiscalYear:anchorYear,perCompanyFiscalCalendars:true,
-          projectionsEnabled,
+          projectionsEnabled,measures:id==="company-chart"?
+            FINANCIAL.map(([,label])=>label):null,
+          tickerMarkers:id==="company-chart"?Object.fromEntries(frames.map(
+            (frame,i)=>[frame.ticker,TICKER_SYMBOLS[i]])):null,
           sharedProjectionStart:cutoffs.length?cutoffs.at(-1):null,
           projectionWindows:windows}
       }

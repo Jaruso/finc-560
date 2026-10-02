@@ -3,9 +3,10 @@
   "use strict";
   const Model=window.ForecastModel;
   const el=id=>document.getElementById(id);
+  const compactPlot=()=>window.matchMedia("(max-width:650px)").matches;
   const COLOR={five:"#365977",ten:"#0b7f73",historical:"#314b5c",bound:"#81939e",red:"#b84253"};
-  const DEFAULT=["chart-yields","chart-spread","chart-policy","chart-accuracy"];
-  const IDS=[...DEFAULT,"chart-five","chart-ten","chart-shock","chart-policy-gap"];
+  const DEFAULT=["chart-yields","chart-spread","chart-curve","chart-accuracy"];
+  const IDS=[...DEFAULT,"chart-policy","chart-five","chart-ten","chart-shock","chart-policy-gap"];
   const latest=new Map(),queue=new Map(),drawing=new Set();
   let selectedCharts=[...DEFAULT];
   let data=null,focused=false,frame=null;
@@ -96,7 +97,7 @@
     }
     status.textContent=selectedCharts.length+
       (selectedCharts.length===1?" chart":" charts")+
-      " selected. Charts update together with your rate scenario.";
+      " selected. Scenarios affect modeled views; observed charts remain unchanged.";
     showCharts();
   }
   function plot(id,history,path){
@@ -188,11 +189,14 @@
     const boundary=(Date.parse(base)-Date.parse(rangeStart))/(Date.parse(end)-Date.parse(rangeStart));
     const layout={
       autosize:true,height:plotHeight(id),
-      margin:{l:55,r:16,t:62,b:49,autoexpand:false},paper_bgcolor:"#fff",plot_bgcolor:"#fff",
+      margin:compactPlot()
+        ?{l:47,r:8,t:46,b:34,autoexpand:false}
+        :{l:55,r:16,t:62,b:49,autoexpand:false},paper_bgcolor:"#fff",plot_bgcolor:"#fff",
       font:{family:"Inter, system-ui, sans-serif",size:11,color:"#465865"},
       hovermode:"closest",showlegend:true,
-      legend:{orientation:"h",x:.5,xanchor:"center",y:1.14,
-        font:{size:10},itemwidth:32,autoexpand:false},
+      legend:{orientation:"h",x:.5,xanchor:"center",
+        y:compactPlot()?1.035:1.14,
+        font:{size:compactPlot()?9:10},itemwidth:32,autoexpand:false},
       xaxis:{type:"date",range:[rangeStart,end],showgrid:false,
         tickformat:focused?"%b '%y":"%Y",nticks:focused?8:10,
         linecolor:"#dfe3e6",tickfont:{size:10},automargin:true},
@@ -235,12 +239,15 @@
     const sourceNote=el(id+"-context");
     const base={
       autosize:true,height:plotHeight(id),
-      margin:{l:55,r:20,t:55,b:47,autoexpand:false},
+      margin:compactPlot()
+        ?{l:47,r:8,t:43,b:34,autoexpand:false}
+        :{l:55,r:20,t:55,b:47,autoexpand:false},
       paper_bgcolor:"#fff",plot_bgcolor:"#fff",showlegend:true,
       font:{family:"Inter, system-ui, sans-serif",size:10,color:"#465865"},
       hovermode:"closest",
-      legend:{orientation:"h",x:.5,xanchor:"center",y:1.16,
-        font:{size:10},itemwidth:30},
+      legend:{orientation:"h",x:.5,xanchor:"center",
+        y:compactPlot()?1.035:1.16,
+        font:{size:compactPlot()?9:10},itemwidth:30},
       xaxis:{type:"date",range:[historicalStart,end],
         tickformat:focused?"%b '%y":"%Y",nticks:8,
         linecolor:"#dfe3e6"},
@@ -253,7 +260,50 @@
       hovertemplate:"%{x|%b %Y}: %{y:.2f}"+unit+"<extra>"+name+"</extra>"
     });
     let traces=[];
-    if(id==="chart-policy"){
+    if(id==="chart-curve"){
+      // A snapshot of synchronized, actually observed FRED Treasury yields.
+      // The current model projects only the 5Y and 10Y series: do not invent
+      // the six other maturities' future yields by interpolation.
+      const maturities=[
+        ["DGS1",1],["DGS2",2],["DGS3",3],["DGS5",5],
+        ["DGS7",7],["DGS10",10],["DGS20",20],["DGS30",30]
+      ];
+      const snapshot=data.latest_treasury_yields||{};
+      const last=data.observations.at(-1);
+      const points=maturities.map(([series,years])=>({
+        series,years,value:snapshot[series]??(
+          series==="DGS5"?last.dgs5:series==="DGS10"?last.dgs10:null)
+      })).filter(r=>Number.isFinite(r.value));
+      traces=[{
+        type:"scatter",mode:"lines+markers",
+        name:"Observed Treasury yields",
+        x:points.map(r=>r.years),y:points.map(r=>r.value),
+        text:points.map(r=>r.years+"Y"),
+        line:{color:COLOR.ten,width:2.5},
+        marker:{color:COLOR.ten,size:7},
+        hovertemplate:"%{text} Treasury: %{y:.2f}%<extra>FRED observed</extra>"
+      }];
+      const ticks=compactPlot()?[1,5,10,20,30]:[1,3,5,10,20,30];
+      const values=points.map(r=>r.value);
+      const lo=Math.min(...values),hi=Math.max(...values);
+      const pad=Math.max(.14,(hi-lo)*.15);
+      base.xaxis={type:"linear",title:"Treasury maturity (years)",
+        range:[0,31],tickmode:"array",tickvals:ticks,
+        ticktext:ticks.map(y=>y+"Y"),showgrid:false,
+        linecolor:"#dfe3e6",zeroline:false};
+      base.yaxis={title:"Observed yield (%)",
+        range:[lo-pad,hi+pad],gridcolor:"#edf1f2",zeroline:false};
+      base.margin={...base.margin,t:compactPlot()?20:28,b:compactPlot()?43:52};
+      base.showlegend=false;
+      base.meta={chartKind:id,observedOnly:true,
+        snapshotDate:data.latest_synchronized_daily_observation,
+        maturities:points.map(r=>r.years)};
+      sourceNote.textContent="FRED observed · "+
+        data.latest_synchronized_daily_observation+" · "+
+        points.length+" of 8 verified maturities"+
+        (points.length===8?" · No projection shown":
+          " · Partial curve; awaiting remaining verified yields");
+    }else if(id==="chart-policy"){
       traces=[line("Effective federal funds rate (observed)",hx,
         history.map(r=>r.policy),COLOR.historical)];
       sourceNote.textContent="Latest observed DFF "+
@@ -407,7 +457,7 @@
       " months observed, then "+s.horizon+" modeled months. Continuous dates.":
       label+" of actual yields ending "+date+" → "+s.horizon+
       " months "+(s.delta===0?"model forecast":"conditional policy scenario")+
-      ". Time-series charts preserve calendar distances; the accuracy view uses backtest horizons.";
+      ". Time-series charts preserve calendar distances; the curve shows observed tenors and the accuracy view uses backtest horizons.";
   }
   function renderQueued(){
     if(!data)return;

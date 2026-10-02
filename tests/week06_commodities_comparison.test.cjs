@@ -57,7 +57,7 @@ test("all eight analytical chart choices overlay every selected benchmark",()=>{
     assert.deepEqual([...ids].sort(),choices.slice(0,4).map(c=>c.id).sort(),
       "Missing data series on "+id);
     assert.equal(result.traces.length,id==="commodity-models"?12:
-      id==="commodity-chart"?20:4,id);
+      id==="commodity-chart"?20:id==="commodity-yoy"?12:4,id);
   }
   const season=C.study(frames,"commodity-seasonality",{...opt,shock:15});
   assert.ok(season.traces.every(t=>t.y.some(Number.isFinite)));
@@ -112,7 +112,8 @@ test("multiple nominal unit groups receive independent labeled axes",()=>{
   const plan=C.nominalAxes(traces,frames,{ranges,positiveOnly:true});
   assert.deepEqual(plan.units,
     ["USD/barrel","USD/troy oz","USD/metric ton","USD/MMBtu"]);
-  assert.ok(plan.xDomain[0]<plan.xDomain[1]);
+  assert.deepEqual(plan.xDomain,[0,1],
+    "Separate nominal units keep the full horizontal data domain");
   for(let i=0;i<4;i++){
     const key=i?"yaxis"+(i+1):"yaxis";
     assert.equal(plan.axes[key].title.text,choices[i].unit);
@@ -133,4 +134,72 @@ test("same-unit commodities share one nominal axis without false index rebasing"
   assert.equal(traces[1].yaxis,"y");
   assert.equal(traces[0].y[0],frames[0].anchor);
   assert.equal(traces[1].y[0],frames[1].anchor);
+});
+
+test("derived YoY forecasts anchor to verified observations and exact prior-year prices",()=>{
+  const c=choices[0];
+  const input={...opt,shock:20,horizon:12,halfLife:3,vol:0};
+  const f=M.forecast(c,input),indexed=M.yearOverYearForecast(c,f,"indexed");
+  const nominal=M.yearOverYearForecast(c,f,"nominal");
+  assert.equal(indexed.scenario.length,13);
+  assert.equal(indexed.baseline.length,13);
+  assert.equal(indexed.scenario[0].date,c.last_observation);
+  assert.equal(indexed.scenario[0].projected,false);
+  const byDate=new Map(c.observations.map(r=>[r.date,r.value]));
+  for(let i=1;i<=12;i++){
+    const now=f.scenario[i],before=byDate.get(M.shiftMonth(now.date,-12));
+    assert.ok(Number.isFinite(before)&&before>0);
+    assert.equal(indexed.scenario[i].date,now.date);
+    assert.equal(indexed.scenario[i].value,(now.price/before-1)*100);
+    assert.equal(nominal.scenario[i].value,now.price-before);
+    assert.equal(indexed.baseline[i].value,
+      (f.baseline[i].price/before-1)*100);
+  }
+  assert.notDeepEqual(indexed.scenario,indexed.baseline,
+    "Conditional shock must change future YoY but never actual history");
+  assert.equal(indexed.scenario[0].value,indexed.baseline[0].value);
+  assert.throws(()=>M.yearOverYearForecast(c,f,"invented"),/mode/);
+});
+
+test("missing exact prior-year months are omitted, never forward-filled",()=>{
+  const c=commodity("sparse","USD/kg",5);
+  const base=M.forecast(c,{...opt,horizon:6,vol:0});
+  const firstPrior=M.shiftMonth(base.scenario[1].date,-12);
+  const history={...c,observations:c.observations.filter(p=>p.date!==firstPrior)};
+  history.last_observation=history.observations.at(-1).date;
+  const forecast=M.forecast(history,{...opt,horizon:6,vol:0});
+  const paths=M.yearOverYearForecast(history,forecast);
+  assert.equal(paths.scenario.length,6,
+    "Last actual anchor and only five future points have an exact prior-year match");
+  assert.ok(!paths.scenario.some(p=>p.date===forecast.scenario[1].date));
+  assert.deepEqual(paths.scenario.map(p=>p.date),
+    paths.baseline.map(p=>p.date));
+});
+
+test("four commodities project scenario YoY in both units with independent shock baselines",()=>{
+  for(const mode of ["indexed","nominal"]){
+    const options={...opt,shock:15,horizon:6,halfLife:3,vol:0};
+    const frames=C.prepare(choices.slice(0,4),60,options);
+    const chart=C.study(frames,"commodity-yoy",options,mode);
+    assert.equal(chart.traces.length,12);
+    for(const frame of frames){
+      const own=chart.traces.filter(t=>t.meta.commodity===frame.commodity.id);
+      assert.deepEqual(own.map(t=>t.meta.kind),["solid","dot","dash"]);
+      assert.ok(own.every(t=>t.line.color===frame.color));
+      const actual=own[0],baseline=own[1],scenario=own[2];
+      const projection=M.yearOverYearForecast(frame.commodity,frame.forecast,mode);
+      assert.deepEqual(scenario.y,projection.scenario.map(p=>p.value));
+      assert.deepEqual(baseline.y,projection.baseline.map(p=>p.value));
+      assert.equal(scenario.line.dash,"dash");
+      assert.equal(baseline.line.dash,"dot");
+      assert.equal(scenario.x[0],frame.commodity.last_observation);
+      assert.equal(scenario.x.at(-1),frame.forecast.scenario.at(-1).date);
+      assert.ok(actual.y.length>6);
+    }
+  }
+  const noShock=C.study(C.prepare(choices.slice(0,4),60,opt),
+    "commodity-yoy",opt,"indexed");
+  assert.equal(noShock.traces.length,8,
+    "Without shock, the redundant unshocked baseline must be hidden");
+  assert.ok(noShock.traces.every(t=>t.meta.kind!=="dot"));
 });

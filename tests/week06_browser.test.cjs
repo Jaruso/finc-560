@@ -44,7 +44,7 @@ async function slide(page,id,v){
       return d?.data?.length===8&&d.data[0].x.length===120&&d.data[6].x.length===13;
     });
     assert.deepEqual(await page.locator(".workspaces a").allTextContents(),
-      ["Bonds","Equities","Commodities"]);
+      ["Rates","Equities","Commodities"]);
     assert.equal(await page.locator(".hero").count(),0,
       "No redundant Treasury yields headline or hero");
     assert.equal(await page.locator(
@@ -57,8 +57,32 @@ async function slide(page,id,v){
       "Macro switch must be centered in the viewport");
     assert.match(await page.locator(".week-06-header .source-stamp").textContent(),
       /Historical data.*\d{4}-\d\d-\d\d/s);
-    assert.equal(await page.locator("#chart-picker input").count(),8);
+    assert.equal(await page.locator("#chart-picker input").count(),9);
     assert.equal(await page.locator("#chart-stage > .chart-card:not(.is-view-hidden)").count(),4);
+    assert.deepEqual(await page.locator("#chart-picker input:checked").evaluateAll(inputs=>
+      inputs.map(n=>n.value)),["chart-yields","chart-spread","chart-curve","chart-accuracy"]);
+    await page.waitForFunction(()=>document.querySelector("#chart-curve")?.data?.[0]?.x?.length===8);
+    const currentCurve=await page.locator("#chart-curve").evaluate(n=>({
+      x:n.data[0].x,y:n.data[0].y,text:n.data[0].text,
+      xType:n.layout.xaxis.type,
+      snapshot:n.layout.meta.snapshotDate,observedOnly:n.layout.meta.observedOnly
+    }));
+    assert.deepEqual(currentCurve.x,[1,2,3,5,7,10,20,30],
+      "Maturity axis must use actual years, not equal category spacing");
+    assert.equal(currentCurve.xType,"linear");
+    assert.equal(currentCurve.observedOnly,true);
+    assert.equal(currentCurve.snapshot,"2023-10-20");
+    assert.deepEqual(currentCurve.y,
+      ["DGS1","DGS2","DGS3","DGS5","DGS7","DGS10","DGS20","DGS30"]
+        .map(key=>makeFixture().latest_treasury_yields[key]));
+    assert.match(await page.locator("#chart-curve-context").textContent(),
+      /observed.*8 of 8.*No projection/i);
+    await page.locator(".chart-help summary").click();
+    const help=page.locator(".chart-help-panel");
+    assert.equal(await help.isVisible(),true);
+    assert.match(await help.textContent(),/RMSE.*basis points/s);
+    assert.match(await help.textContent(),/not.*Fed-rate scenarios/is);
+    await page.locator(".chart-help summary").click();
     assert.equal(await page.locator("#model-status").textContent(),
       "Fitted Diebold–Li style · 189 training months · 8 Treasury maturities");
     assert.equal(await page.locator("#controls-heading").textContent(),"Controls");
@@ -148,6 +172,11 @@ async function slide(page,id,v){
       historicPixel:n._fullLayout.yaxis.l2p(n.data[0].y.at(-1))
     }));
     assert.notEqual(shocked.p10,initialTerminal10);
+    assert.deepEqual(await page.locator("#chart-curve").evaluate(n=>({
+      x:n.data[0].x,y:n.data[0].y,text:n.data[0].text,
+      xType:n.layout.xaxis.type,
+      snapshot:n.layout.meta.snapshotDate,observedOnly:n.layout.meta.observedOnly
+    })),currentCurve,"Rate scenarios must not alter observed Treasury yields");
     assert.deepEqual(shocked.actual5,baseline.hist5);
     assert.deepEqual(shocked.actual10,baseline.hist10);
     assert.equal(shocked.label,"5Y scenario (dashed)");
@@ -214,7 +243,7 @@ async function slide(page,id,v){
     assert.ok(three[0].width>three[1].width*1.8 &&
       three[1].top===three[2].top && three[2].left>three[1].left,
       "Three charts must show a full-width featured chart over two columns");
-    await chartInput("chart-policy").uncheck();
+    await chartInput("chart-curve").uncheck();
     const two=await boxes();
     assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"2");
     assert.ok(two[1].top>two[0].top&&two[0].left===two[1].left,
@@ -254,7 +283,7 @@ async function slide(page,id,v){
     assert.deepEqual(stressed.hist,spread.hist);
     // Additional views must render from the same verified dataset on demand.
     for(const [id,expected] of [
-      ["chart-five",4],["chart-ten",4],
+      ["chart-policy",1],["chart-five",4],["chart-ten",4],
       ["chart-shock",2],["chart-policy-gap",2]
     ]){
       const input=page.locator('#chart-picker input[value="'+id+'"]');
@@ -279,6 +308,14 @@ async function slide(page,id,v){
     fs.mkdirSync("test-artifacts",{recursive:true});
     await page.screenshot({path:"test-artifacts/week06-fitted-model.png",fullPage:false});
     await page.setViewportSize({width:390,height:844});
+    await page.waitForFunction(()=>
+      document.querySelector("#chart-yields")?.layout?.margin?.t===46);
+    const compactBonds=await page.evaluate(()=>({
+      card:document.querySelector('[data-chart="chart-yields"]').getBoundingClientRect().height,
+      top:document.querySelector("#chart-yields").layout.margin.t
+    }));
+    assert.ok(compactBonds.card<295&&compactBonds.top<=46,
+      "Mobile Rates cards and Plotly legends must remain compact");
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));
     assert.equal(await page.locator(".mobile-controls-toggle").isVisible(),true);
     await page.waitForFunction(()=>getComputedStyle(

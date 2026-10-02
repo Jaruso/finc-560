@@ -103,6 +103,25 @@ async function switchMode(page,id,mode){
    assert.equal(await page.locator("#catalog-gaps").isHidden(),false);
    assert.match(await page.locator("#catalog-gap-list").textContent(),/Gallium/);
 
+   // A secondary scale switch must not turn a one-commodity dashboard into
+   // the comparison dashboard. The target card changes units; its neighbors
+   // retain their original chart type, description, and source treatment.
+   await switchMode(page,"commodity-yoy","nominal");
+   assert.equal(await page.locator("#commodity-chart").evaluate(g=>
+     g.layout.meta.comparison),false);
+   assert.match(await page.locator("#chart-subtitle").textContent(),/^Observed /,
+     "Spot-price copy must remain the single-benchmark copy");
+   assert.match(await page.locator("#commodity-yoy-context").textContent(),
+     /YoY difference in original units/);
+   assert.equal(await page.locator("#commodity-returns").evaluate(g=>
+     g.layout.meta.mode),"indexed",
+     "Changing YoY must not alter the monthly-return card");
+   await switchMode(page,"commodity-yoy","indexed");
+   assert.equal(await page.locator("#commodity-chart").evaluate(g=>
+     g.layout.meta.comparison),false);
+   assert.match(await page.locator("#commodity-yoy-context").textContent(),
+     /^Latest observed YoY /);
+
    // Filtering must NEVER alter the selected primary automatically.
    await page.selectOption("#commodity-category","Precious metals");
    assert.equal(await page.locator("#commodity-summary").textContent(),"WTI crude oil");
@@ -160,7 +179,16 @@ async function switchMode(page,id,mode){
    await page.waitForFunction(()=>document.querySelector("#commodity-chart")
      ?.layout?.meta?.commodities?.length===4);
    await page.waitForFunction(()=>["commodity-yoy","commodity-returns","commodity-vol"]
-     .every(id=>document.getElementById(id)?.data?.length===4));
+     .every(id=>document.getElementById(id)?.data?.length===
+       (id==="commodity-yoy"?8:4)));
+   const initialYoy=await page.locator("#commodity-yoy").evaluate(g=>({
+     observed:g.data.filter(t=>t.meta.kind==="solid").map(t=>t.y.slice()),
+     forecast:g.data.filter(t=>t.meta.kind==="dash").map(t=>t.y.at(-1)),
+     lineStyles:g.data.map(t=>t.meta.kind)
+   }));
+   assert.equal(initialYoy.observed.length,4);
+   assert.equal(initialYoy.forecast.length,4);
+   assert.equal(initialYoy.lineStyles.filter(k=>k==="dash").length,4);
    assert.equal(await page.locator("#commodity-selection-count").textContent(),"4 of 4");
    assert.match(await page.locator("#commodity-summary").textContent(),
      /^WTI crude oil \+ 3 comparisons$/);
@@ -213,12 +241,14 @@ async function switchMode(page,id,mode){
      axes:g.layout.meta.axesByUnit,
      axisTitles:[g.layout.yaxis?.title?.text,
        g.layout.yaxis2?.title?.text,g.layout.yaxis3?.title?.text],
-     history:g.data[0].y.slice(),ranges:[g.layout.yaxis.range.slice(),
+     history:g.data[0].y.slice(),domain:g.layout.xaxis.domain.slice(),ranges:[g.layout.yaxis.range.slice(),
        g.layout.yaxis2.range.slice(),g.layout.yaxis3.range.slice()]
    }));
    assert.deepEqual(nominal.values,initial.originals);
    assert.deepEqual(nominal.axes,
      ["USD/barrel","USD/troy oz","USD/metric ton"]);
+   assert.deepEqual(nominal.domain,[0,1],
+     "Nominal comparison reserves only outer margins, not in-chart whitespace");
    assert.deepEqual(nominal.axisTitles,nominal.axes,
      "Unlike indexed data, mixed nominal units require independent labeled axes");
    assert.equal(await page.locator(
@@ -235,6 +265,17 @@ async function switchMode(page,id,mode){
      ?.data?.some(t=>t.name==="Gold baseline")&&
      document.querySelector("#commodity-chart")?.data?.some(
        t=>t.name==="Gold forecast"&&t.line.dash==="dash"));
+   await page.waitForFunction(()=>document.querySelector("#commodity-yoy")
+     ?.data?.length===12);
+   const shockedYoy=await page.locator("#commodity-yoy").evaluate(g=>({
+     observed:g.data.filter(t=>t.meta.kind==="solid").map(t=>t.y.slice()),
+     baseline:g.data.filter(t=>t.meta.kind==="dot").map(t=>t.y.at(-1)),
+     scenario:g.data.filter(t=>t.meta.kind==="dash").map(t=>t.y.at(-1))
+   }));
+   assert.deepEqual(shockedYoy.observed,initialYoy.observed,
+     "Four-asset annual history must not change under a conditional shock");
+   assert.ok(shockedYoy.scenario.every((value,i)=>
+     value!==shockedYoy.baseline[i]));
    const nominalShock=await page.locator("#commodity-chart").evaluate(g=>({
      history:g.data[0].y.slice(),ranges:[g.layout.yaxis.range.slice(),
        g.layout.yaxis2.range.slice(),g.layout.yaxis3.range.slice()],
@@ -295,7 +336,7 @@ async function switchMode(page,id,mode){
        count:g.data.length,axes:g.layout.meta.axesByUnit,
        mode:g.layout.meta.mode
      }));
-     assert.equal(result.count,4);
+     assert.equal(result.count,id==="commodity-yoy"?12:4);
      assert.equal(result.mode,"nominal");
      assert.deepEqual(result.axes,nominal.axes);
      assert.equal(await page.locator("#commodity-chart").evaluate(g=>

@@ -211,9 +211,22 @@
           "<extra>"+frame.commodity.label+"</extra>";
       }
       traces.push(trace);
+      if(id==="commodity-yoy"){
+        // Historical and projected annual changes share the same price units
+        // and asset color. Preserve the model's own conditional shock decay.
+        const paths=M.yearOverYearForecast(frame.commodity,frame.forecast,"indexed");
+        if(opt.shock&&paths.baseline.some(row=>row.projected))
+          traces.push(line(frame,paths.baseline,
+            frame.commodity.label+" · unshocked YoY",
+            {dash:"dot",width:1.6,showlegend:frames.length===1,rank:25}));
+        if(paths.scenario.some(row=>row.projected))
+          traces.push(line(frame,paths.scenario,
+            frame.commodity.label+" · modeled YoY",
+            {dash:"dash",width:2.3,showlegend:frames.length===1,rank:20}));
+      }
     }
     const contexts={
-      "commodity-yoy":"Observed 12-month price change (%) · Each source uses its own recorded months.",
+      "commodity-yoy":"12-month price change (%) · Solid observed · Dashed modeled · Dotted unshocked if shocked. Exact prior-year dates only.",
       "commodity-returns":"Observed adjacent-month price returns (%) · Each commodity has its own color.",
       "commodity-vol":"Trailing 12-month monthly-return standard deviation (%) · Historical observations only.",
       "commodity-drawdown":"Drawdown from each commodity's own peak within the displayed history (%).",
@@ -311,9 +324,27 @@
       trace.hovertemplate=(id==="commodity-seasonality"?"%{x}":"%{x|%b %Y}")+
         ": %{y:,.3f} "+frame.unit+"<extra>"+frame.commodity.label+"</extra>";
       traces.push(trace);
+      if(id==="commodity-yoy"){
+        const paths=M.yearOverYearForecast(frame.commodity,frame.forecast,"nominal");
+        const projected=(records,name,dash,rank)=>({
+          type:"scatter",mode:"lines",x:records.map(row=>row.date),
+          y:records.map(row=>row.value),name,legendrank:rank,
+          showlegend:frames.length===1,
+          line:{color:frame.color,width:dash==="dash"?2.3:1.6,dash},
+          meta:{commodity:frame.commodity.id,unit:frame.unit,kind:dash},
+          hovertemplate:"%{x|%b %Y}: %{y:,.3f} "+frame.unit+
+            "<extra>"+name+"</extra>"
+        });
+        if(opt.shock&&paths.baseline.some(row=>row.projected))
+          traces.push(projected(paths.baseline,
+            frame.commodity.label+" · unshocked YoY","dot",25));
+        if(paths.scenario.some(row=>row.projected))
+          traces.push(projected(paths.scenario,
+            frame.commodity.label+" · modeled YoY","dash",20));
+      }
     }
     const labels={
-      "commodity-yoy":"Nominal price change versus the same calendar month a year ago (each unit labeled).",
+      "commodity-yoy":"YoY difference in original units · Solid observed · Dashed modeled · Dotted unshocked if shocked. Exact prior-year dates only.",
       "commodity-returns":"Nominal change since the preceding reported month (each unit labeled).",
       "commodity-vol":"Rolling 12-month standard deviation of actual monthly price changes.",
       "commodity-drawdown":"Nominal decline from each asset's highest price in the visible period.",
@@ -373,8 +404,11 @@
     const units=unitGroups(frames);
     const merged=ranges||nominalStudyRanges(traces,{positiveOnly});
     const many=units.length>1;
-    const axisLayout={},xDomain=many?
-      (units.length===2?[.06,.85]:units.length===3?[.10,.75]:[.10,.69]):null;
+    // Free axes place their labels in Plotly's outer margins. Reserving part
+    // of the x domain for them creates a large, empty in-chart gutter, so
+    // keep the data canvas full width and let the configured margins absorb
+    // the visible unit labels instead.
+    const axisLayout={},xDomain=many?[0,1]:null;
     units.forEach((unit,i)=>{
       const id=i===0?"y":"y"+(i+1),key=i===0?"yaxis":"yaxis"+(i+1);
       const same=frames.filter(frame=>frame.unit===unit);
