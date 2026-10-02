@@ -263,7 +263,7 @@
       ...(st.showKeys?{legend:{orientation:"h",x:.5,xanchor:"center",
         y:compactPlot()?1.035:1.16,
         font:{size:compactPlot()?9:10},itemwidth:30}}:{}),
-      xaxis:{type:"date",range:[historicalStart,end],
+      xaxis:{type:"date",range:[historicalStart,st.projectionsEnabled?end:hx.at(-1)],
         tickformat:focused?"%b '%y":"%Y",nticks:8,
         linecolor:"#dfe3e6"},
       yaxis:{gridcolor:"#edf1f2",automargin:true},
@@ -362,6 +362,11 @@
       base.barmode="group";
       base.meta={chartKind:id,backtestHorizon:st.horizon};
     }else if(id==="chart-shock"){
+      if(!st.projectionsEnabled){
+        sourceNote.textContent="Projection disabled.";
+        putPlot(id,[],{...base,meta:{chartKind:id,projectionsEnabled:false}});
+        return;
+      }
       const basePath=data.forecast.slice(0,st.horizon+1);
       const five=path.map((r,i)=>(r.y5-basePath[i].y5)*100);
       const ten=path.map((r,i)=>(r.y10-basePath[i].y10)*100);
@@ -391,7 +396,7 @@
       const low=five?"low5":"low10",high=five?"high5":"high10";
       const color=five?COLOR.five:COLOR.ten,label=five?"5Y":"10Y";
       traces=[line(label+" observed",hx,history.map(r=>r[key]),color)];
-      if(st.bands){
+      if(st.projectionsEnabled&&st.bands){
         traces.push(
           {type:"scatter",mode:"lines",x:px,y:path.map(r=>r[low]),
             name:"Historical-error 10th percentile",showlegend:false,
@@ -404,22 +409,25 @@
             hovertemplate:"%{x|%b %Y}: %{y:.2f}%<extra>90th percentile</extra>"}
         );
       }
-      traces.push(line(label+" modeled (dashed)",px,path.map(r=>r[val]),color,"%","dash"));
+      if(st.projectionsEnabled)
+        traces.push(line(label+" modeled (dashed)",px,path.map(r=>r[val]),color,"%","dash"));
       sourceNote.textContent="Latest observed "+label+" "+pct(observed[key])+
-        " · "+st.horizon+"-month modeled "+pct(terminal[val])+
-        (st.bands?" · Historical-error range shown":"");
+        (st.projectionsEnabled
+          ?" · "+st.horizon+"-month modeled "+pct(terminal[val])+
+            (st.bands?" · Historical-error range shown":"")
+          :" · Observed history only");
       base.yaxis.title="Yield (%)";
       const domain=focused?history.slice(-25):history;
       const all=[...domain.map(r=>r[key]),...[-100,0,100].flatMap(delta=>
         Model.forecast(data,delta,24).flatMap(r=>[r[val],r[low],r[high]]))];
       const min=Math.min(...all),max=Math.max(...all),pad=Math.max(.14,(max-min)*.11);
       base.yaxis.range=[min-pad,max+pad];
-      base.shapes=[
+      base.shapes=st.projectionsEnabled?[
         {type:"rect",xref:"x",yref:"paper",x0:px[0],x1:end,
           y0:0,y1:1,fillcolor:"rgba(11,127,115,.04)",line:{width:0},layer:"below"},
         {type:"line",xref:"x",yref:"paper",x0:px[0],x1:px[0],
           y0:0,y1:1,line:{color:"#93a9a8",width:1.3,dash:"dash"}}
-      ];
+      ]:[];
       base.meta={chartKind:id,observedEnd:hx.at(-1),scenarioEnd:end,
         conditionalShockBp:st.delta,empiricalBands:st.bands};
     }else return;
