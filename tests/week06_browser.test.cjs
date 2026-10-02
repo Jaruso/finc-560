@@ -34,7 +34,13 @@ async function slide(page,id,v){
     }));
     // This fixture tests the browser independent of FRED network availability.
     // Separate Python/refresh CI verifies the actual FRED fitting pipeline.
-    await page.route("**/week-06/data.json",r=>r.fulfill({json:makeFixture()}));
+    const fixture=makeFixture();
+    // Exercise all three outcomes: model worse, better, and tied with baseline.
+    const negative=fixture.backtest.metrics.find(r=>r.horizon_months===12&&r.metric==="5y");
+    negative.rmse_model_bp=58.8; // baseline 56 bp -> -5.0%
+    const tied=fixture.backtest.metrics.find(r=>r.horizon_months===12&&r.metric==="spread");
+    tied.rmse_model_bp=tied.rmse_no_change_bp;
+    await page.route("**/week-06/data.json",r=>r.fulfill({json:fixture}));
     await page.goto(base+"/#week-05",{waitUntil:"domcontentloaded"});
     await page.locator("a.week-06-nav").click();
     await page.waitForURL("**/week-06/");
@@ -77,11 +83,39 @@ async function slide(page,id,v){
         .map(key=>makeFixture().latest_treasury_yields[key]));
     assert.match(await page.locator("#chart-curve-context").textContent(),
       /observed.*8 of 8.*No projection/i);
+    // All three in-chart skill labels must use the selected backtest horizon.
+    const readAccuracy=()=>page.locator("#chart-accuracy").evaluate(n=>({
+      horizon:n.layout.meta.backtestHorizon,
+      improvement:n.layout.meta.rmseImprovementVsNoChangePercent,
+      labels:n.layout.annotations.map(a=>a.text),
+      positions:n.layout.annotations.map(a=>a.x),
+      colors:n.layout.annotations.map(a=>a.font.color),
+      topMargin:n.layout.margin.t
+    }));
+    await page.waitForFunction(()=>document.querySelector("#chart-accuracy")
+      ?.layout?.meta?.backtestHorizon===12);
+    const initialAccuracy=await readAccuracy();
+    assert.deepEqual(initialAccuracy.positions,["5Y","10Y","10Y − 5Y"]);
+    assert.ok(Math.abs(initialAccuracy.improvement[0]+5)<.001);
+    assert.ok(Math.abs(initialAccuracy.improvement[1]-(12/56*100))<.001);
+    assert.equal(initialAccuracy.improvement[2],0);
+    assert.deepEqual(initialAccuracy.labels,
+      ["<b>−5.0%</b><br>vs no change",
+       "<b>+21.4%</b><br>vs no change",
+       "<b>0.0%</b><br>vs no change"]);
+    assert.equal(new Set(initialAccuracy.colors).size,1,
+      "Better/worse/tied indicators must use identical neutral coloring");
+    assert.ok(initialAccuracy.topMargin>=49,
+      "Reserve space above bars for integrated skill labels");
+    assert.match(await page.locator("#chart-accuracy-context").textContent(),
+      /RMSE improvement.*not a significance test/i);
     await page.locator(".chart-help summary").click();
     const help=page.locator(".chart-help-panel");
     assert.equal(await help.isVisible(),true);
     assert.match(await help.textContent(),/RMSE.*basis points/s);
     assert.match(await help.textContent(),/not.*Fed-rate scenarios/is);
+    assert.match(await help.textContent(),/baseline RMSE.*model RMSE.*baseline RMSE/s);
+    assert.match(await help.textContent(),/not.*statistical significance/is);
     await page.locator(".chart-help summary").click();
     assert.equal(await page.locator("#model-status").textContent(),
       "Fitted Diebold–Li style · 189 training months · 8 Treasury maturities");
@@ -172,6 +206,8 @@ async function slide(page,id,v){
       historicPixel:n._fullLayout.yaxis.l2p(n.data[0].y.at(-1))
     }));
     assert.notEqual(shocked.p10,initialTerminal10);
+    assert.deepEqual(await readAccuracy(),initialAccuracy,
+      "Changing the scenario may not change historical backtest skill");
     assert.deepEqual(await page.locator("#chart-curve").evaluate(n=>({
       x:n.data[0].x,y:n.data[0].y,text:n.data[0].text,
       xType:n.layout.xaxis.type,
@@ -202,6 +238,11 @@ async function slide(page,id,v){
 
     await page.selectOption("#horizon","6");
     await page.waitForFunction(()=>document.querySelector("#chart-yields")?.data?.[6]?.x.length===7);
+    await page.waitForFunction(()=>document.querySelector("#chart-accuracy")
+      ?.layout?.meta?.backtestHorizon===6);
+    const sixMonth=await readAccuracy();
+    assert.deepEqual(sixMonth.labels,Array(3).fill("<b>+27.3%</b><br>vs no change"));
+    assert.notDeepEqual(sixMonth.improvement,initialAccuracy.improvement);
     const short=await page.locator("#chart-yields").evaluate(n=>({
       cutoff:n.layout.meta.boundaryFraction,range:n.layout.yaxis.range.slice()
     }));
@@ -209,6 +250,10 @@ async function slide(page,id,v){
     assert.ok(short.cutoff>.93&&short.cutoff<.97);
     await page.selectOption("#horizon","24");
     await page.waitForFunction(()=>document.querySelector("#chart-yields")?.data?.[6]?.x.length===25);
+    await page.waitForFunction(()=>document.querySelector("#chart-accuracy")
+      ?.layout?.meta?.backtestHorizon===24);
+    const twentyFour=await readAccuracy();
+    assert.deepEqual(twentyFour.labels,Array(3).fill("<b>+15.0%</b><br>vs no change"));
     const long=await page.locator("#chart-yields").evaluate(n=>({
       cutoff:n.layout.meta.boundaryFraction,range:n.layout.yaxis.range.slice()
     }));
