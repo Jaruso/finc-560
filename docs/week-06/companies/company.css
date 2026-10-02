@@ -58,20 +58,6 @@
 .company-empty a:hover,.company-empty a:focus-visible{text-decoration:underline}
 .company-empty .company-empty-secondary{font-size:.67rem;color:#62747a}
 
-/* Contextual guidance appears only when a user explicitly selects Revenue.
-   Its visibility does not change when moving either scenario dial. */
-.revenue-margin-guidance{
-  flex:0 0 auto;display:flex;align-items:center;justify-content:center;
-  flex-wrap:wrap;gap:4px 9px;margin:0 2px;padding:4px 9px;
-  border:1px solid #b9d8d1;border-radius:7px;background:#f3f9f7;
-  color:#355b5d;font-size:.67rem;line-height:1.35;
-}
-.revenue-margin-guidance[hidden]{display:none}
-.revenue-margin-guidance .secondary{
-  padding:4px 8px;font-size:.67rem;font-weight:750;
-}
-
-
 /* Contextual revenue-model explainer: native details works with mouse, touch and keyboard. */
 .model-method-control{position:relative}
 .model-method-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}

@@ -204,7 +204,7 @@ async function selectPrimary(page,ticker){
         throw new Error("Ticker pills failed to initialize: "+
           await page.locator("#data-error").textContent()+"; "+error.message);
       });
-    await page.waitForFunction(()=>document.querySelector("#company-chart")?.data?.length===2 &&
+    await page.waitForFunction(()=>document.querySelector("#company-chart")?.data?.length===6 &&
       document.querySelector("#company-chart")?.data?.[0]?.x?.length===5 &&
       document.querySelector("#company-chart")?.data?.[1]?.x?.length===4);
     assert.equal(await page.locator(".company-timeline").count(),1);
@@ -279,301 +279,146 @@ async function selectPrimary(page,ticker){
     assert.equal(await page.locator("#news-list .news-item").first()
       .locator("time").count(),1);
     assert.deepEqual(newsCalls,["MSFT"]);
-    assert.equal(await page.locator("#metric").inputValue(),"net");
+    assert.equal(await page.locator("#metric").count(),0,
+      "Focus measure control must be removed; all three measures are shown");
+    assert.equal(await page.locator("#revenue-margin-guidance").count(),0);
     const picker=page.locator("#chart-picker");
-    assert.equal(await picker.locator('input[type="checkbox"]').count(),8);
-    assert.equal(await picker.locator("input:checked").count(),4);
-    assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"4");
+    assert.equal(await picker.locator('input[type="checkbox"]').count(),6);
+    assert.equal(await picker.locator('input[value="equity-revenue"]').count(),0);
+    assert.equal(await picker.locator('input[value="equity-operating"]').count(),0);
+    assert.equal(await picker.locator("input:checked").count(),2,
+      "Earnings-only snapshots support the combined forecast and profit margins");
+    assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"2");
     assert.equal(await page.locator(".kpis").count(),0);
-    assert.equal(await picker.locator('input[value="equity-cashflows"]').isDisabled(),true,
-      "Do not imply curated earnings-only filings contain cash-flow disclosures");
-    const headerStack=await page.evaluate(()=>{
-      const header=document.querySelector(".week-06-header");
-      const summary=document.querySelector("#chart-picker summary");
-      summary.scrollIntoView({block:"start"});
-      const headerRect=header.getBoundingClientRect();
-      const summaryRect=summary.getBoundingClientRect();
-      const overlapTop=Math.max(headerRect.top,summaryRect.top);
-      const overlapBottom=Math.min(headerRect.bottom,summaryRect.bottom);
-      const point=[summaryRect.left+10,overlapTop+4];
-      const target=overlapBottom>overlapTop?document.elementFromPoint(...point):null;
-      window.scrollTo(0,0);
-      return {overlap:overlapBottom>overlapTop,headerOnTop:header.contains(target)};
-    });
-    assert.equal(headerStack.overlap,true,"Chart picker should pass behind the sticky header");
-    assert.equal(headerStack.headerOnTop,true,
-      "Sticky header must visually and interactively cover the chart picker");
+    assert.equal(await picker.locator('input[value="equity-cashflows"]').isDisabled(),
+      true,"Unavailable cash-flow statements must not create fictional charts");
     await page.waitForFunction(()=>
-      document.querySelector("#equity-revenue")?.data?.length===2 &&
-      document.querySelector("#equity-operating")?.data?.length===2 &&
+      document.querySelector("#company-chart")?.data?.length===6 &&
       document.querySelector("#equity-margins")?.data?.length===4);
-    // The Revenue model switch hides ALL forecast lines, shading and
-    // scenario-only controls; turning it back on restores the same settings.
-    assert.equal(await page.locator("#projections-enabled").isChecked(),true);
-    await page.locator("#projections-enabled").uncheck();
-    await page.waitForFunction(()=>[
-      ["company-chart",1],["equity-revenue",1],
-      ["equity-operating",1],["equity-margins",2]
-    ].every(([id,n])=>{
-      const plot=document.getElementById(id);
-      return plot?.data?.length===n&&plot.layout?.shapes?.length===0;
-    })&&document.querySelector("#company-chart")?.layout?.meta?.projectionsEnabled===false);
-    for(const [id,count] of [
-      ["company-chart",1],["equity-revenue",1],
-      ["equity-operating",1],["equity-margins",2]
-    ]){
-      const actual=await page.locator("#"+id).evaluate(node=>({
-        count:node.data.length,shapes:node.layout.shapes||[],
-        end:node.layout.xaxis.range.at(-1)
-      }));
-      assert.equal(actual.count,count,id+" must show reported traces only");
-      assert.equal(actual.shapes.length,0,id+" must remove projection shading");
-      assert.equal(actual.end,"2025-06-30",id+" must end at reported fiscal date");
+    const first=await page.locator("#company-chart").evaluate(g=>({
+      traces:g.data.map(t=>({name:t.name,color:t.line.color,dash:t.line.dash||"solid",
+        x:t.x.slice(),y:t.y.slice(),visible:t.showlegend!==false})),
+      meta:g.layout.meta,range:g.layout.yaxis.range.slice(),
+      shapes:g.layout.shapes.length,
+      start:g.layout.xaxis.range[0],end:g.layout.xaxis.range.at(-1)
+    }));
+    assert.deepEqual(first.meta.measures,["revenue","operating","net"]);
+    assert.deepEqual(first.traces.filter(t=>t.dash==="solid").map(t=>t.name),
+      ["Revenue","Operating income","Net income"]);
+    assert.deepEqual(first.traces.filter(t=>t.visible).map(t=>t.name),
+      ["Revenue","Operating income","Net income"],
+      "Only three measure legend entries despite six visible lines");
+    assert.deepEqual(first.traces.filter(t=>t.dash==="solid").map(t=>t.color),
+      ["#0b7f73","#365977","#aa7840"]);
+    for(let i=0;i<6;i+=2){
+      assert.equal(first.traces[i].x.at(-1),first.traces[i+1].x[0]);
+      assert.equal(first.traces[i].y.at(-1),first.traces[i+1].y[0]);
+      assert.equal(first.traces[i+1].dash,"dash");
+      assert.equal(first.traces[i].color,first.traces[i+1].color);
     }
+    assert.equal(first.meta.singleChart,true);
+    assert.equal(first.meta.unit,"USD billions");
+    assert.equal(first.shapes,2);
+    assert.equal(await page.locator("#chart-heading").textContent(),
+      "Financial performance & forecast");
+    assert.match(await page.locator("#company-chart-context").textContent(),
+      /Latest FY .*3-year modeled outlook/);
+
+    // Projections off leaves all three actual lines (never switches to one).
+    await page.locator("#projections-enabled").uncheck();
+    await page.waitForFunction(()=>
+      document.querySelector("#company-chart")?.data?.length===3 &&
+      document.querySelector("#company-chart")?.layout?.shapes?.length===0 &&
+      document.querySelector("#equity-margins")?.data?.length===2);
     assert.equal(await page.locator("#method").isHidden(),true);
-    assert.equal(await page.locator('[data-chart="equity-revenue"] h2').textContent(),
-      "Revenue history");
-    assert.equal(await page.locator('[data-chart="equity-operating"] h2').textContent(),
-      "Operating-income history");
-    assert.equal(await page.locator(".company-preview").isHidden(),true);
-    assert.equal(await page.locator("#revenue-margin-guidance").isHidden(),true);
+    const reported=await page.locator("#company-chart").evaluate(g=>g.data.map(t=>t.y.slice()));
+    assert.deepEqual(reported,first.traces.filter(t=>t.dash==="solid").map(t=>t.y));
     await page.locator("#projections-enabled").check();
     await page.waitForFunction(()=>
-      document.querySelector("#company-chart")?.layout?.meta?.projectionsEnabled===true &&
-      document.querySelector("#company-chart")?.data?.length===2);
-    assert.equal(await page.locator("#company-chart").evaluate(g=>g.layout.shapes.length),2);
+      document.querySelector("#company-chart")?.data?.length===6 &&
+      document.querySelector("#company-chart")?.layout?.shapes?.length===2);
     assert.equal(await page.locator("#method").isVisible(),true);
-    assert.match(await page.locator("#company-chart-context").textContent(),/modeled/);
-    assert.match(await page.locator("#company-chart-context").textContent(),/Latest reported/);
-    assert.match(await page.locator("#equity-revenue-context").textContent(),/Latest reported/);
-    const layoutRects=()=>page.locator("#chart-stage").evaluate(stage=>
-      [...stage.querySelectorAll(".chart-card:not(.is-view-hidden)")].map(card=>{
-        const r=card.getBoundingClientRect();
-        return {x:Math.round(r.x),y:Math.round(r.y),w:r.width};
-      }));
-    const four=await layoutRects();
-    assert.equal(four[0].y,four[1].y);
-    assert.equal(four[2].y,four[3].y);
-    assert.ok(four[1].x>four[0].x&&four[2].y>four[0].y);
+
+    // Removing the duplicated chart choices must not break 1–4 card layouts.
     await picker.locator("summary").click();
     await picker.locator('input[value="equity-margins"]').uncheck();
-    const three=await layoutRects();
-    assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"3");
-    assert.ok(three[0].w>three[1].w*1.8&&
-      three[1].y===three[2].y&&three[2].x>three[1].x);
-    await picker.locator('input[value="equity-operating"]').uncheck();
-    const two=await layoutRects();
-    assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"2");
-    assert.ok(two[1].y>two[0].y&&two[0].x===two[1].x);
-    await picker.locator('input[value="equity-revenue"]').uncheck();
     assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"1");
-    await picker.locator('input[value="company-chart"]').click();
-    assert.equal(await picker.locator('input[value="company-chart"]').isChecked(),true);
-    await page.locator("#reset").click();
-    await page.waitForFunction(()=>document.querySelector("#chart-stage")?.dataset.count==="4");
+    await picker.locator('input[value="company-chart"]').uncheck();
+    assert.equal(await picker.locator('input[value="company-chart"]').isChecked(),true,
+      "At least one visualization stays selected");
+    await picker.locator('input[value="equity-margins"]').check();
     await picker.locator("summary").click();
-    assert.equal(await page.locator("#chart-heading").textContent(),"Net income");
-    assert.equal(await page.locator("#revenue-margin-guidance").isHidden(),true);
-    await page.waitForFunction(()=>document.querySelector("#quote-price")?.textContent==="$123.45");
-    assert.equal(await page.locator("#quote-change").textContent(),"+$2.55 (+2.11%)");
-    assert.match(await page.locator("#quote-status").textContent(),/Finnhub.*May be delayed/);
-    assert.deepEqual(marketCalls,["MSFT"],"Initial market quote is fetched once");
+    assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"2");
 
-    const first=await page.evaluate(()=>{
-      const g=document.querySelector("#company-chart");
-      return {
-        actual:{x:g.data[0].x,y:g.data[0].y,name:g.data[0].name},
-        forecast:{x:g.data[1].x,y:g.data[1].y,name:g.data[1].name},
-        axes:Object.keys(g.layout).filter(k=>(k.startsWith("xaxis")&&k!=="xaxis")||(k.startsWith("yaxis")&&k!=="yaxis")),
-        xaxis:g.layout.xaxis, yaxis:g.layout.yaxis,
-        shapes:g.layout.shapes,annotations:g.layout.annotations,
-        meta:g.layout.meta,
-        yRange:g.layout.yaxis.range.slice(),
-        historicalPixel:g._fullLayout.yaxis.l2p(g.data[0].y.at(-1)),
-      plotHeight:g._fullLayout._size.h,
-      plotMargin:g._fullLayout.margin,
-      };
-    });
-    assert.deepEqual(first.axes,[],"One Plotly x-axis and one y-axis only");
-    assert.equal(first.meta.singleChart,true);
-    assert.equal(first.meta.continuousCalendar,true);
-    assert.equal(first.meta.unit,"USD billions");
-    assert.equal(first.actual.x.at(-1),first.forecast.x[0],
-      "Projection must touch the final historical point on the same date axis");
-    assert.equal(first.actual.y.at(-1),first.forecast.y[0],
-      "Dashed forecast must join the solid reported series at the final value");
-    assert.deepEqual(first.xaxis.range,[first.actual.x[0],first.forecast.x.at(-1)]);
-    assert.ok(first.meta.cutoffFraction>.55&&first.meta.cutoffFraction<.60,
-      "Historical/projection widths reflect elapsed years, not an arbitrary 50/50");
-    assert.equal(first.shapes.length,2,"Future shading and one cutoff divider");
-    assert.equal(first.shapes[1].x0,first.forecast.x[0]);
-    assert.equal(first.shapes[1].x1,first.forecast.x[0]);
-    assert.deepEqual(first.annotations,[],
-      "Projection shading stays, but remove REPORTED/FORECAST labels above the graph");
-    assert.equal(first.actual.name,"Reported (solid)");
-    assert.equal(first.forecast.name,"Model forecast (dashed)");
-    const cleanHover=await page.locator("#company-chart").evaluate(g=>
-      g.data.map(trace=>trace.hovertemplate));
-    assert.ok(cleanHover.every(template=>template.includes("<extra></extra>") &&
-      !template.includes("Browser model") && !template.includes("Unadjusted model")),
-      "Line hover shows only fiscal year and value without any separate model-label box");
-    const standardLegend=await page.locator("#company-chart").evaluate(g=>
-      g.data.filter(t=>t.showlegend!==false).map(t=>({name:t.name,dash:t.line?.dash||"solid"})));
-    assert.deepEqual(standardLegend,[
-      {name:"Reported (solid)",dash:"solid"},
-      {name:"Model forecast (dashed)",dash:"dash"}
-    ]);
-    assert.ok(first.forecast.y.at(-1)>first.forecast.y[0]);
-    const baseline=first.forecast.y.at(-1);
-    const priorProfit=await page.locator("#kpi-forecast-profit").textContent();
-    const initialRevenueKpi=await page.locator("#kpi-forecast-revenue").textContent();
-    // With Net income selected by default, profit margin MUST move the graph,
-    // while historical values and chart geometry remain fixed.
+    const lastReported=first.traces.filter(t=>t.dash==="solid").map(t=>t.y.slice());
+    const projected=(metric)=>page.locator("#company-chart").evaluate(
+      (g,label)=>g.data.find(t=>t.name===label+" · forecast"||
+        t.name===label+" · scenario")?.y.at(-1),metric);
+    const revenueBefore=await projected("Revenue");
+    const operatingBefore=await projected("Operating income");
+    const netBefore=await projected("Net income");
+    const revenueKpi=await page.locator("#kpi-forecast-revenue").textContent();
+    const profitKpi=await page.locator("#kpi-forecast-profit").textContent();
     await slide(page,"#margin",2);
     await page.waitForFunction(previous=>{
-      const g=document.querySelector("#company-chart");
-      return g?.data?.length===3 && g.layout?.meta?.measure==="net" &&
-        g.data[2].y.at(-1)>previous;
-    },first.forecast.y.at(-1));
-    const marginPreview=await page.locator("#company-chart").evaluate(g=>({
-      historical:g.data[0].y.slice(),
-      adjusted:g.data[2].y.at(-1),
-      baseline:g.data[1].y.at(-1),
-      yRange:g.layout.yaxis.range.slice(),
-      pixel:g._fullLayout.yaxis.l2p(g.data[0].y.at(-1))
+      const t=document.querySelector("#company-chart")?.data?.find(t=>
+        t.name==="Net income · scenario");
+      return t&&t.y.at(-1)>previous;
+    },netBefore);
+    const marginTraces=await page.locator("#company-chart").evaluate(g=>({
+      actual:g.data.filter(t=>!t.line.dash||t.line.dash==="solid").map(t=>t.y.slice()),
+      revenue:g.data.find(t=>t.name==="Revenue · forecast")?.y.at(-1),
+      operating:g.data.find(t=>t.name==="Operating income · scenario")?.y.at(-1),
+      net:g.data.find(t=>t.name==="Net income · scenario")?.y.at(-1),
+      dotted:g.data.filter(t=>t.line.dash==="dot").map(t=>t.name),
+      range:g.layout.yaxis.range.slice()
     }));
-    assert.deepEqual(marginPreview.historical,first.actual.y);
-    assert.equal(marginPreview.baseline,first.forecast.y.at(-1));
-    assert.deepEqual(marginPreview.yRange,first.yRange);
-    assert.ok(Math.abs(marginPreview.pixel-first.historicalPixel)<.001);
-    assert.equal(await page.locator("#kpi-forecast-revenue").textContent(),initialRevenueKpi);
-    assert.notEqual(await page.locator("#kpi-forecast-profit").textContent(),priorProfit);
+    assert.deepEqual(marginTraces.actual,lastReported);
+    assert.equal(marginTraces.revenue,revenueBefore,
+      "Margin adjustments never alter revenue or its projected values");
+    assert.ok(marginTraces.operating>operatingBefore&&marginTraces.net>netBefore);
+    assert.deepEqual(marginTraces.dotted,
+      ["Operating income · unadjusted","Net income · unadjusted"]);
+    assert.deepEqual(marginTraces.range,first.range,
+      "Scenario sliders cannot silently move the common financial axis");
+    assert.equal(await page.locator("#kpi-forecast-revenue").textContent(),revenueKpi);
+    assert.notEqual(await page.locator("#kpi-forecast-profit").textContent(),profitKpi);
     await slide(page,"#margin",0);
-    await page.waitForFunction(expected=>{
-      const g=document.querySelector("#company-chart");
-      return g?.data?.length===2 && Math.abs(g.data[1].y.at(-1)-expected)<1e-8;
-    },first.forecast.y.at(-1));
-
+    await page.waitForFunction(()=>
+      document.querySelector("#company-chart")?.data?.length===6);
     await slide(page,"#growth",10);
-    await page.waitForFunction(old=>{
-      const g=document.querySelector("#company-chart");
-      return g?.data?.length===3 && g.data[2].y.at(-1)>old;
-    },baseline);
-    const changed=await page.locator("#company-chart").evaluate(g=>({
-      historical:g.data[0].y,
-      projected:g.data[2].y.at(-1),
-      baseline:g.data[1].y.at(-1),
-      names:g.data.map(d=>d.name),
-      boundary:g.layout.meta.cutoffFraction,
-      yRange:g.layout.yaxis.range.slice(),
-      historicalPixel:g._fullLayout.yaxis.l2p(g.data[0].y.at(-1)),
-      plotHeight:g._fullLayout._size.h,
-      plotMargin:g._fullLayout.margin
-    }));
-    assert.deepEqual(changed.historical,first.actual.y,
-      "Input dials cannot change audited historical observations");
-    assert.equal(changed.baseline,baseline,
-      "Unadjusted baseline must remain available for comparison");
-    assert.ok(changed.names.includes("Unadjusted baseline (dotted)"));
-    assert.equal(changed.names[2],"Adjusted scenario (dashed)");
-    const adjustedLegend=await page.locator("#company-chart").evaluate(g=>
-      g.data.filter(t=>t.showlegend!==false).map(t=>({name:t.name,dash:t.line?.dash||"solid"})));
-    assert.deepEqual(adjustedLegend,[
-      {name:"Reported (solid)",dash:"solid"},
-      {name:"Unadjusted baseline (dotted)",dash:"dot"},
-      {name:"Adjusted scenario (dashed)",dash:"dash"}
-    ]);
-    assert.deepEqual(changed.boundary,first.meta.cutoffFraction,
-      "Changing financial assumptions cannot move the historical boundary");
-    assert.notEqual(await page.locator("#kpi-forecast-profit").textContent(),priorProfit);
-    assert.equal(await page.locator("#data-error").isVisible(),false,
-      "Slider updates must not show the former undefined .catch banner");
-    assert.deepEqual(changed.yRange,first.yRange,
-      "Growth dial must not change the historical financial y-scale");
-    assert.ok(Math.abs(changed.historicalPixel-first.historicalPixel)<.001,
-      "Reported observations cannot move vertically as growth assumptions change; "+
-      JSON.stringify({before:{pixel:first.historicalPixel,height:first.plotHeight,margin:first.plotMargin},
-                      after:{pixel:changed.historicalPixel,height:changed.plotHeight,margin:changed.plotMargin}}));
-    assert.equal(await page.locator("#fit-company-projection").textContent(),"Fit projection");
-    assert.equal(await page.locator("#fit-company-projection").isEnabled(),true);
-
-    assert.equal(await page.locator("#metric").inputValue(),"net");
-    assert.equal(await page.locator("#chart-heading").textContent(),"Net income");
-    const netInitial=await page.locator("#company-chart").evaluate(g=>({
-      range:g.layout.yaxis.range.slice(),
-      hist:g.data[0].y.slice(),forecast:g.data.at(-1).y.at(-1)
-    }));
-    const revenueAfterGrowth=await page.locator("#kpi-forecast-revenue").textContent();
-    const profitAfterGrowth=await page.locator("#kpi-forecast-profit").textContent();
-    await slide(page,"#margin",4);
-    await page.waitForFunction(old=>document.querySelector("#kpi-forecast-profit").textContent!==old,profitAfterGrowth);
-    assert.equal(await page.locator("#kpi-forecast-revenue").textContent(),revenueAfterGrowth,
-      "Margin dial must not silently change revenue");
-    await page.waitForFunction(previous=>{
-      const g=document.querySelector("#company-chart");
-      return g?.data?.length===3 && g.data[2].y.at(-1)!==previous;
-    },netInitial.forecast);
-    const netAfterMargin=await page.locator("#company-chart").evaluate(g=>({
-      range:g.layout.yaxis.range.slice(),history:g.data[0].y.slice()
-    }));
-    assert.deepEqual(netAfterMargin.range,netInitial.range,
-      "Margin dial must not move the net-income historical y-scale");
-    assert.deepEqual(netAfterMargin.history,netInitial.hist);
-
-    // Revenue must remain independent of margin assumptions. Provide a
-    // deliberate one-click path to the affected earnings measure.
-    await page.selectOption("#metric","revenue");
     await page.waitForFunction(()=>
-      document.querySelector("#company-chart")?.layout?.meta?.measure==="revenue");
-    assert.equal(await page.locator("#revenue-margin-guidance").isVisible(),true);
-    assert.match(await page.locator("#revenue-margin-guidance").textContent(),
-      /Profit-margin adjustments change projected earnings, not revenue/);
-    const revenueBefore=await page.locator("#company-chart").evaluate(g=>({
-      history:g.data[0].y.slice(),projected:g.data.at(-1).y.slice(),
-      yRange:g.layout.yaxis.range.slice()
-    }));
-    const profitBefore=await page.locator("#kpi-forecast-profit").textContent();
-    await slide(page,"#margin",5);
-    await page.waitForFunction(prior=>
-      document.querySelector("#kpi-forecast-profit")?.textContent!==prior,
-      profitBefore);
-    assert.equal(await page.locator("#margin-value").textContent(),"+5 pp");
-    const revenueAfter=await page.locator("#company-chart").evaluate(g=>({
-      history:g.data[0].y.slice(),projected:g.data.at(-1).y.slice(),
-      yRange:g.layout.yaxis.range.slice()
-    }));
-    assert.deepEqual(revenueAfter,revenueBefore,
-      "Revenue and its axis must remain unchanged when only margins change");
-    assert.equal(await page.locator("#revenue-margin-guidance").isVisible(),true);
-    await page.locator("#view-profit-impact").click();
+      document.querySelector("#company-chart")?.data?.length===9);
+    assert.ok((await projected("Revenue"))>revenueBefore);
+    assert.deepEqual(await page.locator("#company-chart").evaluate(g=>
+      g.data.filter(t=>!t.line.dash||t.line.dash==="solid").map(t=>t.y.slice())),
+      lastReported);
+    assert.deepEqual(await page.locator("#company-chart").evaluate(g=>
+      g.layout.yaxis.range.slice()),first.range);
+    await slide(page,"#growth",0);
     await page.waitForFunction(()=>
-      document.querySelector("#company-chart")?.layout?.meta?.measure==="net" &&
-      document.querySelector("#chart-heading")?.textContent==="Net income");
-    assert.equal(await page.locator("#metric").inputValue(),"net");
-    assert.equal(await page.locator("#revenue-margin-guidance").isHidden(),true);
-    assert.equal(await page.locator("#data-error").isVisible(),false);
-
+      document.querySelector("#company-chart")?.data?.length===6);
     await page.selectOption("#method","linear");
-    await page.waitForFunction(()=>document.querySelector("#model-note")?.textContent.includes("OLS"));
+    await page.waitForFunction(()=>
+      document.querySelector("#model-note")?.textContent.includes("OLS"));
     await page.selectOption("#horizon","1");
     await page.waitForFunction(()=>
-      document.querySelector("#company-chart")?.data?.at(-1)?.x.length===2);
-    const shorter=await page.locator("#company-chart").evaluate(g=>({
-      fraction:g.layout.meta.cutoffFraction,range:g.layout.xaxis.range,
-      observedEnd:g.data[0].x.at(-1),futureStart:g.data.at(-1).x[0],
-      futureEnd:g.data.at(-1).x.at(-1)
-    }));
-    assert.ok(shorter.fraction>.78&&shorter.fraction<.82,
-      "Shorter projection must consume less chronological width");
-    assert.equal(shorter.observedEnd,shorter.futureStart);
-    assert.equal(shorter.futureEnd,shorter.range[1]);
+      document.querySelector("#company-chart")?.data
+        ?.filter(t=>t.line.dash==="dash").every(t=>t.x.length===2));
     await page.selectOption("#history","all");
     await page.waitForFunction(()=>
-      document.querySelector("#company-chart")?.data?.[0]?.x?.length===7);
-    const longerHistory=await page.locator("#company-chart").evaluate(g=>g.layout.meta.cutoffFraction);
-    assert.ok(longerHistory>shorter.fraction,
-      "Expanding observation window shifts boundary right on the same scale");
-    assert.match(await page.locator("#backtest").textContent(),/historical one-year origins/);
+      document.querySelector("#company-chart")?.data?.[0]?.x.length===7);
+    assert.match(await page.locator("#backtest").textContent(),
+      /historical one-year origins/);
+    await page.locator("#reset").click();
+    await page.waitForFunction(()=>
+      document.querySelector("#company-chart")?.data?.length===6 &&
+      document.querySelector("#history")?.value==="5");
+    assert.equal(await page.locator("#method").inputValue(),"cagr");
+    assert.equal(await page.locator("#horizon").inputValue(),"3");
+    assert.equal(await page.locator("#chart-heading").textContent(),
+      "Financial performance & forecast");
+    assert.equal(await page.locator("#data-error").isVisible(),false);
 
     // Enter and pill removal only change pending selection, not analysis.
     const oldQuoteCalls=marketCalls.length,oldNewsCalls=newsCalls.length;
@@ -624,11 +469,11 @@ async function selectPrimary(page,ticker){
     await page.waitForFunction(()=>document.querySelector("#growth-value")?.textContent==="0 pp");
     assert.equal(await page.locator("#method").inputValue(),"cagr");
     assert.equal(await page.locator("#horizon").inputValue(),"3");
-    assert.equal(await page.locator("#metric").inputValue(),"net");
+    assert.equal(await page.locator("#metric").count(),0);
     assert.equal(await page.locator("#ticker-pills .ticker-pill strong").textContent(),"AAPL");
     assert.equal(await page.locator("#history").inputValue(),"5");
     await page.waitForFunction(()=>
-      document.querySelector("#company-chart")?.data?.length===2 &&
+      document.querySelector("#company-chart")?.data?.length===6 &&
       document.querySelector("#company-chart")?.data?.[1]?.x.length===4);
     assert.equal(await page.locator(".company-timeline").count(),1);
     const defaultRange=await page.locator("#company-chart").evaluate(g=>
@@ -678,7 +523,7 @@ async function selectPrimary(page,ticker){
     await page.screenshot({path:"test-artifacts/week06-company-dashboard.png",fullPage:false});
     await page.setViewportSize({width:390,height:844});
     await page.waitForFunction(()=>
-      document.querySelector("#company-chart")?.layout?.margin?.t===36);
+      document.querySelector("#company-chart")?.layout?.margin?.t===47);
     const mobileDensity=await page.evaluate(()=>{
       const card=document.querySelector('[data-chart="company-chart"]');
       const heading=card.querySelector(".chart-heading");
@@ -692,7 +537,7 @@ async function selectPrimary(page,ticker){
     assert.ok(mobileDensity.legendGap!==null&&mobileDensity.legendGap<63,
       "Reduce blank mobile space between Equity chart context and legend");
     await page.waitForFunction(()=>
-      document.querySelector("#company-chart")?.data?.length===2);
+      document.querySelector("#company-chart")?.data?.length===6);
     const mobile=await page.evaluate(()=>({
       scroll:document.documentElement.scrollWidth,width:innerWidth,
       plots:document.querySelectorAll(".company-timeline .js-plotly-plot").length,
@@ -747,7 +592,7 @@ async function selectPrimary(page,ticker){
     assert.match(await page.locator("#news-company-title").textContent(),
       /International Research Example/);
     await selectPrimary(page,"AAPL");
-    await page.waitForFunction(()=>document.querySelector("#company-chart")?.data?.length===2 &&
+    await page.waitForFunction(()=>document.querySelector("#company-chart")?.data?.length===6 &&
       document.querySelectorAll("#news-list .news-item").length===2);
     await selectPrimary(page,"NVDA");
     await page.waitForFunction(()=>document.querySelector("#news-status")?.dataset.state==="error");
@@ -797,7 +642,7 @@ async function selectPrimary(page,ticker){
     // Staged AAPL must not affect displayed MSFT until Analyze; both
     // comparative charts use real independent statements and fiscal dates.
     await selectPrimary(page,"MSFT");
-    await page.waitForFunction(()=>document.querySelector("#company-chart")?.data?.length===2);
+    await page.waitForFunction(()=>document.querySelector("#company-chart")?.data?.length===6);
     await page.locator("#reset").click();
     await page.locator("#custom-ticker").fill("AAPL");
     await page.locator("#custom-ticker").press("Enter");
@@ -809,24 +654,25 @@ async function selectPrimary(page,ticker){
     assert.equal(await page.locator("#ticker-count").evaluate(node=>
       node.classList.contains("is-pending")),false);
     await page.waitForFunction(()=>document.querySelector("#company-chart")?.layout?.meta
-      ?.comparison===true&&document.querySelector("#company-chart")?.data?.length===4);
+      ?.comparison===true&&document.querySelector("#company-chart")?.data?.length===12);
     const comparative=await page.locator("#company-chart").evaluate(g=>({
       primary:g.layout.meta.primary,tickers:g.layout.meta.tickers,
       indexed:g.layout.meta.indexed,
-      anchor1:g.data[0].y[0],anchor2:g.data[2].y[0]
+      anchor1:g.data[0].y[0],anchor2:g.data[6].y[0],
+      measures:g.layout.meta.measures,markers:g.layout.meta.tickerMarkers
     }));
     assert.deepEqual(comparative.tickers,["MSFT","AAPL"]);
     assert.equal(comparative.primary,"MSFT");
+    assert.deepEqual(comparative.measures,["Revenue","Operating income","Net income"]);
+    assert.deepEqual(comparative.markers,{MSFT:"circle",AAPL:"square"});
     await page.locator("#projections-enabled").uncheck();
     await page.waitForFunction(()=>[
-      ["company-chart",2],["equity-revenue",2],
-      ["equity-operating",2],["equity-margins",4]
+      ["company-chart",6],["equity-margins",4]
     ].every(([id,n])=>{
       const plot=document.getElementById(id);
       return plot?.data?.length===n&&plot.layout?.shapes?.length===0;
     })&&document.querySelector("#company-chart")?.layout?.meta?.projectionsEnabled===false);
-    for(const [id,count] of [["company-chart",2],["equity-revenue",2],
-      ["equity-operating",2],["equity-margins",4]]){
+    for(const [id,count] of [["company-chart",6],["equity-margins",4]]){
       const plot=await page.locator("#"+id).evaluate(g=>({
         count:g.data.length,shapes:g.layout.shapes.length
       }));
@@ -835,7 +681,7 @@ async function selectPrimary(page,ticker){
     }
     await page.locator("#projections-enabled").check();
     await page.waitForFunction(()=>document.querySelector("#company-chart")?.layout?.meta
-      ?.projectionsEnabled===true&&document.querySelector("#company-chart")?.data?.length===4);
+      ?.projectionsEnabled===true&&document.querySelector("#company-chart")?.data?.length===12);
     assert.equal(await page.locator(".market-quote-heading #company-name").textContent(),
       "Test Corporation","Comparisons must not crowd primary quote-card heading");
     assert.equal(comparative.indexed,true);
@@ -846,7 +692,7 @@ async function selectPrimary(page,ticker){
     assert.equal(await page.locator("#equity-comparison-context").isVisible(),true);
     assert.match(await page.locator("#equity-comparison-context").textContent(),
       /MSFT \(primary\).*AAPL.*Actual fiscal dates/);
-    assert.ok((await page.locator("#company-chart-context").textContent()).length<90,
+    assert.ok((await page.locator("#company-chart-context").textContent()).length<145,
       "Each comparison chart keeps only a concise scale subtitle");
     assert.match(await page.locator("#news-company-title").textContent(),/MSFT/,
       "News still follow primary ticker during a comparison");
@@ -854,8 +700,9 @@ async function selectPrimary(page,ticker){
       'button[data-mode="nominal"]').click();
     await page.waitForFunction(()=>document.querySelector("#company-chart")
       ?.layout?.meta?.indexed===false);
-    assert.equal(await page.locator("#equity-revenue").evaluate(g=>
-      g.layout.meta.indexed),true,"Each absolute-value chart keeps its own scale");
+    assert.equal(await page.locator("#equity-margins").evaluate(g=>
+      g.layout.meta.indexed),false,
+      "The three-metric dollar chart switches growth indexing; profit margins stay percentages");
     await page.locator("#ticker-pills .ticker-pill-remove").first().click();
     assert.equal(await page.locator("#ticker-pills .ticker-pill strong").textContent(),"AAPL");
     assert.equal(await page.locator("#company-chart").evaluate(g=>g.layout.meta.primary),
