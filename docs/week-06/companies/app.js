@@ -314,7 +314,8 @@
       }
       el(id+"-context").textContent=chart.context;
       if(id==="company-chart"){
-        el("chart-heading").textContent="Financial performance & forecast";
+        el("chart-heading").textContent=assumptions.projectionsEnabled?
+          "Financial performance & forecast":"Financial performance";
         el("chart-footnote").textContent=assumptions.projectionsEnabled
           ?"Each equity: revenue, operating income & net income · Solid = reported · Dashed = modeled."
           :"Each equity: revenue, operating income & net income · Reported annual values only.";
@@ -475,7 +476,8 @@
         defaultYRange:defaultYRange.slice(),
         projectionClipped:showProjection&&overflow}
     };
-    el("chart-heading").textContent="Financial performance & forecast";
+    el("chart-heading").textContent=showProjection?
+      "Financial performance & forecast":"Financial performance";
     el("company-chart-context").textContent=
       "Latest FY "+boundary+" · "+
       (showProjection?assumptions.horizon+"-year modeled outlook":
@@ -789,7 +791,7 @@
     el("data-refresh").textContent="Finnhub as-reported · Checking coverage";
     for(const id of ["kpi-revenue","kpi-profit","kpi-forecast-revenue","kpi-forecast-profit",
       "preview-revenue","preview-profit"])el(id).textContent="—";
-    el("model-note").textContent="This company needs five comparable filings to enable revenue forecasts.";
+    el("model-note").textContent="This company needs five comparable filings to enable financial forecasts.";
     el("backtest").textContent="Awaiting complete annual reports.";
     el("chart-footnote").textContent="No historical or modeled values are shown until source validation succeeds.";
     if(window.Plotly)window.Plotly.purge("company-chart");
