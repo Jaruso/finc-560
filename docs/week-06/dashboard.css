@@ -394,6 +394,12 @@ input[type="range"] { display: block; width: 100%; height: 19px; margin: 0;
 .chart-options label{display:flex;align-items:center;gap:8px;min-height:27px;
   cursor:pointer;color:#30434a;font-size:.74rem;font-weight:650}
 .chart-options input{accent-color:#0b7f73;width:16px;height:16px;margin:0;flex:0 0 auto}
+.chart-options input:disabled{cursor:not-allowed}
+.chart-option-warning{display:inline-flex;align-items:center;justify-content:center;
+  width:16px;height:16px;flex:0 0 16px;border-radius:50%;
+  background:#b84253;color:#fff;font-size:.65rem;font-weight:900;
+  line-height:1;cursor:help}
+.chart-option-warning:focus-visible{outline:2px solid #228b81;outline-offset:2px}
 .chart-picker-help{font-size:.67rem;color:#4e6869;line-height:1.3;
   border-top:1px solid #d9e7e4;margin:4px 0 0;padding-top:8px}
 @media(max-width:1000px){

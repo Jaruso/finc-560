@@ -254,6 +254,51 @@
       }
     }
   }
+  function setChartOptionReasons(reasons={}){
+    for(const input of document.querySelectorAll("#chart-picker input[type='checkbox']")){
+      const label=input.closest("label");
+      label?.querySelector(".chart-option-warning")?.remove();
+      input.removeAttribute("title");
+      if(!reasons[input.value])continue;
+      const message=reasons[input.value].join("\n");
+      input.title=message;
+      if(!label)continue;
+      const warning=document.createElement("span");
+      warning.className="chart-option-warning";
+      warning.textContent="!";
+      warning.setAttribute("role","img");
+      warning.setAttribute("tabindex","0");
+      warning.setAttribute("aria-label","Unavailable: "+message.replace(/\n/g,", "));
+      warning.title=message;
+      label.append(warning);
+    }
+  }
+  function singleChartOptionReasons(rows){
+    const missing={};
+    const needs={
+      "company-chart":["revenue_musd","operating_income_musd","net_income_musd"],
+      "equity-revenue":["revenue_musd"],
+      "equity-operating":["operating_income_musd"],
+      "equity-net":["net_income_musd"],
+      "equity-margins":["revenue_musd","operating_income_musd","net_income_musd"],
+      "equity-cashflows":["cfo_musd","capex_musd"],
+      "equity-fcf":["cfo_musd","capex_musd"],
+      "equity-coverage":["operating_income_musd","interest_musd"],
+      "equity-balance":["cash_musd","total_debt_musd"]
+    };
+    const labels={
+      revenue_musd:"revenue",operating_income_musd:"operating income",
+      net_income_musd:"net income",cfo_musd:"operating cash flow",
+      capex_musd:"capex",interest_musd:"interest expense",
+      cash_musd:"cash",total_debt_musd:"total debt"
+    };
+    for(const [id,keys] of Object.entries(needs)){
+      const count=rows.filter(row=>keys.every(key=>Number.isFinite(row[key]))).length;
+      if(count<2)missing[id]=[company.ticker+": requires at least two reported "+
+        keys.map(key=>labels[key]).join(", ")+" values"];
+    }
+    return missing;
+  }
   function renderComparisonSources(frames){
     const host=el("equity-comparison-sources");
     host.replaceChildren();
@@ -291,6 +336,7 @@
         ?" · Actual fiscal dates are preserved; dashed lines and shading mark each company's forecast period."
         :" · Only reported annual results; projections hidden.");
     const replacingUnified=canvas.selected().includes("company-chart");
+    setChartOptionReasons(C.unavailable(frames));
     const available=new Set(C.available(frames).filter(id=>
       id!=="company-chart"));
     canvas.setAvailable([...available],
@@ -744,6 +790,7 @@
       el("equity-comparison-context").hidden=true;
       // The selected chart set changes with actual statement coverage. Do not
       // imply debt or interest data exists for curated earnings-only snapshots.
+      setChartOptionReasons(singleChartOptionReasons(history));
       canvas.setAvailable(availableEquityCharts(history));
       const focused=canvas.visible("company-chart");
       el("fit-company-projection").hidden=!focused||!assumptions.projectionsEnabled;
@@ -786,6 +833,7 @@
   function clearAnnual(ticker){
     company=null;
     canvas.setAvailable([]);
+    setChartOptionReasons({});
     el("equity-comparison-sources").hidden=true;
     el("equity-comparison-context").hidden=true;
     el("company-name").textContent=ticker;

@@ -19,6 +19,20 @@
     net:"net_income_musd"};
   const splitMetric={"equity-revenue":"revenue","equity-operating":"operating",
     "equity-net":"net"};
+  const chartRequirements={
+    "company-chart":"at least two reported revenue, operating income, and net income values",
+    "equity-revenue":"at least two reported revenue values",
+    "equity-operating":"at least two reported operating income values",
+    "equity-net":"at least two reported net income values",
+    "equity-margins":"at least two complete reported margin periods",
+    "equity-cashflows":"at least two reported operating cash flow and capex periods",
+    "equity-fcf":"at least two reported operating cash flow and capex periods",
+    "equity-coverage":"at least two reported operating income and interest expense periods",
+    "equity-balance":"at least two reported cash and total debt periods"
+  };
+  const chartOrder=["company-chart","equity-margins","equity-revenue",
+    "equity-operating","equity-net","equity-cashflows","equity-fcf",
+    "equity-coverage","equity-balance"];
   const coverage={
     "equity-cashflows":r=>Number.isFinite(r.cfo_musd)&&Number.isFinite(r.capex_musd),
     "equity-fcf":r=>Number.isFinite(r.cfo_musd)&&Number.isFinite(r.capex_musd),
@@ -38,12 +52,29 @@
     });
   }
   function available(frames){
-    const financial=frames.length>1
-      ? ["company-chart","equity-margins","equity-revenue","equity-operating","equity-net"]
-      : ["company-chart","equity-margins"];
-    return [...financial,
-      ...Object.keys(coverage).filter(id=>
-        frames.every(f=>f.history.filter(coverage[id]).length>=2))];
+    return chartOrder.filter(id=>
+      frames.every(frame=>sufficient(frame,id)));
+  }
+  function sufficient(frame,id){
+    const rows=frame.history;
+    if(id==="company-chart")
+      return rows.filter(r=>FINANCIAL.every(([key])=>Number.isFinite(r[key]))).length>=2;
+    if(splitMetric[id])
+      return rows.filter(r=>Number.isFinite(r[metricKeys[splitMetric[id]]])).length>=2;
+    if(id==="equity-margins")
+      return rows.filter(r=>r.revenue_musd>0&&
+        Number.isFinite(r.operating_income_musd)&&
+        Number.isFinite(r.net_income_musd)).length>=2;
+    if(coverage[id])return rows.filter(coverage[id]).length>=2;
+    return false;
+  }
+  function unavailable(frames){
+    return Object.fromEntries(chartOrder.flatMap(id=>{
+      const missing=frames.filter(frame=>!sufficient(frame,id));
+      return missing.length
+        ? [[id,missing.map(frame=>frame.ticker+": "+chartRequirements[id])]]
+        : [];
+    }));
   }
   function line(frame,name,records,value,{dash="solid",width=2.25,unit="usd",
     mode="nominal",anchor=null,rank=10,color=frame.color,
@@ -234,5 +265,5 @@
     return metric==="revenue"?"Revenue":
       metric==="operating"?"Operating income":"Net income";
   }
-  return {prepare,available,study,ABSOLUTE,COLORS};
+  return {prepare,available,unavailable,study,ABSOLUTE,COLORS};
 });
