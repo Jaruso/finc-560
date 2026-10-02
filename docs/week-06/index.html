@@ -13,7 +13,7 @@
   
   <script defer src="./forecast_model.js?v=dns-engine"></script>
   <script defer src="./mobile-controls.js?v=20261001"></script>
-<script defer src="./app.js?v=projection-toggle-20261002"></script>
+<script defer src="./app.js?v=rmse-skill-20261002"></script>
 </head>
 <body>
   <header class="site-header week-06-header">
@@ -184,7 +184,7 @@
           <header class="chart-heading chart-heading-with-help">
             <div class="chart-heading-copy">
               <h2>Backtested forecast error</h2>
-              <p id="chart-accuracy-context">Historical model vs. no-change baseline; lower error is better</p>
+              <p id="chart-accuracy-context">RMSE improvement vs no change: + means smaller model errors; not a significance test</p>
             </div>
             <details class="chart-help">
               <summary aria-label="Explain backtested forecast error" title="How to read forecast error">i</summary>
@@ -193,6 +193,7 @@
                 <p>The bars compare our fitted Treasury model with an <strong>unchanged-yield baseline</strong> that assumes each yield or spread stays at its starting value.</p>
                 <p><strong>RMSE</strong> (root mean squared error) measures historical forecast misses in <strong>basis points</strong>; 100 basis points equals one percentage point. <strong>Lower is better.</strong></p>
                 <p>Each group represents the 5Y yield, 10Y yield or 10Y–5Y spread. The selected 6-, 12- or 24-month horizon is tested across 60 expanding-window historical forecast origins, without using future observations to fit past forecasts.</p>
+                <p>The percentage above each group is <strong>(baseline RMSE − model RMSE) / baseline RMSE × 100</strong>. Positive means the fitted model made smaller historical errors; negative means it did worse, and zero means equal RMSE. These neutral labels do <strong>not</strong> assess statistical significance or predict future accuracy.</p>
                 <p>Results evaluate the fitted baseline model, <strong>not</strong> optional Fed-rate scenarios. Past errors are not probabilities or guarantees of future accuracy.</p>
               </div>
             </details>

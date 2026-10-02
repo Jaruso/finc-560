@@ -354,13 +354,37 @@
           y:rows.map(r=>r.rmse_no_change_bp),marker:{color:COLOR.five},
           hovertemplate:"%{x}<br>No change: %{y:.1f} bp RMSE<extra></extra>"}
       ];
+      // Relative RMSE change against the historical no-change forecast.
+      // Positive means fewer errors than that baseline, NOT a probability
+      // of getting a future forecast right or a significance test.
+      const skill=rows.map(r=>{
+        const baseline=r.rmse_no_change_bp,model=r.rmse_model_bp;
+        return Number.isFinite(baseline)&&baseline>0&&
+          Number.isFinite(model)&&model>=0
+          ?100*(baseline-model)/baseline:null;
+      });
+      const skillLabel=value=>value===null?"n/a":
+        (value>0?"+":value<0?"−":"")+
+        Math.abs(value).toFixed(1)+"%";
       sourceNote.textContent=st.horizon+"-month expanding-window backtest · "+
-        "Lower RMSE means smaller historical forecast errors.";
+        "RMSE improvement vs no change (+ = smaller model errors).";
       base.xaxis={type:"category",title:"Forecast target",showgrid:false};
       base.yaxis={title:"RMSE (basis points)",rangemode:"tozero",
         gridcolor:"#edf1f2"};
+      // Integrate all three neutral indicators directly above their bar groups.
+      // Keep separate from the chart legend and reserve top margin on mobile.
+      base.margin={...base.margin,
+        t:compactPlot()?(st.showKeys?76:49):(st.showKeys?82:53)};
+      base.annotations=labels.map((label,i)=>({
+        x:label,xref:"x",y:1.025,yref:"paper",xanchor:"center",
+        yanchor:"bottom",showarrow:false,align:"center",
+        text:"<b>"+skillLabel(skill[i])+"</b><br>vs no change",
+        font:{family:"Inter, system-ui, sans-serif",
+          size:compactPlot()?9:10,color:"#465865"}
+      }));
       base.barmode="group";
-      base.meta={chartKind:id,backtestHorizon:st.horizon};
+      base.meta={chartKind:id,backtestHorizon:st.horizon,
+        rmseImprovementVsNoChangePercent:skill};
     }else if(id==="chart-shock"){
       if(!st.projectionsEnabled){
         sourceNote.textContent="Projection disabled.";
