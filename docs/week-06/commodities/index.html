@@ -82,12 +82,13 @@
           <div class="control sidebar-model-control">
             <div class="model-method-heading">
               <label for="model">Price model</label>
-              <label class="projection-switch" title="Show or hide projections">
-                <input id="projections-enabled" type="checkbox" role="switch"
-                  aria-label="Show projections" checked>
-                <span class="projection-switch-track" aria-hidden="true"></span>
-              </label>
-              <details class="model-help">
+              <div class="model-method-actions">
+                <label class="projection-switch" title="Show or hide projections">
+                  <input id="projections-enabled" type="checkbox" role="switch"
+                    aria-label="Show projections" checked>
+                  <span class="projection-switch-track" aria-hidden="true"></span>
+                </label>
+                <details class="model-help">
                 <summary aria-label="Explain commodity forecasting models" title="How the commodity price models work">i</summary>
                 <div class="model-help-panel" role="note" aria-label="Commodity forecasting models explained">
                   <strong class="model-help-title">Commodity price models</strong>
@@ -96,7 +97,8 @@
                   <p><strong>Unchanged price:</strong> Holds the most recent verified monthly spot average constant. Useful as a transparent reference, not a prediction of an efficient or stable market.</p>
                   <p><strong>Shared scenario controls:</strong> The percentage price shock is hypothetical and decays by the selected half-life. A realized-volatility corridor illustrates sensitivity, but is not a statistically calibrated prediction interval. These models use monthly benchmarks, not live futures quotes.</p>
                 </div>
-              </details>
+                </details>
+              </div>
             </div>
             <select id="model">
               <option value="mean">Mean reversion (log AR1)</option>

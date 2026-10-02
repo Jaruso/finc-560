@@ -57,19 +57,21 @@
       <div class="control sidebar-model-control">
         <div class="model-method-heading">
           <label for="treasury-model">Projection model</label>
-          <label class="projection-switch" title="Show or hide projections">
-            <input id="projections-enabled" type="checkbox" role="switch"
-              aria-label="Show projections" checked>
-            <span class="projection-switch-track" aria-hidden="true"></span>
-          </label>
-          <details class="model-help">
+          <div class="model-method-actions">
+            <label class="projection-switch" title="Show or hide projections">
+              <input id="projections-enabled" type="checkbox" role="switch"
+                aria-label="Show projections" checked>
+              <span class="projection-switch-track" aria-hidden="true"></span>
+            </label>
+            <details class="model-help">
             <summary aria-label="Explain the Diebold–Li Treasury projection model" title="How the Treasury model works">i</summary>
             <div class="model-help-panel" role="note" aria-label="Treasury projection model explained">
               <strong class="model-help-title">Diebold–Li (fixed model)</strong>
               <p>The dashboard fits a fixed-decay Nelson–Siegel curve to eight synchronized Treasury maturities each month, producing level, slope, and curvature factors. Separate historical AR(1) regressions project these factors into future Treasury yields. This is a simplified two-stage Diebold–Li-style model; no alternative bond forecasting model is implemented.</p>
               <p>The Fed-rate deviation applies a <em>conditional</em> scenario using an observed historical association between monthly policy-rate and yield-factor changes, not a causal estimate of a Fed decision. The historical-error ranges and rolling backtests characterize past forecast performance, not guaranteed future outcomes.</p>
             </div>
-          </details>
+            </details>
+          </div>
         </div>
         <select id="treasury-model" disabled aria-describedby="model-status" aria-label="Projection model: Diebold–Li, fixed">
           <option selected>Diebold–Li</option>
