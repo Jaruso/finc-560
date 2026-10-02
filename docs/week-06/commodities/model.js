@@ -106,6 +106,42 @@
       sigma:s.monthlyLogVolatility,latest:first.value,
       last_observation:first.date};
   }
+  /* Derive future 12-month changes directly from forecast prices. A future
+     observation is compared with the same calendar month a year earlier:
+     an actual recorded price when available, otherwise the matching earlier
+     modeled price for horizons extending beyond 12 months. Missing reference
+     months are skipped, never interpolated or replaced by another month.
+     Attach the last VERIFIED YoY observation as the line's common anchor so
+     the historical solid line connects to the dashed/dotted future paths. */
+  function yearOverYearForecast(commodity,forecastPath,mode="indexed"){
+    if(!["indexed","nominal"].includes(mode))
+      throw Error("Unsupported YoY display mode.");
+    const observed=new Map(commodity.observations.map(r=>[r.date,r.value]));
+    const last=commodity.observations.at(-1);
+    if(!forecastPath||forecastPath.scenario[0]?.date!==last.date||
+       forecastPath.baseline[0]?.date!==last.date)
+      throw Error("Year-over-year forecast does not match verified history.");
+    const change=(price,prior)=>mode==="indexed"?
+      (price/prior-1)*100:price-prior;
+    const makePath=rows=>{
+      const lookup=new Map(observed);
+      for(const row of rows.slice(1))lookup.set(row.date,row.price);
+      const path=[];
+      const lastPrior=observed.get(shiftMonth(last.date,-12));
+      if(Number.isFinite(lastPrior)&&lastPrior>0)
+        path.push({date:last.date,value:change(last.value,lastPrior),
+          projected:false});
+      for(const row of rows.slice(1)){
+        const prior=lookup.get(shiftMonth(row.date,-12));
+        if(Number.isFinite(prior)&&prior>0)
+          path.push({date:row.date,value:change(row.price,prior),
+            projected:true});
+      }
+      return path;
+    };
+    return {scenario:makePath(forecastPath.scenario),
+      baseline:makePath(forecastPath.baseline)};
+  }
   function history(c,months){
     if(!c||!Array.isArray(c.observations))throw Error("Commodity series missing.");
     if(months==="all")return c.observations;
@@ -113,5 +149,5 @@
     if(![24,60,120,240].includes(n))throw Error("Invalid commodity history window.");
     return c.observations.slice(-n);
   }
-  return {verify,forecast,history,shiftMonth,stats,MODELS};
+  return {verify,forecast,yearOverYearForecast,history,shiftMonth,stats,MODELS};
 });
