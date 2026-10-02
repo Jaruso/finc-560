@@ -1,0 +1,162 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - link "Return to Financial Visualization Lab overview" [ref=e3] [cursor=pointer]:
+      - /url: ../../
+      - generic [aria-hidden] [ref=e4]: ←
+      - generic [ref=e5]: Financial Visualization Lab
+    - navigation "Week 6 dashboards" [ref=e6]:
+      - link "Rates" [ref=e7] [cursor=pointer]:
+        - /url: ../
+      - link "Equities" [ref=e8] [cursor=pointer]:
+        - /url: ./
+      - link "Commodities" [ref=e9] [cursor=pointer]:
+        - /url: ../commodities/
+    - generic [ref=e10]:
+      - generic [ref=e11]: Annual financial reports
+      - strong [ref=e12]: FY ending 2026-06-30
+      - generic [ref=e13]: Verified annual snapshot · 2026-09-30
+    - generic [ref=e14]:
+      - generic [ref=e15]: FINC 560
+      - generic [ref=e16]: / WEEK 06
+  - main [ref=e17]:
+    - generic [ref=e18]:
+      - complementary "Company forecast controls" [ref=e19]:
+        - region [ref=e20]:
+          - generic [ref=e21]:
+            - heading "Controls" [level=2] [ref=e22]
+            - button "Reset" [ref=e23] [cursor=pointer]
+          - generic [ref=e24]:
+            - generic "Pending equity selections" [ref=e25]:
+              - generic [ref=e26]:
+                - strong [ref=e27]: MSFT
+                - generic [ref=e28]: Primary
+                - button "Remove MSFT" [ref=e29] [cursor=pointer]: ×
+            - generic [ref=e30]:
+              - textbox "Add equity ticker" [ref=e31]:
+                - /placeholder: Add ticker symbol.
+              - button "Add" [ref=e32] [cursor=pointer]
+            - generic [ref=e33]:
+              - generic [ref=e34]: 1 of 4
+              - button "Analyze" [ref=e35] [cursor=pointer]
+          - region "Latest market quote from Finnhub" [ref=e36]:
+            - generic [ref=e37]:
+              - generic [ref=e38]: Microsoft Corporation
+              - button "Refresh" [disabled] [ref=e39]
+            - generic [ref=e40]:
+              - strong [ref=e41]: —
+              - generic [ref=e42]: —
+            - paragraph [ref=e43]: Loading latest market quote…
+          - generic [ref=e44]:
+            - generic [ref=e45]:
+              - generic [ref=e46]:
+                - generic [ref=e47] [cursor=pointer]: Revenue model
+                - generic [ref=e48]:
+                  - generic "Show or hide projections" [ref=e49] [cursor=pointer]:
+                    - switch "Show projections" [checked] [ref=e50]
+                  - group [ref=e52]:
+                    - generic "Explain revenue forecast models" [ref=e53] [cursor=pointer]: i
+              - combobox "Revenue model" [ref=e54]:
+                - option "Historical CAGR" [selected]
+                - option "Linear trend (OLS)"
+            - generic [ref=e55]:
+              - generic [ref=e56]: Projection
+              - combobox "Projection" [ref=e57]:
+                - option "1 year" [selected]
+                - option "2 years"
+                - option "3 years"
+            - generic [ref=e58]:
+              - generic [ref=e59]:
+                - text: Annual growth adjustment
+                - status "Annual growth adjustment 0" [ref=e60]: 0 pp
+              - slider [ref=e61] [cursor=pointer]: "0"
+            - generic [ref=e62]:
+              - generic [ref=e63]:
+                - text: Profit margin adjustment
+                - status "Profit margin adjustment 0" [ref=e64]: 0 pp
+              - slider [ref=e65] [cursor=pointer]: "0"
+          - generic [ref=e66]:
+            - generic [ref=e67]:
+              - generic [ref=e68]: Projected revenue
+              - strong [ref=e69]: $377.4B
+            - generic [ref=e70]:
+              - generic [ref=e71]: Projected net profit
+              - strong [ref=e72]: $144.2B
+          - paragraph [ref=e73]: Historical CAGR revenue with recent weighted profit margins.
+          - group [ref=e74]:
+            - generic "Forecast checks" [ref=e75] [cursor=pointer]
+          - group [ref=e76]:
+            - generic "Data and methods" [ref=e77] [cursor=pointer]
+      - region "Company financial performance and projection" [ref=e78]:
+        - generic [ref=e79]:
+          - group [ref=e80]:
+            - generic "Choose up to four equity charts" [ref=e81] [cursor=pointer]:
+              - text: Charts
+              - strong [ref=e82]: 2 of 4
+              - text: ▾
+          - generic [ref=e83]:
+            - generic [ref=e84]: History
+            - combobox "History" [ref=e85]:
+              - option "4 years"
+              - option "5 years"
+              - option "6 years"
+              - option "8 years" [selected]
+              - option "All available"
+          - button "Show key" [ref=e86] [cursor=pointer]
+          - link "Company news ↓" [ref=e87] [cursor=pointer]:
+            - /url: "#research-lab"
+        - generic "Configurable equity forecasting and financial statement dashboard" [ref=e88]:
+          - article "Unified revenue, operating income and net income forecast" [ref=e89]:
+            - generic [ref=e90]:
+              - heading "Financial performance & forecast" [level=2] [ref=e91]
+              - paragraph [ref=e92]: Latest FY 2026-06-30 · 1-year modeled outlook
+            - img "Annual revenue, operating income, and net income, with optional modeled forecasts" [ref=e93]:
+              - generic [ref=e95]:
+                - img:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: "2022"
+                        - generic: "2023"
+                        - generic: "2024"
+                        - generic: "2025"
+                        - generic: "2026"
+                        - generic: "2027"
+                      - generic:
+                        - generic: $200B
+                        - generic: $400B
+                - img:
+                  - generic: USD billions
+          - article [ref=e109]:
+            - generic [ref=e110]:
+              - heading "Profit margin trends" [level=2] [ref=e111]
+              - paragraph [ref=e112]: Latest operating margin 46.8% · Net margin 40.3% · Future margins are assumptions.
+            - img "Historical and modeled operating and net income margins" [ref=e113]:
+              - generic [ref=e115]:
+                - img:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: "2022"
+                        - generic: "2023"
+                        - generic: "2024"
+                        - generic: "2025"
+                        - generic: "2026"
+                        - generic: "2027"
+                      - generic:
+                        - generic: 35%
+                        - generic: 40%
+                        - generic: 45%
+                - img:
+                  - generic: Margin (%)
+        - paragraph [ref=e129]: Color = financial measure · Solid = reported · Dashed = forecast
+  - region "Recent company news" [ref=e130]:
+    - generic [ref=e131]:
+      - generic [ref=e132]:
+        - paragraph [ref=e133]: FINC 560 · Market developments
+        - heading "Company news · Microsoft Corporation" [level=2] [ref=e134]
+        - paragraph [ref=e135]: Recent headlines for the selected equity · Last 30 days. Publisher reporting, not an assessment of financial impact.
+      - generic [ref=e136]:
+        - generic [ref=e137]: Finnhub company news
+        - button "Refresh company news" [disabled] [ref=e138]: Refresh news
+    - status [ref=e139]: Loading recent MSFT news…
+    - paragraph [ref=e140]: Article headlines and summaries are attributed to their publishers. Open original articles for full context. Coverage varies by ticker and Finnhub subscription.

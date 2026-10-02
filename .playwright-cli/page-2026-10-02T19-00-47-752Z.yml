@@ -1,0 +1,31 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - paragraph [ref=e4]: FINC 560
+      - heading "Financial Visualization Lab" [level=1] [ref=e5]
+    - navigation "Site sections" [ref=e6]:
+      - button "Overview" [ref=e7] [cursor=pointer]
+      - button "Week 2" [ref=e8] [cursor=pointer]
+      - button "Week 3" [ref=e9] [cursor=pointer]
+      - button "Week 4" [ref=e10] [cursor=pointer]
+      - button "Week 5" [ref=e11] [cursor=pointer]
+      - link "Week 6" [ref=e12] [cursor=pointer]:
+        - /url: week-06/
+      - button "Notes" [ref=e13] [cursor=pointer]
+  - main [ref=e14]:
+    - region [ref=e15]:
+      - generic [ref=e16]:
+        - paragraph [ref=e17]: Brief
+        - heading "Overview" [level=2] [ref=e18]
+      - generic [ref=e19]:
+        - generic [ref=e20]:
+          - heading "How it works" [level=3] [ref=e21]
+          - paragraph [ref=e22]:
+            - text: This GitHub Pages site hosts interactive Plotly exports for FINC 560. The Python source lives in
+            - code [ref=e23]: src/assignments/
+            - text: ", and the generated standalone HTML files are published from"
+            - code [ref=e24]: docs/visualizations/
+            - text: .
+        - generic [ref=e25]:
+          - heading "Course connection" [level=3] [ref=e26]
+          - paragraph [ref=e27]: "This site aggregates the coding assignments from FINC-560: Data Visualization in Finance, applying financial visualization principles and Python/Plotly interactivity."

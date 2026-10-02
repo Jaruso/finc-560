@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from urllib.parse import urlparse
 
-DATA = Path("docs/week-06/companies/data")
+DATA = Path("docs/week-06/equities/data")
 EXPECTED = {"MSFT": 6, "AAPL": 5, "HD": 5}
 
 

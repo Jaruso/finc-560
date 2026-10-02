@@ -1,0 +1,222 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - link "Return to Financial Visualization Lab overview" [ref=e3] [cursor=pointer]:
+      - /url: ../
+      - generic [aria-hidden] [ref=e4]: ←
+      - generic [ref=e5]: Financial Visualization Lab
+    - navigation "Week 6 dashboards" [ref=e6]:
+      - link "Rates" [ref=e7] [cursor=pointer]:
+        - /url: ./
+      - link "Equities" [ref=e8] [cursor=pointer]:
+        - /url: companies/
+      - link "Commodities" [ref=e9] [cursor=pointer]:
+        - /url: commodities/
+    - generic [ref=e10]:
+      - generic [ref=e11]: Historical data
+      - strong [ref=e12]: 2026-09-30
+      - generic [ref=e13]: FRED model refreshed 2026-10-02 18:43 UTC
+    - generic [ref=e14]:
+      - generic [ref=e15]: FINC 560
+      - generic [ref=e16]: / WEEK 06
+  - main [ref=e17]:
+    - generic [ref=e18]:
+      - complementary "Model forecasting and conditional policy controls" [ref=e19]:
+        - region [ref=e20]:
+          - generic [ref=e21]:
+            - heading "Controls" [level=2] [ref=e22]
+            - button "Reset" [ref=e23] [cursor=pointer]
+          - group "Latest observed Treasury yields" [ref=e24]:
+            - 'generic "1-year Treasury yield: 4.54%" [ref=e25]':
+              - generic [ref=e26]: 1Y Treasury
+              - strong [ref=e27]: 4.54%
+            - 'generic "2-year Treasury yield: 4.88%" [ref=e28]':
+              - generic [ref=e29]: 2Y Treasury
+              - strong [ref=e30]: 4.88%
+            - 'generic "5-year Treasury yield: 5.09%" [ref=e31]':
+              - generic [ref=e32]: 5Y Treasury
+              - strong [ref=e33]: 5.09%
+            - 'generic "10-year Treasury yield: 5.29%" [ref=e34]':
+              - generic [ref=e35]: 10Y Treasury
+              - strong [ref=e36]: 5.29%
+          - status [ref=e37]: Federal Reserve / FRED · 2026-09-30 · Synchronized observed yields
+          - generic [ref=e38]:
+            - generic [ref=e39]:
+              - generic [ref=e40]: Projection model
+              - generic [ref=e41]:
+                - generic "Show or hide projections" [ref=e42] [cursor=pointer]:
+                  - switch "Show projections" [checked] [ref=e43]
+                - group [ref=e45]:
+                  - generic "Explain the Diebold–Li Treasury projection model" [ref=e46] [cursor=pointer]: i
+            - 'combobox "Projection model: Diebold–Li, fixed" [disabled] [ref=e47]':
+              - option "Diebold–Li" [selected]
+            - paragraph [ref=e48]: Fitted Diebold–Li style · 249 training months · 8 Treasury maturities
+          - generic [ref=e49]:
+            - generic [ref=e50]:
+              - generic [ref=e51]: Forecast horizon
+              - combobox "Forecast horizon" [ref=e52]:
+                - option "6 months"
+                - option "12 months" [selected]
+                - option "24 months"
+            - generic [ref=e53]:
+              - generic [ref=e54]:
+                - text: Next-month Fed-rate deviation
+                - status "Next-month Fed-rate deviation 0 −100 bps 0 +100 bps" [ref=e55]: 0 bps
+              - slider [ref=e56] [cursor=pointer]: "0"
+              - generic [ref=e57]:
+                - generic [ref=e58]: −100 bps
+                - generic [ref=e59]: "0"
+                - generic [ref=e60]: +100 bps
+            - paragraph [ref=e61]:
+              - text: Conditional rate shock, not a Fed prediction.
+              - link "Method" [ref=e62] [cursor=pointer]:
+                - /url: "#model-method"
+            - generic [ref=e63]:
+              - generic [ref=e64]: Historical-error ranges
+              - generic [ref=e65]:
+                - checkbox "Historical-error ranges 10th–90th percentiles" [checked] [ref=e66]
+                - text: 10th–90th percentiles
+          - group "Live fitted model and scenario results" [ref=e67]:
+            - generic [ref=e68]:
+              - generic [ref=e69]: Forecast 5Y
+              - strong [ref=e70]: 4.30%
+            - generic [ref=e71]:
+              - generic [ref=e72]: Forecast 10Y
+              - strong [ref=e73]: 4.74%
+            - generic [ref=e74]:
+              - generic [ref=e75]: Forecast spread
+              - strong [ref=e76]: +44 bps
+            - paragraph [ref=e77]: Fitted model baseline; historical-error ranges describe past out-of-sample errors. No modeled central-path inversion in this horizon.
+          - paragraph [ref=e78]: Fitted Treasury model · conditional scenarios
+          - group [ref=e79]:
+            - generic "Out-of-sample forecast accuracy" [ref=e80] [cursor=pointer]
+          - group [ref=e81]:
+            - generic "Model methodology & limitations" [ref=e82] [cursor=pointer]
+      - region "Interactive yield chart workspace" [ref=e83]:
+        - generic "Chart controls" [ref=e84]:
+          - group [ref=e85]:
+            - generic "Choose up to four Treasury charts" [ref=e86] [cursor=pointer]:
+              - text: Charts
+              - strong [ref=e87]: 4 of 4
+              - text: ▾
+          - generic [ref=e88]:
+            - generic [ref=e89]: History
+            - combobox "Years of historical observations shown" [ref=e90]:
+              - option "1 year"
+              - option "2 years"
+              - option "5 years"
+              - option "10 years" [selected]
+              - option "15 years"
+              - option "20 years"
+              - option "All available"
+          - button "Focus projection" [ref=e91] [cursor=pointer]
+          - button "Show key" [ref=e92] [cursor=pointer]
+        - generic "Configurable Treasury analytics chart canvas" [ref=e93]:
+          - article [ref=e94]:
+            - generic [ref=e95]:
+              - heading "5Y and 10Y Treasury yields" [level=2] [ref=e96]
+              - paragraph [ref=e97]: "Latest observed: 5Y 5.09% · 10Y 5.29% · 12-month modeled: 5Y 4.30% · 10Y 4.74%"
+            - img "Observed five-year and ten-year Treasury yields with modeled future paths" [ref=e98]:
+              - generic [ref=e100]:
+                - img:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: "2018"
+                        - generic: "2020"
+                        - generic: "2022"
+                        - generic: "2024"
+                        - generic: "2026"
+                      - generic:
+                        - generic: "0"
+                        - generic: "2"
+                        - generic: "4"
+                        - generic: "6"
+                - img:
+                  - generic: Yield (%)
+          - article [ref=e114]:
+            - generic [ref=e115]:
+              - heading "10Y − 5Y spread" [level=2] [ref=e116]
+              - paragraph [ref=e117]: Observed +20 bps · 12-month modeled +44 bps
+            - img "Ten-year minus five-year observed and modeled spread, with inversion threshold" [ref=e118]:
+              - generic [ref=e120]:
+                - img:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: "2018"
+                        - generic: "2020"
+                        - generic: "2022"
+                        - generic: "2024"
+                        - generic: "2026"
+                      - generic:
+                        - generic: −0.5
+                        - generic: "0"
+                        - generic: "0.5"
+                - img:
+                  - generic: Spread (pp)
+          - article [ref=e134]:
+            - generic [ref=e135]:
+              - heading "Treasury yield curve" [level=2] [ref=e136]
+              - paragraph [ref=e137]: FRED observed · 2026-09-30 · 8 of 8 verified maturities · No projection shown
+            - img "Latest observed Treasury yields across eight maturities, plotted at actual year tenors" [ref=e138]:
+              - generic [ref=e140]:
+                - img:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: 1Y
+                        - generic: 3Y
+                        - generic: 5Y
+                        - generic: 10Y
+                        - generic: 20Y
+                        - generic: 30Y
+                      - generic:
+                        - generic: "4.5"
+                        - generic: "5"
+                        - generic: "5.5"
+                - img:
+                  - generic:
+                    - generic: Treasury maturity (years)
+                    - generic: Observed yield (%)
+          - article [ref=e154]:
+            - generic [ref=e155]:
+              - generic [ref=e156]:
+                - heading "Backtested forecast error" [level=2] [ref=e157]
+                - paragraph [ref=e158]: 12-month expanding-window backtest · RMSE improvement vs no change (+ = smaller model errors).
+              - group [ref=e159]:
+                - generic "Explain backtested forecast error" [ref=e160] [cursor=pointer]: i
+            - img "Out-of-sample model and unchanged-yield forecast error comparisons" [ref=e161]:
+              - generic [ref=e163]:
+                - img:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: 5Y
+                        - generic: 10Y
+                        - generic: 10Y − 5Y
+                      - generic:
+                        - generic: "0"
+                        - generic: "50"
+                        - generic: "100"
+                - img:
+                  - generic:
+                    - generic: Forecast target
+                    - generic: RMSE (basis points)
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic: −5.0%
+                            - text: vs no change
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic: +3.6%
+                            - text: vs no change
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic: −7.0%
+                            - text: vs no change

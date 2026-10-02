@@ -1,0 +1,236 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - link "Return to Financial Visualization Lab overview" [ref=e3] [cursor=pointer]:
+      - /url: ../../
+      - generic [aria-hidden] [ref=e4]: ←
+      - generic [ref=e5]: Financial Visualization Lab
+    - navigation "Week 6 dashboards" [ref=e6]:
+      - link "Rates" [ref=e7] [cursor=pointer]:
+        - /url: ../
+      - link "Equities" [ref=e8] [cursor=pointer]:
+        - /url: ../companies/
+      - link "Commodities" [ref=e9] [cursor=pointer]:
+        - /url: ./
+    - generic [ref=e10]:
+      - generic [ref=e11]: Spot-price history
+      - strong [ref=e12]: Through 2026-09
+      - generic [ref=e13]: Verified snapshot · 2026-10-01
+    - generic [ref=e14]:
+      - generic [ref=e15]: FINC 560
+      - generic [ref=e16]: / WEEK 06
+  - main [ref=e17]:
+    - generic [ref=e18]:
+      - complementary "Commodity scenario input controls" [ref=e19]:
+        - region [ref=e20]:
+          - generic [ref=e21]:
+            - heading "Controls" [level=2] [ref=e22]
+            - button "Reset" [ref=e23] [cursor=pointer]
+          - generic [ref=e24]:
+            - generic [ref=e25]:
+              - generic [ref=e26]: Category
+              - combobox "Commodity category" [ref=e27]:
+                - option "All categories (74)" [selected]
+                - option "Energy (12)"
+                - option "Precious metals (3)"
+                - option "Industrial metals (7)"
+                - option "Critical minerals (1)"
+                - option "Forest products (5)"
+                - option "Grains (8)"
+                - option "Oilseeds & oils (10)"
+                - option "Soft commodities (16)"
+                - option "Livestock & food (7)"
+                - option "Fertilizers (5)"
+            - generic [ref=e28]:
+              - generic [ref=e29]: Commodity
+              - searchbox "Search commodity benchmarks" [ref=e30]
+            - group [ref=e31]:
+              - generic "Select up to four commodities" [ref=e32] [cursor=pointer]:
+                - generic [ref=e33]: WTI crude oil
+                - generic [ref=e34]: 1 of 4
+                - text: ⌄
+            - region "Latest primary commodity monthly price" [ref=e35]:
+              - generic [ref=e36]:
+                - strong [ref=e37]: WTI crude oil
+                - generic [ref=e38]: Monthly spot
+              - generic [ref=e39]:
+                - strong [ref=e40]: $97.31
+                - generic [ref=e41]: +52.2% / 12 mo
+              - paragraph [ref=e42]: USD/barrel · U.S. Energy Information Administration via FRED · 2026-09 monthly average
+              - link "View U.S. Energy Information Administration via FRED source" [ref=e43] [cursor=pointer]:
+                - /url: https://fred.stlouisfed.org/series/DCOILWTICO
+            - generic [ref=e44]:
+              - generic [ref=e45]:
+                - generic [ref=e46]: Price model
+                - generic [ref=e47]:
+                  - generic "Show or hide projections" [ref=e48] [cursor=pointer]:
+                    - switch "Show projections" [checked] [ref=e49]
+                  - group [ref=e51]:
+                    - generic "Explain commodity forecasting models" [ref=e52] [cursor=pointer]: i
+              - combobox "Price model" [ref=e53]:
+                - option "Mean reversion (log AR1)" [selected]
+                - option "Recent log-price trend"
+                - option "Unchanged price"
+            - generic [ref=e54]:
+              - generic [ref=e55]: Projection
+              - combobox "Projection" [ref=e56]:
+                - option "3 months"
+                - option "6 months"
+                - option "12 months" [selected]
+            - generic [ref=e57]:
+              - generic [ref=e58]:
+                - text: Conditional price shock
+                - status "Conditional price shock 0" [ref=e59]: 0%
+              - slider [ref=e60] [cursor=pointer]: "0"
+            - generic [ref=e61]:
+              - generic [ref=e62]: Shock half-life
+              - combobox "Shock half-life" [disabled] [ref=e63]:
+                - option "3 months"
+                - option "6 months" [selected]
+                - option "12 months"
+            - generic [ref=e64]:
+              - generic [ref=e65]: Volatility corridor
+              - combobox "Volatility corridor" [ref=e66]:
+                - option "Off"
+                - option "1× realized volatility" [selected]
+                - option "2× realized volatility"
+          - generic [ref=e67]:
+            - generic [ref=e68]:
+              - generic [ref=e69]: Baseline
+              - strong [ref=e70]: $81.477
+            - generic [ref=e71]:
+              - generic [ref=e72]: Scenario
+              - strong [ref=e73]: $81.477
+            - generic [ref=e74]:
+              - generic [ref=e75]: Difference
+              - strong [ref=e76]: "+0.000"
+            - paragraph [ref=e77]: Fitted baseline · 12-month horizon · 1× historical volatility
+          - group [ref=e78]:
+            - generic "Other benchmarks requiring specialized sources (5)" [ref=e79] [cursor=pointer]:
+              - text: Other benchmarks requiring specialized sources
+              - generic [ref=e80]: (5)
+          - group [ref=e81]:
+            - generic "Forecast methodology" [ref=e82] [cursor=pointer]
+      - region "Commodity spot-price history and forecast" [ref=e83]:
+        - generic [ref=e84]:
+          - group [ref=e85]:
+            - generic "Choose up to four commodity charts" [ref=e86] [cursor=pointer]:
+              - text: Charts
+              - strong [ref=e87]: 4 of 4
+              - text: ▾
+          - generic [ref=e88]:
+            - generic [ref=e89]: History
+            - combobox "Months of historical prices shown" [ref=e90]:
+              - option "2 years"
+              - option "5 years"
+              - option "10 years" [selected]
+              - option "20 years"
+              - option "All available"
+          - button "Show key" [ref=e91] [cursor=pointer]
+        - generic "Configurable multi-chart commodity dashboard" [ref=e92]:
+          - article "Unified commodity price history and projection" [ref=e93]:
+            - generic [ref=e94]:
+              - generic [ref=e95]:
+                - heading "WTI crude oil" [level=2] [ref=e96]
+                - group "Display commodity spot prices as indexed or nominal" [ref=e97]:
+                  - button "Indexed" [ref=e98] [cursor=pointer]
+                  - button "Nominal" [pressed] [ref=e99] [cursor=pointer]
+              - paragraph [ref=e100]: Observed $97.315 · 12-month 52.2% · 12-month modeled $81.477 · USD/barrel
+            - img "Verified monthly spot history and modeled conditional projection" [ref=e101]:
+              - generic [ref=e103]:
+                - img:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: Jan 2017
+                        - generic: Jan 2018
+                        - generic: Jan 2019
+                        - generic: Jan 2020
+                        - generic: Jan 2021
+                        - generic: Jan 2022
+                        - generic: Jan 2023
+                        - generic: Jan 2024
+                        - generic: Jan 2025
+                        - generic: Jan 2026
+                        - generic: Jan 2027
+                      - generic:
+                        - generic: $50
+                        - generic: $100
+                - img:
+                  - generic: USD/barrel
+          - article [ref=e117]:
+            - generic [ref=e118]:
+              - generic [ref=e119]:
+                - heading "Year-over-year price change" [level=2] [ref=e120]
+                - group "Display yoy as indexed or nominal" [ref=e121]:
+                  - button "Indexed" [pressed] [ref=e122] [cursor=pointer]
+                  - button "Nominal" [ref=e123] [cursor=pointer]
+              - paragraph [ref=e124]: Latest observed YoY +52.2%. · Modeled 12-month endpoint YoY -16.3%. Solid = observed; dashed = scenario; dotted = unshocked baseline when applicable.
+            - img "Observed and modeled year-over-year commodity price changes" [ref=e125]:
+              - generic [ref=e127]:
+                - img:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: "2018"
+                        - generic: "2020"
+                        - generic: "2022"
+                        - generic: "2024"
+                        - generic: "2026"
+                      - generic:
+                        - generic: 0%
+                        - generic: 100%
+                        - generic: 200%
+                - img:
+                  - generic: 12-month change (%)
+          - article [ref=e141]:
+            - generic [ref=e142]:
+              - generic [ref=e143]:
+                - heading "Monthly price returns" [level=2] [ref=e144]
+                - group "Display returns as indexed or nominal" [ref=e145]:
+                  - button "Indexed" [pressed] [ref=e146] [cursor=pointer]
+                  - button "Nominal" [ref=e147] [cursor=pointer]
+              - paragraph [ref=e148]: Latest reported monthly change +16.0% · Actual spot-price averages.
+            - img "Observed month-over-month percentage changes in commodity spot prices" [ref=e149]:
+              - generic [ref=e151]:
+                - img:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: "2018"
+                        - generic: "2020"
+                        - generic: "2022"
+                        - generic: "2024"
+                        - generic: "2026"
+                      - generic:
+                        - generic: 0%
+                        - generic: 50%
+                - img:
+                  - generic: Monthly change (%)
+          - article [ref=e165]:
+            - generic [ref=e166]:
+              - generic [ref=e167]:
+                - heading "Rolling price volatility" [level=2] [ref=e168]
+                - group "Display vol as indexed or nominal" [ref=e169]:
+                  - button "Indexed" [pressed] [ref=e170] [cursor=pointer]
+                  - button "Nominal" [ref=e171] [cursor=pointer]
+              - paragraph [ref=e172]: Latest 12-month realized standard deviation 13.0%.
+            - img "Trailing historical monthly-return volatility" [ref=e173]:
+              - generic [ref=e175]:
+                - img:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: "2018"
+                        - generic: "2020"
+                        - generic: "2022"
+                        - generic: "2024"
+                        - generic: "2026"
+                      - generic:
+                        - generic: 10%
+                        - generic: 20%
+                        - generic: 30%
+                - img:
+                  - generic: Monthly return std. dev. (%)
+        - paragraph [ref=e189]: "Solid: observed · Dashed: forecast · Dotted: baseline/volatility guides."
+        - link "U.S. Energy Information Administration via FRED · DCOILWTICO" [ref=e190] [cursor=pointer]:
+          - /url: https://fred.stlouisfed.org/series/DCOILWTICO

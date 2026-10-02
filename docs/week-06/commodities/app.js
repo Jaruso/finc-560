@@ -4,7 +4,7 @@
 const M=window.CommodityForecast,C=window.CommodityComparison,el=id=>document.getElementById(id);
 const state={snapshot:null,commodity:null,context:null,range:null,values:null,
   plotHeight:null,pending:null,painting:false,tick:false,canvas:null,selectedIds:[],modes:{},axisValues:null,
-  showKeys:false};
+  showKeys:false,focusProjection:false};
 const OPTIONS=["commodity-chart","commodity-yoy","commodity-returns","commodity-vol",
   "commodity-seasonality","commodity-models","commodity-shock","commodity-drawdown"];
 const DEFAULT=OPTIONS.slice(0,4);
@@ -39,6 +39,13 @@ function updateKeyButton(){
   button.setAttribute("aria-pressed",String(state.showKeys));
   button.textContent=state.showKeys?"Hide key":"Show key";
 }
+function updateFocusButton(){
+  const button=el("focus-projection");
+  button.setAttribute("aria-pressed",String(state.focusProjection));
+  button.textContent=state.focusProjection?"Show full timeline":"Focus projection";
+}
+const focusedStart=(history,horizon)=>history[Math.max(0,history.length-1-
+  Math.max(12,horizon))].date;
 
 /* Each panel has its own explicit Indexed / Nominal preference. Single
    benchmarks initially retain their familiar raw spot and model prices and
@@ -129,6 +136,7 @@ function draw(){
       id!=="commodity-shock"||opt.shock!==0));
     const first=history[0].date,last=history.at(-1),showProjection=opt.projectionsEnabled;
     const end=showProjection?f.scenario.at(-1).date:last.date;
+    const rangeStart=state.focusProjection?focusedStart(history,opt.horizon):first;
     const key=[c.id,c.last_observation,el("history").value].join("|");
     if(state.context!==key){state.context=key;state.range=null;}
     // FIXED SCALE: only reported prices and unadjusted, maximum-horizon
@@ -210,8 +218,8 @@ function draw(){
       legend:{orientation:"h",x:.5,xanchor:"center",
         y:compactPlot()?1.04:1.14,
         font:{size:compactPlot()?9:10},autoexpand:false},
-      xaxis:{type:"date",range:[first,end],dtick:history.length>36?"M12":"M3",
-        tickformat:"%b %Y",showgrid:false,linecolor:"#dfe3e6",automargin:true},
+      xaxis:{type:"date",range:[rangeStart,end],dtick:state.focusProjection?"M3":history.length>36?"M12":"M3",
+        tickformat:state.focusProjection?"%b '%y":"%b %Y",showgrid:false,linecolor:"#dfe3e6",automargin:true},
       yaxis:{title:{text:c.unit,font:{size:11}},
         tickprefix:c.unit==="cents/sheet"?"":"$",
         ticksuffix:c.unit==="cents/sheet"?"¢":"",
@@ -289,6 +297,9 @@ function renderExtras(c,history,f,opt){
     if(zero)cfg.shapes=[{type:"line",xref:"paper",yref:"y",x0:0,x1:1,
       y0:0,y1:0,line:{color:"#9aabb2",dash:"dot",width:1}}];
     if(horizon)cfg.xaxis.range=[f.scenario[0].date,f.scenario.at(-1).date];
+    else if(state.focusProjection&&!category)
+      cfg.xaxis.range=[focusedStart(history,opt.horizon),
+        opt.projectionsEnabled?f.scenario.at(-1).date:last.date];
     return cfg;
   }
   const series=(name,x,y,col,{unit="%",dashed=false}={})=>({
@@ -484,7 +495,8 @@ function renderSingleScaleOverrides(c,opt){
           showlegend:state.showKeys,hovermode:"closest",
           legend:{orientation:"h",x:.5,xanchor:"center",
             y:compactPlot()?1.04:1.18,font:{size:compactPlot()?9:10},autoexpand:false},
-          xaxis:{type:"date",range:rendered.rangeX,showgrid:false,
+          xaxis:{type:"date",range:state.focusProjection?
+            [focusedStart(frames[0].history,opt.horizon),rendered.rangeX[1]]:rendered.rangeX,showgrid:false,
             tickformat:"%b %Y",dtick:frames[0].history.length>36?"M12":"M3",
             linecolor:"#dfe3e6",automargin:true},
           yaxis:{title:"Price index (first visible month = 100)",
@@ -549,6 +561,7 @@ function reset(){
   el("vol").value="1";el("history").value="120";
   el("projections-enabled").checked=true;
   state.showKeys=false;updateKeyButton();
+  state.focusProjection=false;updateFocusButton();
   updateProjectionControls();
   state.context=null;state.range=null;state.axisValues=null;
   state.plotHeight=null;state.modes={};syncModes();state.canvas.reset();schedule();
@@ -825,7 +838,8 @@ function drawComparison(){
       legend:{orientation:"h",x:.5,xanchor:"center",
         y:compactPlot()?1.04:1.18,font:{size:compactPlot()?9:10},
         autoexpand:false},
-      xaxis:{type:"date",range:rendered.rangeX,showgrid:false,
+      xaxis:{type:"date",range:state.focusProjection?
+        [frames.map(frame=>focusedStart(frame.history,opt.horizon)).sort()[0],rendered.rangeX[1]]:rendered.rangeX,showgrid:false,
         tickformat:"%b %Y",dtick:frames[0].history.length>36?"M12":"M3",
         linecolor:"#dfe3e6",automargin:true},
       yaxis:{title:"Price index (first shared month = 100)",
@@ -906,6 +920,9 @@ function drawComparison(){
       }
       if(id==="commodity-models"||id==="commodity-shock"){
         extra.xaxis.range=[rendered.shapes[1].x0,rendered.rangeX[1]];
+      }else if(state.focusProjection&&!study.category){
+        extra.xaxis.range=[frames.map(frame=>focusedStart(frame.history,opt.horizon)).sort()[0],
+          rendered.rangeX[1]];
       }
       plotAdditional(id,study.traces,extra);
     }
@@ -971,7 +988,12 @@ async function init(){
       state.showKeys=!state.showKeys;
       updateKeyButton();schedule();
     });
+    el("focus-projection").addEventListener("click",()=>{
+      state.focusProjection=!state.focusProjection;
+      updateFocusButton();schedule();
+    });
     updateKeyButton();
+    updateFocusButton();
     el("shock").addEventListener("input",schedule);
     el("shock").addEventListener("change",schedule);
     el("reset").addEventListener("click",reset);

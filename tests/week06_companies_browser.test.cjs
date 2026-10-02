@@ -163,7 +163,7 @@ async function selectPrimary(page,ticker){
       // Reverse input order to verify client enforces newest first.
       return route.fulfill({headers,json:articles.reverse()});
     });
-    await page.route("**/week-06/companies/data/*.json",route=>{
+    await page.route("**/week-06/equities/data/*.json",route=>{
       const ticker=route.request().url().match(/\/([A-Z]+)\.json$/)?.[1];
       const d=fixture(ticker);
       if(ticker==="AAPL"){
@@ -174,7 +174,7 @@ async function selectPrimary(page,ticker){
       }
       return route.fulfill({json:d});
     });
-    await page.route("**/week-06/companies/data/manifest.json",route=>route.fulfill({
+    await page.route("**/week-06/equities/data/manifest.json",route=>route.fulfill({
       json:{schema_version:1,status:"ready",retrieved_utc:"2026-09-29T00:00:00+00:00",
         companies:symbols.map(t=>({
           ticker:t,company:t,file:"data/"+t+".json",latest_fiscal_end:"2025-06-30"
@@ -195,7 +195,7 @@ async function selectPrimary(page,ticker){
       "Macro tab switch must be horizontally centered regardless of page");
     assert.equal(await page.locator(".workspaces [aria-current=page]").textContent(),"Rates");
     await page.locator(".workspaces a").nth(1).click();
-    await page.waitForURL("**/week-06/companies/");
+    await page.waitForURL("**/week-06/equities/");
     onCompany=true;
     await page.waitForFunction(()=>
       document.querySelectorAll("#ticker-pills .ticker-pill").length===1 &&

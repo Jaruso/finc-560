@@ -1,7 +1,7 @@
 const test=require("node:test");
 const assert=require("node:assert/strict");
-const R=require("../docs/week-06/companies/research.js");
-const Forecast=require("../docs/week-06/companies/model.js");
+const R=require("../docs/week-06/equities/research.js");
+const Forecast=require("../docs/week-06/equities/model.js");
 const money=(concept,value)=>({concept:"us-gaap_"+concept,unit:"USD",value:value*1e6});
 function makeYear(year,opts={}){
   const endDate=year+"-09-30",accessNumber="0000320193-"+String(year).slice(-2)+"-000001";

@@ -97,12 +97,19 @@
     projectionsEnabled:el("projections-enabled").checked,
     showKeys
   });
-  let showKeys=false;
+  let showKeys=false,focusProjection=false;
   function updateKeyButton(){
     const button=el("toggle-keys");
     button.setAttribute("aria-pressed",String(showKeys));
     button.textContent=showKeys?"Hide key":"Show key";
   }
+  function updateFocusButton(){
+    const button=el("focus-projection");
+    button.setAttribute("aria-pressed",String(focusProjection));
+    button.textContent=focusProjection?"Show full timeline":"Focus projection";
+  }
+  const focusedStart=(rows,horizon)=>rows[Math.max(0,rows.length-1-Math.max(1,horizon))]
+    .fiscal_end;
   function updateProjectionControls(){
     const enabled=el("projections-enabled").checked;
     for(const control of document.querySelectorAll(".projection-dependent")){
@@ -369,6 +376,13 @@
         chart=C.study(frames,id,"net","nominal",assumptions);
         setScaleControls(true);
       }
+      if(focusProjection&&chart.layout?.xaxis?.type==="date"){
+        const start=frames.map(frame=>focusedStart(frame.history,assumptions.horizon)).sort()[0];
+        const end=(assumptions.projectionsEnabled
+          ?frames.map(frame=>frame.forecast.projected.at(-1).fiscal_end)
+          :frames.map(frame=>frame.history.at(-1).fiscal_end)).sort().at(-1);
+        chart.layout.xaxis.range=[start,end];
+      }
       el(id+"-context").textContent=chart.context;
       if(id==="company-chart"){
         el("chart-heading").textContent=assumptions.projectionsEnabled?
@@ -421,6 +435,7 @@
     const xObserved=history.map(r=>r.fiscal_end);
     const xProjected=result.projected.map(r=>r.fiscal_end);
     const boundary=xObserved.at(-1),endDate=xProjected.at(-1);
+    const rangeStart=focusProjection?focusedStart(history,assumptions.horizon):xObserved[0];
     if(!history.length||boundary!==xProjected[0]||xObserved[0]>=endDate||
        FINANCIAL_METRICS.some(metric=>{
          const key=M.METRICS[metric];
@@ -487,9 +502,9 @@
     }
     const overflow=shownValues.some(v=>v<range[0]||v>range[1]);
 
-    const total=Date.parse(endDate)-Date.parse(xObserved[0]);
+    const total=Date.parse(endDate)-Date.parse(rangeStart);
     const cutoff=showProjection
-      ?(Date.parse(boundary)-Date.parse(xObserved[0]))/total:1;
+      ?(Date.parse(boundary)-Date.parse(rangeStart))/total:1;
     const layout={
       autosize:true,height:fullChartHeight(),
       margin:compactPlot()
@@ -501,8 +516,8 @@
       legend:{orientation:"h",x:.5,xanchor:"center",
         y:compactPlot()?1.045:1.12,font:{size:compactPlot()?9:10},
         groupclick:"togglegroup",autoexpand:false},
-      xaxis:{type:"date",range:[xObserved[0],showProjection?endDate:boundary],
-        tickformat:"%Y",dtick:"M12",showgrid:false,
+      xaxis:{type:"date",range:[rangeStart,showProjection?endDate:boundary],
+        tickformat:focusProjection?"%b '%y":"%Y",dtick:focusProjection?"M3":"M12",showgrid:false,
         linecolor:"#dfe3e6",automargin:true},
       yaxis:{title:{text:unit,font:{size:11}},
         tickprefix:"$",ticksuffix:"B",gridcolor:"#edf1f2",
@@ -514,7 +529,7 @@
           y0:0,y1:1,line:{color:"#92aba7",width:1.35,dash:"dash"}}
       ]:[],annotations:[],
       meta:{singleChart:true,continuousCalendar:true,cutoffFraction:cutoff,
-        observedStart:xObserved[0],observedEnd:boundary,
+        observedStart:rangeStart,observedEnd:boundary,
         projectionStart:showProjection?boundary:null,
         projectionEnd:showProjection?endDate:null,
         projectionsEnabled:showProjection,measures:FINANCIAL_METRICS.slice(),
@@ -582,6 +597,7 @@
     const xs=history.map(r=>r.fiscal_end);
     const xp=result.projected.map(r=>r.fiscal_end);
     const boundary=xs.at(-1),end=xp.at(-1);
+    const rangeStart=focusProjection?focusedStart(history,assumptions.horizon):xs[0];
     const latest=history.at(-1);
     const bcolor=colors.baseline;
     const value=n=>Number(n/1000);
@@ -622,7 +638,7 @@
         "<extra>"+name+"</extra>"
     });
     const addBoundary=(layout)=>{
-      layout.xaxis.range=[xs[0],showProjection?end:boundary];
+      layout.xaxis.range=[rangeStart,showProjection?end:boundary];
       if(!showProjection)return;
       layout.shapes.push(
         {type:"rect",xref:"x",yref:"paper",x0:boundary,x1:end,
@@ -963,7 +979,13 @@
         updateKeyButton();
         queueRender();
       });
+      el("focus-projection").addEventListener("click",()=>{
+        focusProjection=!focusProjection;
+        updateFocusButton();
+        queueRender();
+      });
       updateKeyButton();
+      updateFocusButton();
       updateProjectionControls();
       for(const id of ["method","horizon","history"]){
         el(id).addEventListener("change",queueRender);
@@ -987,6 +1009,8 @@
         el("projections-enabled").checked=true;
         showKeys=false;
         updateKeyButton();
+        focusProjection=false;
+        updateFocusButton();
         updateProjectionControls();
         canvas.reset();queueRender();
       });

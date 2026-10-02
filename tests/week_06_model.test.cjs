@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { fitSensitivities, lastYears, project } = require("../docs/week-06/model.js");
+const { fitSensitivities, lastYears, project } = require("../docs/week-06/rates/model.js");
 
 test("100bp shock respects independent five- and ten-year response assumptions", () => {
   const result = project({ date: "2026-09-01", dgs5: 3.8, dgs10: 4.0 }, 100, 0.8, 0.25, 12, 25);
@@ -45,7 +45,7 @@ test("insufficient policy variation cannot produce a fitted response", () => {
 });
 
 test("user-defined envelope is symmetric, not an estimated standard deviation", () => {
-  const { scenarioBands } = require("../docs/week-06/model.js");
+  const { scenarioBands } = require("../docs/week-06/rates/model.js");
   const sim = project({ date: "2026-09-01", dgs5: 4, dgs10: 4.2 }, -100, 0.7, 0.3, 12, 40);
   const five = scenarioBands(sim.path, "dgs5");
   const ten = scenarioBands(sim.path, "dgs10");

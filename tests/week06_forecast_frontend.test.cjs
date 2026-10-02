@@ -1,6 +1,6 @@
 const test=require("node:test");
 const assert=require("node:assert/strict");
-const M=require("../docs/week-06/forecast_model.js");
+const M=require("../docs/week-06/rates/forecast_model.js");
 const {makeFixture}=require("./week06_forecast_fixture.cjs");
 
 test("rejects stale scenario-only v1 snapshots and invalid origins",()=>{

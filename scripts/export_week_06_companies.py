@@ -14,7 +14,7 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-TARGET = ROOT / "docs" / "week-06" / "companies" / "data"
+TARGET = ROOT / "docs" / "week-06" / "equities" / "data"
 FEATURED = ("MSFT", "AAPL", "HD")
 # SEC's ticker directory blocks some hosted runners. Verify direct issuer IDs.
 FEATURED_CIK = {"MSFT": 789019, "AAPL": 320193, "HD": 354950, "CAT": 18230}

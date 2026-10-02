@@ -1,10 +1,10 @@
 const test=require("node:test");
 const assert=require("node:assert/strict");
-const C=require("../docs/week-06/companies/compare.js");
-const M=require("../docs/week-06/companies/model.js");
-const microsoft=require("../docs/week-06/companies/data/MSFT.json");
-const apple=require("../docs/week-06/companies/data/AAPL.json");
-const homeDepot=require("../docs/week-06/companies/data/HD.json");
+const C=require("../docs/week-06/equities/compare.js");
+const M=require("../docs/week-06/equities/model.js");
+const microsoft=require("../docs/week-06/equities/data/MSFT.json");
+const apple=require("../docs/week-06/equities/data/AAPL.json");
+const homeDepot=require("../docs/week-06/equities/data/HD.json");
 const options={method:"cagr",horizon:3,growth:0,margin:0};
 const frames=()=>C.prepare([microsoft,apple],options,5);
 

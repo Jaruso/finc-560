@@ -1,7 +1,7 @@
 const test=require("node:test");
 const assert=require("node:assert/strict");
-const M=require("../docs/week-06/companies/model.js");
-const C=require("../docs/week-06/companies/compare.js");
+const M=require("../docs/week-06/equities/model.js");
+const C=require("../docs/week-06/equities/compare.js");
 
 const names=["MSFT","AAPL","GOOG","NVDA"];
 const year=i=>String(2019+i)+"-06-30";

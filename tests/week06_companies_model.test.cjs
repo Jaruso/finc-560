@@ -1,6 +1,6 @@
 const test=require("node:test");
 const assert=require("node:assert/strict");
-const M=require("../docs/week-06/companies/model.js");
+const M=require("../docs/week-06/equities/model.js");
 const {fixture}=require("./week06_company_fixture.cjs");
 test("annual SEC input rejects absent statements and nonmonotonic history",()=>{
   const d=fixture();
