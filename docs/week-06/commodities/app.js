@@ -315,15 +315,37 @@ function renderExtras(c,history,f,opt){
       return o.date>=cutoff&&Number.isFinite(prior)&&prior>0
         ?[{date:o.date,value:(o.value/prior-1)*100}]:[];
     });
-    context("commodity-yoy",yoy.length?
-      "Latest verified 12-month change "+(yoy.at(-1).value>=0?"+":"")+
-      safeNumber(yoy.at(-1).value)+"%.":"Requires matching prior-year observations");
+    const future=M.yearOverYearForecast(c,f,"indexed");
+    const projected=future.scenario.filter(row=>row.projected);
+    const terminal=projected.at(-1);
+    const latest=yoy.length?
+      "Latest observed YoY "+(yoy.at(-1).value>=0?"+":"")+
+        safeNumber(yoy.at(-1).value)+"%.":"No comparable prior-year observation.";
+    context("commodity-yoy",latest+" · "+
+      (terminal?"Modeled "+opt.horizon+"-month endpoint YoY "+
+        (terminal.value>=0?"+":"")+safeNumber(terminal.value)+"%.":"Projected YoY needs an exact prior-year month.")+
+      " Solid = observed; dashed = scenario; dotted = unshocked baseline when applicable.");
     const cfg=layout("commodity-yoy",{percent:true,zero:true});
+    cfg.showlegend=true;
+    cfg.margin.t=compactPlot()?34:57;
     cfg.yaxis.title="12-month change (%)";
-    plotAdditional("commodity-yoy",[
-      series("Reported annual change",yoy.map(r=>r.date),
+    cfg.shapes.push({type:"line",xref:"x",yref:"paper",
+      x0:last.date,x1:last.date,y0:0,y1:1,
+      line:{color:"#92aba7",dash:"dash",width:1}});
+    const paths=[
+      series("Observed YoY",yoy.map(r=>r.date),
         yoy.map(r=>r.value),color.main)
-    ],cfg);
+    ];
+    if(opt.shock&&future.baseline.some(row=>row.projected)){
+      const baseline=series("Unshocked YoY",future.baseline.map(r=>r.date),
+        future.baseline.map(r=>r.value),color.secondary);
+      baseline.line.dash="dot";baseline.line.width=1.6;
+      paths.push(baseline);
+    }
+    if(projected.length)
+      paths.push(series("Modeled YoY",future.scenario.map(r=>r.date),
+        future.scenario.map(r=>r.value),color.main,{dashed:true}));
+    plotAdditional("commodity-yoy",paths,cfg);
   }
   if(chosen.has("commodity-vol")){
     const annual=[];
