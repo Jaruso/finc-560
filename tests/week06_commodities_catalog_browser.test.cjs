@@ -160,7 +160,16 @@ async function switchMode(page,id,mode){
    await page.waitForFunction(()=>document.querySelector("#commodity-chart")
      ?.layout?.meta?.commodities?.length===4);
    await page.waitForFunction(()=>["commodity-yoy","commodity-returns","commodity-vol"]
-     .every(id=>document.getElementById(id)?.data?.length===4));
+     .every(id=>document.getElementById(id)?.data?.length===
+       (id==="commodity-yoy"?8:4)));
+   const initialYoy=await page.locator("#commodity-yoy").evaluate(g=>({
+     observed:g.data.filter(t=>t.meta.kind==="solid").map(t=>t.y.slice()),
+     forecast:g.data.filter(t=>t.meta.kind==="dash").map(t=>t.y.at(-1)),
+     lineStyles:g.data.map(t=>t.meta.kind)
+   }));
+   assert.equal(initialYoy.observed.length,4);
+   assert.equal(initialYoy.forecast.length,4);
+   assert.equal(initialYoy.lineStyles.filter(k=>k==="dash").length,4);
    assert.equal(await page.locator("#commodity-selection-count").textContent(),"4 of 4");
    assert.match(await page.locator("#commodity-summary").textContent(),
      /^WTI crude oil \+ 3 comparisons$/);
@@ -235,6 +244,17 @@ async function switchMode(page,id,mode){
      ?.data?.some(t=>t.name==="Gold baseline")&&
      document.querySelector("#commodity-chart")?.data?.some(
        t=>t.name==="Gold forecast"&&t.line.dash==="dash"));
+   await page.waitForFunction(()=>document.querySelector("#commodity-yoy")
+     ?.data?.length===12);
+   const shockedYoy=await page.locator("#commodity-yoy").evaluate(g=>({
+     observed:g.data.filter(t=>t.meta.kind==="solid").map(t=>t.y.slice()),
+     baseline:g.data.filter(t=>t.meta.kind==="dot").map(t=>t.y.at(-1)),
+     scenario:g.data.filter(t=>t.meta.kind==="dash").map(t=>t.y.at(-1))
+   }));
+   assert.deepEqual(shockedYoy.observed,initialYoy.observed,
+     "Four-asset annual history must not change under a conditional shock");
+   assert.ok(shockedYoy.scenario.every((value,i)=>
+     value!==shockedYoy.baseline[i]));
    const nominalShock=await page.locator("#commodity-chart").evaluate(g=>({
      history:g.data[0].y.slice(),ranges:[g.layout.yaxis.range.slice(),
        g.layout.yaxis2.range.slice(),g.layout.yaxis3.range.slice()],
@@ -295,7 +315,7 @@ async function switchMode(page,id,mode){
        count:g.data.length,axes:g.layout.meta.axesByUnit,
        mode:g.layout.meta.mode
      }));
-     assert.equal(result.count,4);
+     assert.equal(result.count,id==="commodity-yoy"?12:4);
      assert.equal(result.mode,"nominal");
      assert.deepEqual(result.axes,nominal.axes);
      assert.equal(await page.locator("#commodity-chart").evaluate(g=>
