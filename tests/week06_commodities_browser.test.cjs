@@ -233,6 +233,14 @@ async function slide(page,n,value){
     await picker.locator("summary").click();
     assert.equal(await page.locator("#data-error").isVisible(),false);
     await page.setViewportSize({width:390,height:844});
+    await page.waitForFunction(()=>
+      document.querySelector("#commodity-chart")?.layout?.margin?.t===38);
+    const mobileDensity=await page.evaluate(()=>({
+      card:document.querySelector('[data-chart="commodity-chart"]').getBoundingClientRect().height,
+      top:document.querySelector("#commodity-chart").layout.margin.t
+    }));
+    assert.ok(mobileDensity.card<295&&mobileDensity.top<=38,
+      "Commodity mobile cards should fit content without desktop plot whitespace");
     const mobile=await page.evaluate(()=>({
       scroll:document.documentElement.scrollWidth,width:innerWidth,
       card:document.querySelector(".commodity-chart-card").getBoundingClientRect().width,
