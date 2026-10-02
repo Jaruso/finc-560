@@ -279,6 +279,14 @@ async function slide(page,id,v){
     fs.mkdirSync("test-artifacts",{recursive:true});
     await page.screenshot({path:"test-artifacts/week06-fitted-model.png",fullPage:false});
     await page.setViewportSize({width:390,height:844});
+    await page.waitForFunction(()=>
+      document.querySelector("#chart-yields")?.layout?.margin?.t===46);
+    const compactBonds=await page.evaluate(()=>({
+      card:document.querySelector('[data-chart="chart-yields"]').getBoundingClientRect().height,
+      top:document.querySelector("#chart-yields").layout.margin.t
+    }));
+    assert.ok(compactBonds.card<295&&compactBonds.top<=46,
+      "Mobile Bonds cards and Plotly legends must remain compact");
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));
     assert.equal(await page.locator(".mobile-controls-toggle").isVisible(),true);
     await page.waitForFunction(()=>getComputedStyle(
