@@ -11,11 +11,11 @@
 <link rel="stylesheet" href="../dashboard.css?v=mobile-density-20261001">
 <link rel="stylesheet" href="./commodities.css?v=commodity-quote-half-life-20261001">
 <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
-<script defer src="./model.js?v=commodity-catalog-20261001"></script>
-<script defer src="./comparison.js?v=full-nominal-domain-20261001"></script>
+<script defer src="./model.js?v=commodity-yoy-projections-20261001"></script>
+<script defer src="./comparison.js?v=commodity-yoy-projections-20261001"></script>
 <script defer src="../chart-canvas.js?v=20261001"></script>
 <script defer src="../mobile-controls.js?v=20261001"></script>
-<script defer src="./app.js?v=mobile-density-20261001"></script>
+<script defer src="./app.js?v=commodity-yoy-projections-20261001"></script>
 </head>
 <body>
 <header class="site-header week-06-header commodity-header">
@@ -148,6 +148,7 @@
             <p>Verified EIA/FRED monthly spot-price averages, World Bank monthly nominal physical benchmarks, and an IMF uranium monthly reference when available. Sources are identified for each commodity. These are not real-time futures or live tradable quotes; the current incomplete month is excluded.</p>
             <p><strong>Mean reversion:</strong> A bounded log-price AR(1) fitted to up to 60 historical months. <strong>Trend:</strong> Recent 36-month log-linear OLS trend with a ±3.5% monthly slope cap. <strong>Unchanged:</strong> The latest observed monthly average.</p>
             <p><strong>Scenario:</strong> The price shock is a hypothetical immediate percentage adjustment. It decays by half over the selected number of months. This is a sensitivity calculation, not a supply-demand forecast.</p>
+            <p><strong>Year-over-year projections:</strong> For every modeled month, compare its modeled price with that commodity’s price in the exact same calendar month one year earlier. Indexed shows percentage changes; Nominal shows differences in original commodity price units. Solid lines are observed annual changes, dashed lines are conditional projections, and dotted lines are unshocked model paths when a shock is selected. Missing reference months are never estimated or silently substituted. These are derived scenario changes, not separately trained YoY forecasts.</p>
             <p><strong>Corridor:</strong> Trailing monthly realized log-return volatility multiplied by the square root of the forecast horizon. Displayed bounds are illustrative, not a calibrated confidence interval or empirically validated forecast errors.</p>
             <p>Source links and reporting currency belong to each selected commodity. Forecast calculations run locally in your browser.</p>
           </div>
@@ -215,9 +216,9 @@
                 <button type="button" data-mode="nominal" aria-pressed="false">Nominal</button>
               </div>
             </div>
-            <p id="commodity-yoy-context">Percentage change from the comparable prior year</p>
+            <p id="commodity-yoy-context">Observed and projected changes from each exact prior-year month</p>
           </header>
-          <div id="commodity-yoy" class="plot" role="img" aria-label="Year-over-year change in actual commodity prices"></div>
+          <div id="commodity-yoy" class="plot" role="img" aria-label="Observed and modeled year-over-year commodity price changes"></div>
         </article>
         <article class="chart-card card" data-chart="commodity-returns">
           <header class="chart-heading">
