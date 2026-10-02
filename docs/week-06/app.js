@@ -445,7 +445,7 @@
     el("chart-spread-context").textContent="Observed "+bps(first.spread)+
       " · "+s.horizon+"-month modeled "+bps(last.spread)+
       (first.spread<0?" · Currently inverted":last.spread<0?
-        " · Modeled inversion":" · Zero = inversion threshold");
+        " · Modeled inversion":"");
   }
   function render(){
     if(!data)return;
