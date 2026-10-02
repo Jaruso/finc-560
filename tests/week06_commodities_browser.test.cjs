@@ -86,7 +86,21 @@ async function slide(page,n,value){
     assert.equal(await page.locator(".kpis").count(),0,
       "Commodity results belong in chart headings and hovers");
     await page.waitForFunction(()=>["commodity-yoy","commodity-returns","commodity-vol"]
-      .every(id=>document.getElementById(id)?.data?.length===1));
+        .every(id=>document.getElementById(id)?.data?.length===
+        (id==="commodity-yoy"?2:1)));
+    const defaultYoy=await page.locator("#commodity-yoy").evaluate(g=>({
+      kinds:g.data.map(t=>t.line.dash||"solid"),
+      final:g.data.at(-1).y.at(-1),
+      projectedDate:g.data.at(-1).x.at(-1),
+      anchor:g.data.at(-1).y[0],
+      observedLast:g.data[0].y.at(-1)
+    }));
+    assert.deepEqual(defaultYoy.kinds,["solid","dash"]);
+    assert.equal(defaultYoy.anchor,defaultYoy.observedLast,
+      "Forecast YoY must connect to the last measured YoY change");
+    assert.equal(defaultYoy.projectedDate,
+      require("../docs/week-06/commodities/model.js")
+        .shiftMonth(fixture().commodities[0].last_observation,6));
     const four=await page.locator("#chart-stage").evaluate(stage=>
       [...stage.querySelectorAll(".chart-card:not(.is-view-hidden)")].map(node=>{
         const rect=node.getBoundingClientRect();
@@ -118,6 +132,20 @@ async function slide(page,n,value){
       const r=n.getBoundingClientRect();return r.x+r.width/2;});
     assert.ok(Math.abs(navigationCenter-720)<1,"Three-tab switch is centered");
     await slide(page,"#shock",20);
+    await page.waitForFunction(()=>document.querySelector("#commodity-yoy")
+      ?.data?.length===3);
+    const shockedYoy=await page.locator("#commodity-yoy").evaluate(g=>({
+      observed:g.data[0].y.slice(),
+      baseline:g.data[1].y.at(-1),
+      scenario:g.data[2].y.at(-1),
+      names:g.data.map(t=>t.name)
+    }));
+    assert.equal(shockedYoy.observed.at(-1),defaultYoy.observedLast,
+      "Shock sliders must not revise reported year-over-year changes");
+    assert.notEqual(shockedYoy.scenario,shockedYoy.baseline,
+      "Conditional shock must propagate into the projected YoY chart");
+    assert.ok(shockedYoy.names.includes("Unshocked YoY")&&
+      shockedYoy.names.includes("Modeled YoY"));
     await page.waitForFunction(previous=>{
       const g=document.querySelector("#commodity-chart");
       return g?.data?.some(t=>t.name==="Conditional scenario (dashed)" &&
