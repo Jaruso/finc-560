@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "status": "ready",
-  "retrieved_utc": "2026-10-01T21:14:39.074230+00:00",
+  "retrieved_utc": "2026-10-02T19:57:11.310761+00:00",
   "method": "Verified EIA/FRED spot means, WB monthly benchmark prices and attributed IMF minerals and agricultural benchmarks",
   "commodities": [
     {
@@ -3160,7 +3160,7 @@
       "source_id": "WB:crude-oil-average",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -6361,6 +6361,10 @@
         {
           "date": "2026-08-01",
           "value": 84.4
+        },
+        {
+          "date": "2026-09-01",
+          "value": 102.3
         }
       ]
     },
@@ -6373,7 +6377,7 @@
       "source_id": "WB:crude-oil-brent",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -9574,6 +9578,10 @@
         {
           "date": "2026-08-01",
           "value": 90.9
+        },
+        {
+          "date": "2026-09-01",
+          "value": 116.8
         }
       ]
     },
@@ -9586,7 +9594,7 @@
       "source_id": "WB:crude-oil-dubai",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -12787,6 +12795,10 @@
         {
           "date": "2026-08-01",
           "value": 79.7
+        },
+        {
+          "date": "2026-09-01",
+          "value": 93.3
         }
       ]
     },
@@ -12799,7 +12811,7 @@
       "source_id": "WB:crude-oil-wti",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1982-01-01",
@@ -14944,6 +14956,10 @@
         {
           "date": "2026-08-01",
           "value": 82.7
+        },
+        {
+          "date": "2026-09-01",
+          "value": 96.9
         }
       ]
     },
@@ -14956,7 +14972,7 @@
       "source_id": "WB:coal-australian",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1970-01-01",
@@ -17677,6 +17693,10 @@
         {
           "date": "2026-08-01",
           "value": 135.2
+        },
+        {
+          "date": "2026-09-01",
+          "value": 147.1
         }
       ]
     },
@@ -17689,7 +17709,7 @@
       "source_id": "WB:coal-south-african",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1984-01-01",
@@ -19738,6 +19758,10 @@
         {
           "date": "2026-08-01",
           "value": 96.8
+        },
+        {
+          "date": "2026-09-01",
+          "value": 98.2
         }
       ]
     },
@@ -19750,7 +19774,7 @@
       "source_id": "WB:natural-gas-us",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -22951,6 +22975,10 @@
         {
           "date": "2026-08-01",
           "value": 2.77
+        },
+        {
+          "date": "2026-09-01",
+          "value": 2.95
         }
       ]
     },
@@ -22963,7 +22991,7 @@
       "source_id": "WB:natural-gas-europe",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -26164,6 +26192,10 @@
         {
           "date": "2026-08-01",
           "value": 21.11
+        },
+        {
+          "date": "2026-09-01",
+          "value": 25.42
         }
       ]
     },
@@ -26176,7 +26208,7 @@
       "source_id": "WB:liquefied-natural-gas-japan",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1977-01-01",
@@ -28560,7 +28592,11 @@
         },
         {
           "date": "2026-08-01",
-          "value": 13.94
+          "value": 15.27
+        },
+        {
+          "date": "2026-09-01",
+          "value": 14.25
         }
       ]
     },
@@ -28573,7 +28609,7 @@
       "source_id": "WB:cocoa",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -31774,6 +31810,10 @@
         {
           "date": "2026-08-01",
           "value": 5.95
+        },
+        {
+          "date": "2026-09-01",
+          "value": 5.92
         }
       ]
     },
@@ -31786,7 +31826,7 @@
       "source_id": "WB:coffee-arabica",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -34987,6 +35027,10 @@
         {
           "date": "2026-08-01",
           "value": 7.97
+        },
+        {
+          "date": "2026-09-01",
+          "value": 7.26
         }
       ]
     },
@@ -34999,7 +35043,7 @@
       "source_id": "WB:coffee-robusta",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -38200,6 +38244,10 @@
         {
           "date": "2026-08-01",
           "value": 3.98
+        },
+        {
+          "date": "2026-09-01",
+          "value": 3.69
         }
       ]
     },
@@ -38212,7 +38260,7 @@
       "source_id": "WB:tea-avg-3-auctions",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -41413,6 +41461,10 @@
         {
           "date": "2026-08-01",
           "value": 2.91
+        },
+        {
+          "date": "2026-09-01",
+          "value": 2.85
         }
       ]
     },
@@ -41425,7 +41477,7 @@
       "source_id": "WB:tea-colombo",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -44626,6 +44678,10 @@
         {
           "date": "2026-08-01",
           "value": 3.61
+        },
+        {
+          "date": "2026-09-01",
+          "value": 3.73
         }
       ]
     },
@@ -44638,7 +44694,7 @@
       "source_id": "WB:tea-kolkata",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -47839,6 +47895,10 @@
         {
           "date": "2026-08-01",
           "value": 2.85
+        },
+        {
+          "date": "2026-09-01",
+          "value": 2.53
         }
       ]
     },
@@ -47851,7 +47911,7 @@
       "source_id": "WB:tea-mombasa",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -51052,6 +51112,10 @@
         {
           "date": "2026-08-01",
           "value": 2.25
+        },
+        {
+          "date": "2026-09-01",
+          "value": 2.3
         }
       ]
     },
@@ -51064,7 +51128,7 @@
       "source_id": "WB:coconut-oil",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -54264,7 +54328,11 @@
         },
         {
           "date": "2026-08-01",
-          "value": 1853.0
+          "value": 1981.0
+        },
+        {
+          "date": "2026-09-01",
+          "value": 2083.0
         }
       ]
     },
@@ -54277,7 +54345,7 @@
       "source_id": "WB:groundnuts",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1980-01-01",
@@ -56517,7 +56585,11 @@
         },
         {
           "date": "2026-08-01",
-          "value": 1250.0
+          "value": 1500.0
+        },
+        {
+          "date": "2026-09-01",
+          "value": 1563.0
         }
       ]
     },
@@ -56530,7 +56602,7 @@
       "source_id": "WB:fish-meal",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1979-01-01",
@@ -58818,7 +58890,11 @@
         },
         {
           "date": "2026-08-01",
-          "value": 2500.0
+          "value": 2605.0
+        },
+        {
+          "date": "2026-09-01",
+          "value": 2916.0
         }
       ]
     },
@@ -58831,7 +58907,7 @@
       "source_id": "WB:groundnut-oil",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -62032,6 +62108,10 @@
         {
           "date": "2026-08-01",
           "value": 1833.0
+        },
+        {
+          "date": "2026-09-01",
+          "value": 1860.0
         }
       ]
     },
@@ -62044,7 +62124,7 @@
       "source_id": "WB:palm-oil",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -65216,35 +65296,39 @@
         },
         {
           "date": "2026-01-01",
-          "value": 1005.0
+          "value": 1013.0
         },
         {
           "date": "2026-02-01",
-          "value": 1039.0
+          "value": 1064.0
         },
         {
           "date": "2026-03-01",
-          "value": 1109.0
+          "value": 1167.0
         },
         {
           "date": "2026-04-01",
-          "value": 1146.0
+          "value": 1181.0
         },
         {
           "date": "2026-05-01",
-          "value": 1136.0
+          "value": 1168.0
         },
         {
           "date": "2026-06-01",
-          "value": 1104.0
+          "value": 1142.0
         },
         {
           "date": "2026-07-01",
-          "value": 1101.0
+          "value": 1133.0
         },
         {
           "date": "2026-08-01",
-          "value": 1117.0
+          "value": 1132.0
+        },
+        {
+          "date": "2026-09-01",
+          "value": 1180.0
         }
       ]
     },
@@ -65257,7 +65341,7 @@
       "source_id": "WB:palm-kernel-oil",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1996-01-01",
@@ -66730,6 +66814,10 @@
         {
           "date": "2026-08-01",
           "value": 2264.0
+        },
+        {
+          "date": "2026-09-01",
+          "value": 2355.0
         }
       ]
     },
@@ -66742,7 +66830,7 @@
       "source_id": "WB:soybeans",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -69943,6 +70031,10 @@
         {
           "date": "2026-08-01",
           "value": 482.0
+        },
+        {
+          "date": "2026-09-01",
+          "value": 524.0
         }
       ]
     },
@@ -69955,7 +70047,7 @@
       "source_id": "WB:soybean-oil",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -73155,7 +73247,11 @@
         },
         {
           "date": "2026-08-01",
-          "value": 1638.0
+          "value": 1639.0
+        },
+        {
+          "date": "2026-09-01",
+          "value": 1615.0
         }
       ]
     },
@@ -73168,7 +73264,7 @@
       "source_id": "WB:soybean-meal",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -76368,7 +76464,11 @@
         },
         {
           "date": "2026-08-01",
-          "value": 403.0
+          "value": 406.0
+        },
+        {
+          "date": "2026-09-01",
+          "value": 447.0
         }
       ]
     },
@@ -76381,7 +76481,7 @@
       "source_id": "WB:rapeseed-oil",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "2002-02-01",
@@ -77562,6 +77662,10 @@
         {
           "date": "2026-08-01",
           "value": 1474.0
+        },
+        {
+          "date": "2026-09-01",
+          "value": 1440.0
         }
       ]
     },
@@ -77574,7 +77678,7 @@
       "source_id": "WB:sunflower-oil",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "2002-02-01",
@@ -78734,7 +78838,11 @@
         },
         {
           "date": "2026-08-01",
-          "value": 1492.0
+          "value": 1484.0
+        },
+        {
+          "date": "2026-09-01",
+          "value": 1390.0
         }
       ]
     },
@@ -78747,7 +78855,7 @@
       "source_id": "WB:maize",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -81948,6 +82056,10 @@
         {
           "date": "2026-08-01",
           "value": 224.0
+        },
+        {
+          "date": "2026-09-01",
+          "value": 239.6
         }
       ]
     },
@@ -81960,7 +82072,7 @@
       "source_id": "WB:rice-thai-5",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -85161,6 +85273,10 @@
         {
           "date": "2026-08-01",
           "value": 471.0
+        },
+        {
+          "date": "2026-09-01",
+          "value": 482.0
         }
       ]
     },
@@ -85173,7 +85289,7 @@
       "source_id": "WB:rice-thai-25",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1986-01-01",
@@ -87094,6 +87210,10 @@
         {
           "date": "2026-08-01",
           "value": 447.0
+        },
+        {
+          "date": "2026-09-01",
+          "value": 461.0
         }
       ]
     },
@@ -87106,7 +87226,7 @@
       "source_id": "WB:rice-thai-a-1",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1986-01-01",
@@ -89059,6 +89179,10 @@
         {
           "date": "2026-08-01",
           "value": 452.8
+        },
+        {
+          "date": "2026-09-01",
+          "value": 473.2
         }
       ]
     },
@@ -89071,7 +89195,7 @@
       "source_id": "WB:rice-viet-namese-5",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "2003-12-01",
@@ -89079,91 +89203,91 @@
         },
         {
           "date": "2004-01-01",
-          "value": 198.8175
+          "value": 198.8
         },
         {
           "date": "2004-02-01",
-          "value": 204.07
+          "value": 204.1
         },
         {
           "date": "2004-03-01",
-          "value": 225.802
+          "value": 225.8
         },
         {
           "date": "2004-04-01",
-          "value": 240.71
+          "value": 240.7
         },
         {
           "date": "2004-05-01",
-          "value": 236.1425
+          "value": 236.1
         },
         {
           "date": "2004-06-01",
-          "value": 230.742
+          "value": 230.7
         },
         {
           "date": "2004-07-01",
-          "value": 228.9625
+          "value": 229.0
         },
         {
           "date": "2004-08-01",
-          "value": 232.715
+          "value": 232.7
         },
         {
           "date": "2004-09-01",
-          "value": 224.172
+          "value": 224.2
         },
         {
           "date": "2004-10-01",
-          "value": 222.145
+          "value": 222.1
         },
         {
           "date": "2004-11-01",
-          "value": 233.07
+          "value": 233.1
         },
         {
           "date": "2004-12-01",
-          "value": 238.512
+          "value": 238.5
         },
         {
           "date": "2005-01-01",
-          "value": 255.3225
+          "value": 255.3
         },
         {
           "date": "2005-02-01",
-          "value": 265.6425
+          "value": 265.6
         },
         {
           "date": "2005-03-01",
-          "value": 262.916
+          "value": 262.9
         },
         {
           "date": "2005-04-01",
-          "value": 259.925
+          "value": 259.9
         },
         {
           "date": "2005-05-01",
-          "value": 256.145
+          "value": 256.1
         },
         {
           "date": "2005-06-01",
-          "value": 241.488
+          "value": 241.5
         },
         {
           "date": "2005-07-01",
-          "value": 237.285
+          "value": 237.3
         },
         {
           "date": "2005-08-01",
-          "value": 255.654
+          "value": 255.7
         },
         {
           "date": "2005-09-01",
-          "value": 256.9975
+          "value": 257.0
         },
         {
           "date": "2005-10-01",
-          "value": 269.3575
+          "value": 269.4
         },
         {
           "date": "2005-11-01",
@@ -89171,43 +89295,43 @@
         },
         {
           "date": "2006-01-01",
-          "value": 263.856667
+          "value": 263.9
         },
         {
           "date": "2006-02-01",
-          "value": 264.2875
+          "value": 264.3
         },
         {
           "date": "2006-03-01",
-          "value": 244.856
+          "value": 244.9
         },
         {
           "date": "2006-04-01",
-          "value": 244.25
+          "value": 244.3
         },
         {
           "date": "2006-05-01",
-          "value": 256.228
+          "value": 256.2
         },
         {
           "date": "2006-06-01",
-          "value": 259.4275
+          "value": 259.4
         },
         {
           "date": "2006-07-01",
-          "value": 257.43
+          "value": 257.4
         },
         {
           "date": "2006-08-01",
-          "value": 263.628
+          "value": 263.6
         },
         {
           "date": "2006-09-01",
-          "value": 267.71
+          "value": 267.7
         },
         {
           "date": "2006-10-01",
-          "value": 283.2125
+          "value": 283.2
         },
         {
           "date": "2007-02-01",
@@ -89215,23 +89339,23 @@
         },
         {
           "date": "2007-03-01",
-          "value": 304.93
+          "value": 304.9
         },
         {
           "date": "2007-04-01",
-          "value": 302.25
+          "value": 302.3
         },
         {
           "date": "2007-05-01",
-          "value": 300.355
+          "value": 300.4
         },
         {
           "date": "2007-06-01",
-          "value": 302.486
+          "value": 302.5
         },
         {
           "date": "2007-07-01",
-          "value": 302.7125
+          "value": 302.7
         },
         {
           "date": "2007-08-01",
@@ -89239,7 +89363,7 @@
         },
         {
           "date": "2007-09-01",
-          "value": 315.25
+          "value": 315.3
         },
         {
           "date": "2007-10-01",
@@ -90120,6 +90244,10 @@
         {
           "date": "2026-08-01",
           "value": 410.9
+        },
+        {
+          "date": "2026-09-01",
+          "value": 418.5
         }
       ]
     },
@@ -90132,7 +90260,7 @@
       "source_id": "WB:wheat-us-srw",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1979-01-01",
@@ -92421,6 +92549,10 @@
         {
           "date": "2026-08-01",
           "value": 263.2
+        },
+        {
+          "date": "2026-09-01",
+          "value": 278.6
         }
       ]
     },
@@ -92433,7 +92565,7 @@
       "source_id": "WB:wheat-us-hrw",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -95634,6 +95766,10 @@
         {
           "date": "2026-08-01",
           "value": 330.0
+        },
+        {
+          "date": "2026-09-01",
+          "value": 347.0
         }
       ]
     },
@@ -95646,7 +95782,7 @@
       "source_id": "WB:banana-europe",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1997-01-01",
@@ -97071,6 +97207,10 @@
         {
           "date": "2026-08-01",
           "value": 1.07
+        },
+        {
+          "date": "2026-09-01",
+          "value": 1.12
         }
       ]
     },
@@ -97083,7 +97223,7 @@
       "source_id": "WB:banana-us",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -100284,6 +100424,10 @@
         {
           "date": "2026-08-01",
           "value": 1.1
+        },
+        {
+          "date": "2026-09-01",
+          "value": 1.12
         }
       ]
     },
@@ -100296,7 +100440,7 @@
       "source_id": "WB:orange",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -103497,6 +103641,10 @@
         {
           "date": "2026-08-01",
           "value": 0.77
+        },
+        {
+          "date": "2026-09-01",
+          "value": 0.79
         }
       ]
     },
@@ -103509,7 +103657,7 @@
       "source_id": "WB:beef",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -106710,6 +106858,10 @@
         {
           "date": "2026-08-01",
           "value": 7.28
+        },
+        {
+          "date": "2026-09-01",
+          "value": 6.86
         }
       ]
     },
@@ -106722,7 +106874,7 @@
       "source_id": "WB:chicken",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -109923,6 +110075,10 @@
         {
           "date": "2026-08-01",
           "value": 1.69
+        },
+        {
+          "date": "2026-09-01",
+          "value": 1.81
         }
       ]
     },
@@ -109935,7 +110091,7 @@
       "source_id": "WB:lamb",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1971-01-01",
@@ -112608,6 +112764,10 @@
         {
           "date": "2026-08-01",
           "value": 7.43
+        },
+        {
+          "date": "2026-09-01",
+          "value": 7.26
         }
       ]
     },
@@ -112620,7 +112780,7 @@
       "source_id": "WB:sugar-eu",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -115821,6 +115981,10 @@
         {
           "date": "2026-08-01",
           "value": 0.38
+        },
+        {
+          "date": "2026-09-01",
+          "value": 0.38
         }
       ]
     },
@@ -115833,7 +115997,7 @@
       "source_id": "WB:sugar-us",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -119034,6 +119198,10 @@
         {
           "date": "2026-08-01",
           "value": 0.82
+        },
+        {
+          "date": "2026-09-01",
+          "value": 0.85
         }
       ]
     },
@@ -119046,7 +119214,7 @@
       "source_id": "WB:sugar-world",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -122247,6 +122415,10 @@
         {
           "date": "2026-08-01",
           "value": 0.38
+        },
+        {
+          "date": "2026-09-01",
+          "value": 0.41
         }
       ]
     },
@@ -122259,7 +122431,7 @@
       "source_id": "WB:tobacco-us-import-u-v",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-06-01",
+      "last_observation": "2026-07-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -125452,6 +125624,10 @@
         {
           "date": "2026-06-01",
           "value": 6723.0
+        },
+        {
+          "date": "2026-07-01",
+          "value": 6775.0
         }
       ]
     },
@@ -125464,7 +125640,7 @@
       "source_id": "WB:logs-cameroon",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1970-01-01",
@@ -128185,6 +128361,10 @@
         {
           "date": "2026-08-01",
           "value": 405.7
+        },
+        {
+          "date": "2026-09-01",
+          "value": 402.9
         }
       ]
     },
@@ -128197,7 +128377,7 @@
       "source_id": "WB:logs-malaysian",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -131398,6 +131578,10 @@
         {
           "date": "2026-08-01",
           "value": 187.4
+        },
+        {
+          "date": "2026-09-01",
+          "value": 190.3
         }
       ]
     },
@@ -131410,7 +131594,7 @@
       "source_id": "WB:sawnwood-cameroon",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1970-01-01",
@@ -133123,6 +133307,10 @@
         {
           "date": "2026-08-01",
           "value": 648.7
+        },
+        {
+          "date": "2026-09-01",
+          "value": 642.9
         }
       ]
     },
@@ -133135,7 +133323,7 @@
       "source_id": "WB:sawnwood-malaysian",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -136336,6 +136524,10 @@
         {
           "date": "2026-08-01",
           "value": 737.9
+        },
+        {
+          "date": "2026-09-01",
+          "value": 731.3
         }
       ]
     },
@@ -136348,7 +136540,7 @@
       "source_id": "WB:plywood",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1979-01-01",
@@ -138637,6 +138829,10 @@
         {
           "date": "2026-08-01",
           "value": 343.8
+        },
+        {
+          "date": "2026-09-01",
+          "value": 349.1
         }
       ]
     },
@@ -138649,7 +138845,7 @@
       "source_id": "WB:cotton-a-index",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -141850,6 +142046,10 @@
         {
           "date": "2026-08-01",
           "value": 2.11
+        },
+        {
+          "date": "2026-09-01",
+          "value": 2.1
         }
       ]
     },
@@ -141862,7 +142062,7 @@
       "source_id": "WB:rubber-tsr20",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1999-01-01",
@@ -143191,6 +143391,10 @@
         {
           "date": "2026-08-01",
           "value": 2.24
+        },
+        {
+          "date": "2026-09-01",
+          "value": 2.41
         }
       ]
     },
@@ -143203,7 +143407,7 @@
       "source_id": "WB:rubber-rss3",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -146404,6 +146608,10 @@
         {
           "date": "2026-08-01",
           "value": 2.73
+        },
+        {
+          "date": "2026-09-01",
+          "value": 2.75
         }
       ]
     },
@@ -146416,7 +146624,7 @@
       "source_id": "WB:phosphate-rock",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -149617,6 +149825,10 @@
         {
           "date": "2026-08-01",
           "value": 170.0
+        },
+        {
+          "date": "2026-09-01",
+          "value": 170.0
         }
       ]
     },
@@ -149629,7 +149841,7 @@
       "source_id": "WB:dap",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1967-01-01",
@@ -152494,6 +152706,10 @@
         {
           "date": "2026-08-01",
           "value": 793.5
+        },
+        {
+          "date": "2026-09-01",
+          "value": 800.6
         }
       ]
     },
@@ -152506,7 +152722,7 @@
       "source_id": "WB:tsp",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -155707,6 +155923,10 @@
         {
           "date": "2026-08-01",
           "value": 704.4
+        },
+        {
+          "date": "2026-09-01",
+          "value": 690.0
         }
       ]
     },
@@ -155719,7 +155939,7 @@
       "source_id": "WB:urea",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -158920,6 +159140,10 @@
         {
           "date": "2026-08-01",
           "value": 390.0
+        },
+        {
+          "date": "2026-09-01",
+          "value": 407.5
         }
       ]
     },
@@ -158932,7 +159156,7 @@
       "source_id": "WB:potassium-chloride",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -162133,6 +162357,10 @@
         {
           "date": "2026-08-01",
           "value": 386.9
+        },
+        {
+          "date": "2026-09-01",
+          "value": 367.5
         }
       ]
     },
@@ -162145,7 +162373,7 @@
       "source_id": "WB:aluminum",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -165346,6 +165574,10 @@
         {
           "date": "2026-08-01",
           "value": 3251.0
+        },
+        {
+          "date": "2026-09-01",
+          "value": 3283.0
         }
       ]
     },
@@ -165358,7 +165590,7 @@
       "source_id": "WB:iron-ore-cfr-spot",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -168559,6 +168791,10 @@
         {
           "date": "2026-08-01",
           "value": 96.3
+        },
+        {
+          "date": "2026-09-01",
+          "value": 97.7
         }
       ]
     },
@@ -168571,7 +168807,7 @@
       "source_id": "WB:copper",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -171772,6 +172008,10 @@
         {
           "date": "2026-08-01",
           "value": 14326.0
+        },
+        {
+          "date": "2026-09-01",
+          "value": 14474.0
         }
       ]
     },
@@ -171784,7 +172024,7 @@
       "source_id": "WB:lead",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -174985,6 +175225,10 @@
         {
           "date": "2026-08-01",
           "value": 1855.0
+        },
+        {
+          "date": "2026-09-01",
+          "value": 1873.0
         }
       ]
     },
@@ -174997,7 +175241,7 @@
       "source_id": "WB:tin",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -178198,6 +178442,10 @@
         {
           "date": "2026-08-01",
           "value": 55385.0
+        },
+        {
+          "date": "2026-09-01",
+          "value": 53712.0
         }
       ]
     },
@@ -178210,7 +178458,7 @@
       "source_id": "WB:nickel",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -181411,6 +181659,10 @@
         {
           "date": "2026-08-01",
           "value": 16751.0
+        },
+        {
+          "date": "2026-09-01",
+          "value": 16324.0
         }
       ]
     },
@@ -181423,7 +181675,7 @@
       "source_id": "WB:zinc",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -184624,6 +184876,10 @@
         {
           "date": "2026-08-01",
           "value": 3875.0
+        },
+        {
+          "date": "2026-09-01",
+          "value": 4021.0
         }
       ]
     },
@@ -184636,7 +184892,7 @@
       "source_id": "WB:gold",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -187837,6 +188093,10 @@
         {
           "date": "2026-08-01",
           "value": 4411.0
+        },
+        {
+          "date": "2026-09-01",
+          "value": 4319.0
         }
       ]
     },
@@ -187849,7 +188109,7 @@
       "source_id": "WB:platinum",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -191050,6 +191310,10 @@
         {
           "date": "2026-08-01",
           "value": 1780.0
+        },
+        {
+          "date": "2026-09-01",
+          "value": 1784.0
         }
       ]
     },
@@ -191062,7 +191326,7 @@
       "source_id": "WB:silver",
       "source_url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx",
       "frequency": "published monthly benchmark price (not exchange futures)",
-      "last_observation": "2026-08-01",
+      "last_observation": "2026-09-01",
       "observations": [
         {
           "date": "1960-01-01",
@@ -194263,6 +194527,10 @@
         {
           "date": "2026-08-01",
           "value": 65.4
+        },
+        {
+          "date": "2026-09-01",
+          "value": 64.6
         }
       ]
     },
