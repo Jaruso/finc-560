@@ -35,7 +35,6 @@
   border:1px dashed #bed5d0;border-radius:8px;text-align:center;padding:22px}
 .commodity-empty[hidden]{display:none}
 .commodity-empty p{max-width:430px;font-size:.75rem;color:var(--muted)}
-#fit-projection{min-width:115px}
 #chart-footnote{font-size:.67rem;margin:0 4px;color:var(--muted);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:16px}
 @media(max-width:800px){.commodity-chart-card{min-height:420px}}

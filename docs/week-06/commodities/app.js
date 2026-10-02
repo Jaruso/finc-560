@@ -146,11 +146,6 @@ function draw(){
       showBase?f.baseline.map(p=>p.price):[],
       showProjection&&opt.vol?f.low.map(p=>p.price).concat(f.high.map(p=>p.price)):[]);
     const clipped=state.values.some(v=>v<range[0]||v>range[1]);
-    const fit=el("fit-projection");
-    fit.textContent=clipped?"Fit projection":state.range?"Restore scale":"Scale locked";
-    fit.hidden=!state.canvas.visible("commodity-chart");
-    fit.disabled=fit.hidden||(!clipped&&!state.range);
-    el("chart-footnote").hidden=fit.hidden;
     const actual=last.value,base=f.baseline.at(-1).price,forecast=f.scenario.at(-1).price;
     showSpot(c,last);
     const oneYearBack=c.observations.find(p=>p.date===M.shiftMonth(last.date,-12));
@@ -235,7 +230,7 @@ function draw(){
         projectionsEnabled:showProjection}
     };
     el("chart-footnote").textContent=clipped?
-      "Scenario extends beyond the fixed scale. Click Fit projection to inspect it.":
+      "Scenario extends beyond the fixed scale; values remain on the model-reference scale.":
       showProjection?"Solid: observed · Dashed: forecast · Dotted: baseline/volatility guides."
         :"Observed monthly prices only.";
     if(state.canvas.visible("commodity-chart")){
@@ -474,15 +469,10 @@ function renderSingleScaleOverrides(c,opt){
             .map(row=>frame.toIndex(row.price)):[]));
       const clipped=currentRange[0]<range[0]||currentRange[1]>range[1];
       state.values=values;state.axisValues=null;
-      const fit=el("fit-projection");
-      fit.textContent=clipped?"Fit projection":state.range?"Restore scale":"Scale locked";
-      fit.hidden=!state.canvas.visible(id);
-      fit.disabled=fit.hidden||(!clipped&&!state.range);
-      el("chart-footnote").hidden=fit.hidden;
       el("chart-subtitle").textContent=rendered.context+
         " · Hover for original units · Solid observed, dashed forecasts.";
       el("chart-footnote").textContent=clipped?
-        "Scenario extends beyond the fixed scale. Click Fit projection to inspect it.":
+        "Scenario extends beyond the fixed scale; values remain on the model-reference scale.":
         "Prices indexed to 100; hover for the original price and units.";
       if(state.canvas.visible(id)){
         state.pending={traces:rendered.traces,layout:{
@@ -750,11 +740,6 @@ function drawComparison(){
       Object.keys(currentRange).some(unit=>
         currentRange[unit][0]<axis[unit][0]||currentRange[unit][1]>axis[unit][1]):
       visiblePrices.some(value=>value<axis[0]||value>axis[1]);
-    const fit=el("fit-projection");
-    fit.textContent=clipped?"Fit projection":state.range?"Restore scale":"Scale locked";
-    fit.hidden=!state.canvas.visible("commodity-chart");
-    fit.disabled=fit.hidden||(!clipped&&!state.range);
-    el("chart-footnote").hidden=fit.hidden;
     el("shock-value").textContent=(opt.shock>0?"+":"")+opt.shock+"%";
     const initial=primary.forecast.baseline.at(-1).price;
     const adjusted=primary.forecast.scenario.at(-1).price;
@@ -865,7 +850,7 @@ function drawComparison(){
       layout.meta.axesByUnit=plan.units.slice();
     }
     el("chart-footnote").textContent=clipped?
-      "Some projections exceed the fixed scale. Click Fit projection to inspect them.":
+      "Some projections exceed the fixed scale; values remain on the model-reference scale.":
       nominal?"Actual, original commodity units; differing units use separate labeled axes.":
       "Prices indexed to 100; hover for the original price and units.";
     if(state.canvas.visible("commodity-chart")){
@@ -990,20 +975,6 @@ async function init(){
     el("shock").addEventListener("input",schedule);
     el("shock").addEventListener("change",schedule);
     el("reset").addEventListener("click",reset);
-    el("fit-projection").addEventListener("click",()=>{
-      if(!state.values)return;
-      if(el("fit-projection").textContent==="Restore scale")state.range=null;
-      else if(modeFor("commodity-chart")==="nominal"&&
-        state.selectedIds.length>1&&state.axisValues){
-        // Each original unit has its own axis and explicit fit envelope.
-        state.range=structuredClone(state.axisValues);
-      }else{
-        const lo=Math.min(...state.values),hi=Math.max(...state.values);
-        const pad=Math.max((hi-lo)*.14,hi*.04,.05);
-        state.range=[Math.max(0,lo-pad),hi+pad];
-      }
-      schedule();
-    });
     let timer;
     window.addEventListener("resize",()=>{
       clearTimeout(timer);

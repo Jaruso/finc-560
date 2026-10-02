@@ -478,33 +478,13 @@ async function selectPrimary(page,ticker){
     assert.equal(await page.locator(".company-timeline").count(),1);
     const defaultRange=await page.locator("#company-chart").evaluate(g=>
       g.layout.yaxis.range.slice());
-    // Extreme adjustments may exceed the scale, but must never silently
-    // squeeze history. Fit projection is the explicit exception.
+    // Extreme adjustments may exceed the fixed model-reference scale.
     await slide(page,"#growth",20);
     await page.waitForFunction(()=>document.querySelector("#company-chart")
       ?.layout?.meta?.projectionClipped===true);
     assert.deepEqual(await page.locator("#company-chart").evaluate(g=>
       g.layout.yaxis.range.slice()),defaultRange);
-    assert.equal(await page.locator("#fit-company-projection").textContent(),"Fit projection");
-    await page.locator("#fit-company-projection").click();
-    await page.waitForFunction(()=>document.querySelector("#company-chart")
-      ?.layout?.meta?.yScale==="manual-locked");
-    const fittedRange=await page.locator("#company-chart").evaluate(g=>
-      g.layout.yaxis.range.slice());
-    assert.ok(fittedRange[1]>defaultRange[1],
-      "Only an explicit Fit projection click may enlarge the vertical scale");
-    await slide(page,"#growth",15);
-    await page.waitForFunction(()=>document.querySelector("#company-chart")
-      ?.layout?.meta?.projectionClipped===false);
-    assert.deepEqual(await page.locator("#company-chart").evaluate(g=>
-      g.layout.yaxis.range.slice()),fittedRange,
-      "Dials cannot silently modify a manually fitted axis either");
     await slide(page,"#growth",0);
-    await page.waitForFunction(()=>document.querySelector("#fit-company-projection")
-      ?.textContent==="Restore scale");
-    await page.locator("#fit-company-projection").click();
-    await page.waitForFunction(()=>document.querySelector("#company-chart")
-      ?.layout?.meta?.yScale==="baseline-locked");
     assert.deepEqual(await page.locator("#company-chart").evaluate(g=>
       g.layout.yaxis.range.slice()),defaultRange);
 

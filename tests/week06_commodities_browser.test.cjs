@@ -242,7 +242,6 @@ async function slide(page,n,value){
     assert.ok(two[1].y>two[0].y&&two[0].x===two[1].x);
     await picker.locator('input[value="commodity-yoy"]').uncheck();
     assert.equal(await page.locator("#chart-stage").getAttribute("data-count"),"1");
-    assert.equal(await page.locator("#fit-projection").isHidden(),false);
     await picker.locator('input[value="commodity-chart"]').click();
     assert.equal(await picker.locator('input[value="commodity-chart"]').isChecked(),true,
       "Cannot deselect the final visible chart");

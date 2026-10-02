@@ -85,9 +85,8 @@
       }
     }
   }
-  // Manual range changes happen ONLY when the user explicitly presses
-  // Fit projection. Dials, model choice and forecast horizon cannot rescale.
-  let scaleContext=null,manualYRange=null,lastRenderedValues=null;
+  // Keep one stable model-reference scale while assumptions change.
+  let scaleContext=null;
   const USD=n=>!Number.isFinite(n)?"—":"$"+(Math.abs(n)>=1000?
     (n/1000).toLocaleString("en-US",{maximumFractionDigits:1})+"B":
     n.toLocaleString("en-US",{maximumFractionDigits:0})+"M");
@@ -351,7 +350,6 @@
     const selected=new Set(canvas.selected());
     setScaleControls(true);
     const focused=selected.has("company-chart");
-    el("fit-company-projection").hidden=true;
     el("chart-footnote").hidden=false;
     el("chart-footnote").textContent=focused
       ?"Each equity: revenue, operating income & net income · Solid = reported · Dashed = modeled."
@@ -378,7 +376,6 @@
         el("chart-footnote").textContent=assumptions.projectionsEnabled
           ?"Each equity: revenue, operating income & net income · Solid = reported · Dashed = modeled."
           :"Each equity: revenue, operating income & net income · Reported annual values only.";
-        lastRenderedValues=null;
         queuedPlot={traces:chart.traces,layout:chart.layout};
         void plotLatest();
       }else extraPlot(id,chart.traces,chart.layout);
@@ -436,7 +433,7 @@
     // or selects a different model.
     const context=[company.ticker,company.annual.at(-1).fiscal_end,
       el("history").value,showProjection?"projection":"reported-only"].join("|");
-    if(scaleContext!==context){manualYRange=null;scaleContext=context;}
+    if(scaleContext!==context)scaleContext=context;
     const actual=FINANCIAL_METRICS.flatMap(metric=>
       history.map(r=>r[M.METRICS[metric]]/1000));
     const baselineReference=showProjection?
@@ -449,7 +446,7 @@
     const baseMin=Math.min(...referenceValues),baseMax=Math.max(...referenceValues);
     const basePadding=Math.max((baseMax-baseMin)*.14,Math.abs(baseMax)*.035,.5);
     const defaultYRange=[baseMin-basePadding,baseMax+basePadding];
-    const range=manualYRange||defaultYRange;
+    const range=defaultYRange;
     const shownValues=actual.slice();
     const traces=[];
     for(const metric of FINANCIAL_METRICS){
@@ -488,16 +485,7 @@
           "<extra>"+label+(showBaseline?" · scenario":" · forecast")+"</extra>"
       });
     }
-    lastRenderedValues=shownValues;
     const overflow=shownValues.some(v=>v<range[0]||v>range[1]);
-    const fitButton=el("fit-company-projection");
-    fitButton.disabled=!showProjection||(!overflow&&!manualYRange);
-    fitButton.textContent=overflow?"Fit projection":
-      manualYRange?"Restore scale":"Scale locked";
-    fitButton.title=overflow
-      ?"Explicitly expand the vertical scale to include this scenario"
-      :manualYRange?"Restore the fixed model-reference scale":
-        "Vertical scale remains fixed while adjusting assumptions";
 
     const total=Date.parse(endDate)-Date.parse(xObserved[0]);
     const cutoff=showProjection
@@ -531,7 +519,7 @@
         projectionEnd:showProjection?endDate:null,
         projectionsEnabled:showProjection,measures:FINANCIAL_METRICS.slice(),
         unit,model:result.method,
-        yScale:manualYRange?"manual-locked":"baseline-locked",
+        yScale:"baseline-locked",
         defaultYRange:defaultYRange.slice(),
         projectionClipped:showProjection&&overflow}
     };
@@ -544,7 +532,7 @@
     el("chart-footnote").textContent=!showProjection
       ?"Color = financial measure · Solid = reported; projections hidden"
       :overflow
-        ?"A scenario exceeds the locked common scale. Use Fit projection to see all three measures."
+        ?"A scenario exceeds the fixed common scale; values remain on the model-reference scale."
         :"Color = financial measure · Solid = reported · Dashed = forecast"+
           (adjusted?" · Dotted = unadjusted reference":"");
     queuedPlot={traces,layout};
@@ -800,10 +788,8 @@
       setChartOptionReasons(singleChartOptionReasons(history));
       canvas.setAvailable(availableEquityCharts(history));
       const focused=canvas.visible("company-chart");
-      el("fit-company-projection").hidden=!focused||!assumptions.projectionsEnabled;
       el("chart-footnote").hidden=!focused;
       if(focused)financialCharts(history,result);
-      else el("fit-company-projection").disabled=true;
       renderExtraEquity(history,result,assumptions);
     }catch(error){showError(error);}
   }
@@ -893,7 +879,7 @@
     el("company-name").textContent=ticker;
     resetQuote();
     el("data-error").hidden=true;
-    scaleContext=null;manualYRange=null;lastRenderedValues=null;
+    scaleContext=null;
     const item=manifest.companies.find(row=>row.ticker===ticker);
     // A former comparison may become primary without repeating its verified
     // annual-file request or losing its disclosures to a later rate limit.
@@ -970,7 +956,6 @@
       el("projections-enabled").addEventListener("change",()=>{
         updateProjectionControls();
         scaleContext=null;
-        manualYRange=null;
         queueRender();
       });
       el("toggle-keys").addEventListener("click",()=>{
@@ -994,20 +979,7 @@
       window.setInterval(()=>{
         if(activeTicker&&document.visibilityState==="visible")void loadQuote(activeTicker);
       },60000);
-      el("fit-company-projection").addEventListener("click",()=>{
-        if(!lastRenderedValues||!company)return;
-        if(el("fit-company-projection").textContent==="Restore scale"){
-          manualYRange=null;
-        }else{
-          // This change to the y-axis is *explicit*, never slider-driven.
-          const lo=Math.min(...lastRenderedValues),hi=Math.max(...lastRenderedValues);
-          const pad=Math.max((hi-lo)*.14,Math.abs(hi)*.035,.5);
-          manualYRange=[lo-pad,hi+pad];
-        }
-        render();
-      });
       el("reset").addEventListener("click",()=>{
-        manualYRange=null;
         scaleContext=null;
         el("method").value="cagr";el("horizon").value="1";
         el("growth").value="0";el("margin").value="0";
