@@ -196,13 +196,14 @@
     const layout={
       autosize:true,height:plotHeight(id),
       margin:compactPlot()
-        ?{l:47,r:8,t:46,b:34,autoexpand:false}
-        :{l:55,r:16,t:62,b:49,autoexpand:false},paper_bgcolor:"#fff",plot_bgcolor:"#fff",
+        ?{l:47,r:8,t:st.showKeys?46:10,b:34,autoexpand:false}
+        :{l:55,r:16,t:st.showKeys?62:12,b:49,autoexpand:false},
+      paper_bgcolor:"#fff",plot_bgcolor:"#fff",
       font:{family:"Inter, system-ui, sans-serif",size:11,color:"#465865"},
       hovermode:"closest",showlegend:st.showKeys,
-      legend:{orientation:"h",x:.5,xanchor:"center",
+      ...(st.showKeys?{legend:{orientation:"h",x:.5,xanchor:"center",
         y:compactPlot()?1.035:1.14,
-        font:{size:compactPlot()?9:10},itemwidth:32,autoexpand:false},
+        font:{size:compactPlot()?9:10},itemwidth:32,autoexpand:false}}:{}),
       xaxis:{type:"date",range:[rangeStart,end],showgrid:false,
         tickformat:focused?"%b '%y":"%Y",nticks:focused?8:10,
         linecolor:"#dfe3e6",tickfont:{size:10},automargin:true},
@@ -246,14 +247,14 @@
     const base={
       autosize:true,height:plotHeight(id),
       margin:compactPlot()
-        ?{l:47,r:8,t:43,b:34,autoexpand:false}
-        :{l:55,r:20,t:55,b:47,autoexpand:false},
+        ?{l:47,r:8,t:st.showKeys?43:8,b:34,autoexpand:false}
+        :{l:55,r:20,t:st.showKeys?55:10,b:47,autoexpand:false},
       paper_bgcolor:"#fff",plot_bgcolor:"#fff",showlegend:st.showKeys,
       font:{family:"Inter, system-ui, sans-serif",size:10,color:"#465865"},
       hovermode:"closest",
-      legend:{orientation:"h",x:.5,xanchor:"center",
+      ...(st.showKeys?{legend:{orientation:"h",x:.5,xanchor:"center",
         y:compactPlot()?1.035:1.16,
-        font:{size:compactPlot()?9:10},itemwidth:30},
+        font:{size:compactPlot()?9:10},itemwidth:30}}:{}),
       xaxis:{type:"date",range:[historicalStart,end],
         tickformat:focused?"%b '%y":"%Y",nticks:8,
         linecolor:"#dfe3e6"},
