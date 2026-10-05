@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "status": "ready",
-  "retrieved_utc": "2026-10-02T19:57:11.310761+00:00",
+  "retrieved_utc": "2026-10-05T22:01:05.743939+00:00",
   "method": "Verified EIA/FRED spot means, WB monthly benchmark prices and attributed IMF minerals and agricultural benchmarks",
   "commodities": [
     {
