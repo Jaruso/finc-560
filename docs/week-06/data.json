@@ -39,7 +39,7 @@
     "DGS30": "https://fred.stlouisfed.org/series/DGS30",
     "DFF": "https://fred.stlouisfed.org/series/DFF"
   },
-  "retrieved_utc": "2026-10-05T21:14:47+00:00",
+  "retrieved_utc": "2026-10-06T19:07:21+00:00",
   "latest_synchronized_daily_observation": "2026-10-02",
   "latest_treasury_yields": {
     "DGS1": 4.46,
